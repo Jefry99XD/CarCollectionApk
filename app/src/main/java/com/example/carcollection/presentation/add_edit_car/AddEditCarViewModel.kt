@@ -48,4 +48,17 @@ class AddEditCarViewModel(
             }
         }
     }
+    fun loadCar(carId: Int) {
+        viewModelScope.launch {
+            val car = repository.getCarById(carId)
+            car?.let {
+                brand.value = it.brand
+                name.value = it.name
+                serie.value = it.serie
+                year.value = it.year.toString()
+                photoUrl.value = it.photoUrl
+            }
+        }
+    }
+
 }

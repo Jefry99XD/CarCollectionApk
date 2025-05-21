@@ -20,4 +20,8 @@ interface CarDao {
 
     @Query("SELECT * FROM cars WHERE name LIKE '%' || :query || '%' ORDER BY name ASC")
     fun searchCarsByName(query: String): Flow<List<Car>>
+
+    @Query("SELECT * FROM cars WHERE id = :id LIMIT 1")
+    suspend fun getCarById(id: Int): Car?
+
 }

@@ -15,4 +15,8 @@ class CarRepository(private val dao: CarDao) {
     suspend fun updateCar(car: Car) = dao.updateCar(car)
 
     suspend fun deleteCar(car: Car) = dao.deleteCar(car)
+    suspend fun getCarById(id: Int): Car? {
+        return dao.getCarById(id)
+    }
+
 }

@@ -12,43 +12,53 @@ import androidx.compose.runtime.collectAsState // Import collectAsState
 import androidx.compose.runtime.getValue     // Import getValue delegate
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.carcollection.data.local.Car // Assuming Car is in this package
-import com.example.carcollection.presentation.main.MainViewModel
 import com.example.carcollection.presentation.main.components.CarCard
 
 @Composable
 fun MainScreen(viewModel: MainViewModel, onNavigateToAdd: () -> Unit) {
-    // Collect the StateFlow into a State<List<Car>>
-    // and then get its value (the actual List<Car>)
-    val carsList: List<Car> by viewModel.cars.collectAsState()
+    val carsList by viewModel.filteredCars.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
 
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { onNavigateToAdd() },
+                onClick = onNavigateToAdd,
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Agregar carro")
             }
-
         }
     ) { padding ->
-        LazyColumn(
-            contentPadding = padding,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+        Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(padding)
                 .padding(16.dp)
         ) {
-            items(items = carsList, key = { car -> car.id }) { car -> // Assuming Car has an 'id' property for key
-                CarCard(car = car, onClick = {
-                    // Aquí puedes navegar o hacer algo con el carro
-                    println("Car clicked: ${car.id}")
-                })
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { viewModel.onSearchQueryChange(it) },
+                label = { Text("Buscar por marca o nombre") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+            )
 
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(items = carsList, key = { car -> car.id }) { car ->
+                    CarCard(
+                        car = car,
+                        onClick = { println("Car clicked: ${car.id}") },
+                        onEditClick = { /* Aquí puedes navegar al edit */ },
+                        onDeleteClick = { viewModel.deleteCar(car) }
+                    )
+
+                }
             }
-
         }
     }
 }
