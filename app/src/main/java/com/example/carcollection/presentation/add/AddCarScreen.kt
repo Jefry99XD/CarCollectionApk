@@ -1,5 +1,6 @@
 package com.example.carcollection.presentation.add
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -26,7 +27,9 @@ fun AddCarScreen(
     var name by remember { mutableStateOf("") }
     var serie by remember { mutableStateOf("") }
     var year by remember { mutableStateOf("") }
+    var color by remember { mutableStateOf("") }
     var photo by remember { mutableStateOf("") }
+    var type by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -62,11 +65,23 @@ fun AddCarScreen(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth()
         )
+        OutlinedTextField(
+            value = color,
+            onValueChange = { color = it },
+            label = { Text("Color") },
+            modifier = Modifier.fillMaxWidth()
+        )
 
         OutlinedTextField(
             value = photo,
             onValueChange = { photo = it },
             label = { Text("URL de la foto (opcional)") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = color,
+            onValueChange = { color = it },
+            label = { Text("Color") },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -79,13 +94,16 @@ fun AddCarScreen(
                         } else {
                             photo
                         }
-
+                        Log.d("AddCarScreen", "URL de imagen buscada: $finalPhoto")
                         val car = Car(
                             brand = brand,
                             name = name,
                             serie = serie,
-                            year = year.toIntOrNull() ?: 0,
-                            photoUrl = finalPhoto
+                            color = color,
+                            year = year,
+                            type = type,
+
+                            photoUrl = finalPhoto,
                         )
                         viewModel.insertCar(car)
                         Toast.makeText(context, "Carro guardado", Toast.LENGTH_SHORT).show()

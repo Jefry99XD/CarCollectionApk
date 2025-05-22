@@ -24,4 +24,8 @@ interface CarDao {
     @Query("SELECT * FROM cars WHERE id = :id LIMIT 1")
     suspend fun getCarById(id: Int): Car?
 
+    @Query("SELECT * FROM cars ORDER BY name ASC")
+    suspend fun getAllCarsList(): List<Car> // nombre diferente al del Flow
+
+
 }

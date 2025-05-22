@@ -9,6 +9,7 @@ import androidx.compose.runtime.remember // This import is not used, consider re
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+
 @Composable
 fun AddEditCarScreen(
     viewModel: AddEditCarViewModel,
@@ -55,6 +56,19 @@ fun AddEditCarScreen(
             value = viewModel.year.value,
             onValueChange = { viewModel.onEvent(AddEditCarEvent.EnteredYear(it)) },
             label = { Text("Año") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = viewModel.color.value, // Access the .value property
+            onValueChange = { viewModel.onEvent(AddEditCarEvent.EnteredColor(it)) },
+            label = { Text("Color") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        OutlinedTextField(
+            value = viewModel.type.value, // Access the .value property
+            onValueChange = { viewModel.onEvent(AddEditCarEvent.EnteredType(it)) },
+            label = { Text("Tipo") },
             modifier = Modifier.fillMaxWidth()
         )
 

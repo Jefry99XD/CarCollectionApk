@@ -6,6 +6,7 @@ sealed class AddEditCarEvent {
     data class EnteredSerie(val value: String) : AddEditCarEvent()
     data class EnteredYear(val value: String) : AddEditCarEvent()
     data class EnteredPhotoUrl(val value: String) : AddEditCarEvent()
-
+    data class EnteredColor(val value: String) : AddEditCarEvent()
+    data class EnteredType(val value: String) : AddEditCarEvent()
     object SaveCar : AddEditCarEvent()
 }

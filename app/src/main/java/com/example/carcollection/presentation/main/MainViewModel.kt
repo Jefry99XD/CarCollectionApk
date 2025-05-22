@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class MainViewModel(
-    private val repository: CarRepository
+    internal val repository: CarRepository
 ) : ViewModel() {
 
     private val _cars = repository.getAllCars()
@@ -30,7 +30,13 @@ class MainViewModel(
             } else {
                 cars.filter {
                     it.name.contains(query, ignoreCase = true) ||
-                            it.brand.contains(query, ignoreCase = true)
+                            it.brand.contains(query, ignoreCase = true) ||
+                            it.color.contains(query, ignoreCase = true) ||
+                            it.year.contains(query, ignoreCase = true) ||
+                            it.type.contains(query, ignoreCase = true) ||
+                            it.serie.contains(query, ignoreCase = true) ||
+                            it.name.contains(query, ignoreCase = true) ||
+                            it.id.toString().contains(query, ignoreCase = true)
                 }
             }
         }

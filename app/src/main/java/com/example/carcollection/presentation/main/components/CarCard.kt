@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -18,16 +19,14 @@ import com.example.carcollection.data.local.Car
 @Composable
 fun CarCard(
     car: Car,
-    onClick: () -> Unit,
-    onEditClick: () -> Unit,
-    onDeleteClick: () -> Unit
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    onShare: () -> Unit
 ) {
     Card(
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(modifier = Modifier.padding(16.dp)) {
             AsyncImage(
@@ -40,35 +39,26 @@ fun CarCard(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(text = car.brand, style = MaterialTheme.typography.titleMedium)
                 Text(text = car.name, style = MaterialTheme.typography.bodyLarge)
                 Text(text = car.serie, style = MaterialTheme.typography.bodyMedium)
+                Text(text = "Color: ${car.color}", style = MaterialTheme.typography.bodySmall)
                 Text(text = "Año: ${car.year}", style = MaterialTheme.typography.bodySmall)
+                Text(text = "Tipo: ${car.type}", style = MaterialTheme.typography.bodySmall)
+            }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    horizontalArrangement = Arrangement.End,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    IconButton(onClick = onEditClick) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Editar"
-                        )
-                    }
-                    IconButton(onClick = onDeleteClick) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Eliminar"
-                        )
-                    }
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                IconButton(onClick = onEdit) {
+                    Icon(Icons.Default.Edit, contentDescription = "Editar")
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, contentDescription = "Eliminar")
                 }
             }
         }
     }
 }
+

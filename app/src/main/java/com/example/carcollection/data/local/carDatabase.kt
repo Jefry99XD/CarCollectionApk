@@ -17,13 +17,15 @@ abstract class CarDatabase : RoomDatabase() {
         fun getDatabase(context: Context): CarDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    CarDatabase::class.java,
-                    "car_database"
-                ).build()
+                                context.applicationContext,
+                                CarDatabase::class.java,
+                                "car_database"
+                            ).fallbackToDestructiveMigration(false)
+                    .build()
                 INSTANCE = instance
                 instance
             }
         }
+
     }
 }

@@ -9,6 +9,9 @@ data class Car(
     val brand: String,
     val name: String,
     val serie: String,
-    val year: Int,
-    val photoUrl: String
+    val year: String,
+    val photoUrl: String,
+    val color: String,
+    val type: String
+
 )

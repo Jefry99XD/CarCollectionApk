@@ -18,5 +18,7 @@ class CarRepository(private val dao: CarDao) {
     suspend fun getCarById(id: Int): Car? {
         return dao.getCarById(id)
     }
+    suspend fun getAllCarsList(): List<Car> = dao.getAllCarsList()
+
 
 }
