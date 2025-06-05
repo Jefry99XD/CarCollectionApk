@@ -9,6 +9,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.rememberNavController
 import com.example.carcollection.data.local.CarDatabase
 import com.example.carcollection.data.repository.CarRepository
+import com.example.carcollection.data.repository.TagRepository
 import com.example.carcollection.presentation.main.TubaCollectionApp
 import com.example.carcollection.presentation.navigation.AppNavGraph
 import com.example.carcollection.ui.theme.CarCollectionTheme
@@ -23,10 +24,11 @@ class MainActivity : ComponentActivity() {
                 val context = LocalContext.current
                 val db = CarDatabase.getDatabase(context)
                 val repository = CarRepository(db.carDao())
+                val tagRepository = TagRepository(db.tagDao())
                 val navController = rememberNavController()
 
                 TubaCollectionApp(navController = navController) {
-                    AppNavGraph(navController = navController, repository = repository)
+                    AppNavGraph(navController = navController, repository = repository, tagRepository = tagRepository)
                 }
             }
         }

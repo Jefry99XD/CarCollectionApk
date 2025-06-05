@@ -7,9 +7,12 @@ import com.example.carcollection.data.local.Car
 import com.example.carcollection.data.repository.CarRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import com.example.carcollection.data.repository.TagRepository
 
 class MainViewModel(
-    internal val repository: CarRepository
+    internal val repository: CarRepository,
+    private val tagRepository: TagRepository
 ) : ViewModel() {
 
     private val _cars = repository.getAllCars()
@@ -23,6 +26,22 @@ class MainViewModel(
         _searchQuery.value = query
     }
 
+    fun getCarByIdSync(id: Int): Car? {
+        return runBlocking {
+            repository.getCarById(id)
+        }
+    }
+
+    val allTags = tagRepository.getAllTagsFlow()
+
+    var currentCar: Car? = null
+    fun setCarForEdit(car: Car) {
+        currentCar = car
+    }
+
+    // 👇 NUEVA PROPIEDAD
+    var savedPage: Int = 0
+
     val filteredCars: StateFlow<List<Car>> = _searchQuery
         .combine(_cars) { query, cars ->
             if (query.isBlank()) {
@@ -35,8 +54,8 @@ class MainViewModel(
                             it.year.contains(query, ignoreCase = true) ||
                             it.type.contains(query, ignoreCase = true) ||
                             it.serie.contains(query, ignoreCase = true) ||
-                            it.name.contains(query, ignoreCase = true) ||
-                            it.id.toString().contains(query, ignoreCase = true)
+                            it.id.toString().contains(query, ignoreCase = true) ||
+                            it.tags.any { tag -> tag.contains(query, ignoreCase = true) }
                 }
             }
         }
@@ -54,3 +73,4 @@ class MainViewModel(
         }
     }
 }
+

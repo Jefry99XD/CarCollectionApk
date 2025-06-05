@@ -15,7 +15,8 @@ fun createCarCardView(context: Context, car: Car): View {
                     car = car,
                     onEdit = {},
                     onDelete = {},
-                    onShare = {}
+                    onClick = {}
+
                 )
             }
         }

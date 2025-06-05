@@ -27,5 +27,11 @@ interface CarDao {
     @Query("SELECT * FROM cars ORDER BY name ASC")
     suspend fun getAllCarsList(): List<Car> // nombre diferente al del Flow
 
+    @Query("DELETE FROM cars")
+    suspend fun deleteAll()
+
+    @Query("SELECT DISTINCT tags FROM cars")
+    suspend fun getAllTags(): List<String>
+
 
 }

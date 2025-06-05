@@ -7,7 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -21,7 +21,7 @@ fun CarCard(
     car: Car,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    onShare: () -> Unit
+    onClick: () -> Unit,
 ) {
     Card(
         shape = RoundedCornerShape(12.dp),
@@ -46,17 +46,22 @@ fun CarCard(
                 Text(text = "Color: ${car.color}", style = MaterialTheme.typography.bodySmall)
                 Text(text = "Año: ${car.year}", style = MaterialTheme.typography.bodySmall)
                 Text(text = "Tipo: ${car.type}", style = MaterialTheme.typography.bodySmall)
+                Text(text = "Tags: ${car.tags.joinToString(", ")}", style = MaterialTheme.typography.bodySmall)
             }
 
             Column(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
+                IconButton(onClick = onClick) {
+                    Icon(Icons.Default.Info, contentDescription = "Ver detalles")
+                }
                 IconButton(onClick = onEdit) {
                     Icon(Icons.Default.Edit, contentDescription = "Editar")
                 }
                 IconButton(onClick = onDelete) {
                     Icon(Icons.Default.Delete, contentDescription = "Eliminar")
                 }
+
             }
         }
     }

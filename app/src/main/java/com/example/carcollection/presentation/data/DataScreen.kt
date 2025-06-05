@@ -27,9 +27,12 @@ import com.example.carcollection.utils.exportCarsToUri
 @Composable
 fun DataScreen(
     repository: CarRepository,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onNavigateToTags: () -> Unit
 ) {
     val context = LocalContext.current
+
+    val showDialog = remember { mutableStateOf(false) }
 
     val carsState = remember { mutableStateOf<List<Car>>(emptyList()) }
 
@@ -87,6 +90,50 @@ fun DataScreen(
             }) {
                 Text("Importar desde archivo")
             }
+
+            Button(onClick = { onNavigateToTags() }) {
+                Text("Tags para colección")
+            }
+
+
+
+            Button(
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                onClick = {
+                    showDialog.value = true
+                }
+            ) {
+                Text("Borrar toda la colección")
+            }
         }
+
+
+        if (showDialog.value) {
+            AlertDialog(
+                onDismissRequest = { showDialog.value = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        runBlocking {
+                            repository.deleteAll()
+                            Toast.makeText(context, "Catálogo borrado con éxito", Toast.LENGTH_SHORT).show()
+                            showDialog.value = false
+                        }
+                    }) {
+                        Text("Sí")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        showDialog.value = false
+                    }) {
+                        Text("No")
+                    }
+                },
+                title = { Text("Confirmar eliminación") },
+                text = { Text("¿Desea realmente eliminar todo el catálogo guardado en la app?") }
+            )
+        }
+
+
     }
 }

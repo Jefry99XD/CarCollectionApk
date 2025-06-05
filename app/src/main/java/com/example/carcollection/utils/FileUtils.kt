@@ -19,11 +19,17 @@ private fun detectDelimiter(headerLine: String): String {
 }
 
 private fun parseCarFromTokens(tokens: List<String>, header: List<String>): Car? {
+
     try {
         fun getValue(column: String): String {
             val index = header.indexOfFirst { it.equals(column, ignoreCase = true) }
-            return if (index >= 0 && index < tokens.size) tokens[index] else ""
+            return if (index >= 0 && index < tokens.size) unescapeCsvField(tokens[index]) else ""
         }
+
+
+        val tagsRaw = getValue("tags")
+        val tags = if (tagsRaw.isNotBlank()) tagsRaw.split("|") else emptyList()
+
 
         return Car(
             brand = getValue("brand"),
@@ -32,10 +38,11 @@ private fun parseCarFromTokens(tokens: List<String>, header: List<String>): Car?
             year = getValue("year"),
             color = getValue("color"),
             type = getValue("type"),
-            photoUrl = getValue("photoUrl")
-
-
+            photoUrl = getValue("photoUrl"),
+            tags = getValue("tags").split("|").map { it.trim() }.filter { it.isNotEmpty() }
         )
+
+
     } catch (e: Exception) {
         return null
     }
@@ -57,10 +64,23 @@ fun exportCarsToCSV(context: Context, cars: List<Car>) {
 
     try {
         FileWriter(file).use { writer ->
-            writer.write("id,brand,name,serie,year,color, type ,photoUrl\n")
+            writer.write("id,brand,name,serie,year,color,type,photoUrl,tags\n")
             cars.forEach { car ->
-                writer.write("${car.id},${car.brand},${car.name},${car.serie},${car.year},${car.color}, ${car.type},${car.photoUrl}\n")
+                val tagsJoined = car.tags.joinToString("|")
+                writer.write(listOf(
+                    car.id.toString(),
+                    car.brand,
+                    car.name,
+                    car.serie,
+                    car.year,
+                    car.color,
+                    car.type,
+                    car.photoUrl,
+                    tagsJoined
+                ).joinToString(",") { escapeCsvField(it) } + "\n")
             }
+
+
         }
 
         Toast.makeText(context, "Exportado a: ${file.absolutePath}", Toast.LENGTH_LONG).show()
@@ -99,7 +119,15 @@ fun importCarsFromCSV(context: Context, repository: CarRepository) {
         }
     }
 }
+private fun unescapeCsvField(field: String): String {
+    return field.trim().removeSurrounding("\"").replace("\"\"", "\"")
+}
 
+private fun escapeCsvField(field: String): String {
+    val cleanedField = field.replace("\n", " ").replace("\r", " ") // quita saltos de línea
+    val escapedField = cleanedField.replace("\"", "\"\"") // escapa comillas dobles
+    return "\"$escapedField\"" // encierra en comillas
+}
 
 fun importCarsFromUri(context: Context, repository: CarRepository, uri: Uri) {
     CoroutineScope(Dispatchers.IO).launch {
@@ -143,10 +171,23 @@ fun exportCarsToUri(context: Context, cars: List<Car>, uri: Uri) {
         try {
             val outputStream = context.contentResolver.openOutputStream(uri)
             outputStream?.bufferedWriter()?.use { writer ->
-                writer.write("id,brand,name,serie,year,color, type,photoUrl\n")
+                writer.write("id,brand,name,serie,year,color,type,photoUrl,tags\n")
                 cars.forEach { car ->
-                    writer.write("${car.id},${car.brand},${car.name},${car.serie},${car.year},${car.color}, ${car.type},${car.photoUrl}\n")
+                    val tagsJoined = car.tags.joinToString("|")
+                    writer.write(listOf(
+                        car.id.toString(),
+                        car.brand,
+                        car.name,
+                        car.serie,
+                        car.year,
+                        car.color,
+                        car.type,
+                        car.photoUrl,
+                        tagsJoined
+                    ).joinToString(",") { escapeCsvField(it) } + "\n")
                 }
+
+
             }
 
             CoroutineScope(Dispatchers.Main).launch {

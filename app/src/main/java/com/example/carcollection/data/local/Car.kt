@@ -12,6 +12,6 @@ data class Car(
     val year: String,
     val photoUrl: String,
     val color: String,
-    val type: String
-
+    val type: String,
+    val tags: List<String> = emptyList()
 )

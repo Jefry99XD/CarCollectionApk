@@ -25,7 +25,7 @@ fun TubaCollectionApp(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(180.dp) // más alto
+                .height(150.dp) // más alto
                 .background(Color(0, 187, 187)),
             contentAlignment = androidx.compose.ui.Alignment.Center
         ) {
