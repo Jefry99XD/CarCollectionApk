@@ -4,7 +4,7 @@ import com.example.carcollection.data.local.Tag
 import com.example.carcollection.data.local.TagDao
 import kotlinx.coroutines.flow.Flow
 
-class TagRepository(private val tagDao: TagDao) {
+class TagRepository(private val tagDao: TagDao, ) {
 
     suspend fun addTag(tag: Tag) {
         tagDao.insertTag(tag)

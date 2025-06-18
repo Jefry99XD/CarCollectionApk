@@ -60,6 +60,7 @@ fun ViewTagsScreen(
                     horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween
                 ) {
                     Text(tag.name)
+                    Text(tag.color)
                     Button(onClick = {
                         viewModel.deleteTag(tag)
                     }) {

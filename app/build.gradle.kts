@@ -41,12 +41,14 @@ android {
 }
 
 dependencies {
+    implementation(libs.firebase.crashlytics.buildtools)
     val room_version = "2.7.1" // Use the latest stable version
 
     implementation("androidx.room:room-runtime:$room_version")
     kapt("androidx.room:room-compiler:$room_version") // Use kapt
-
     implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation(libs.gson)
+    implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.coil.compose)
     implementation(libs.androidx.core.ktx)

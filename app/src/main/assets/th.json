@@ -1,0 +1,38 @@
+[
+  {
+    "name": "Fiat 500e",
+    "year": 2025,
+    "series": "HW Green Speed",
+    "regularPhotoUrl": "https://hotwheelsmedia.com/2025/TH_Fiat500e.jpg"
+  },
+  {
+    "name": "Surf 'N Turf",
+    "year": 2025,
+    "series": "Tooned",
+    "regularPhotoUrl": "https://hotwheelsmedia.com/2025/TH_SurfNTurf.jpg"
+  },
+  {
+    "name": "Custom '01 Acura Integra GSR",
+    "year": 2025,
+    "series": "HW J-Imports",
+    "regularPhotoUrl": "https://hotwheelsmedia.com/2025/TH_AcuraIntegra.jpg"
+  },
+  {
+    "name": "The Mystery Machine",
+    "year": 2025,
+    "series": "HW Screen Time",
+    "regularPhotoUrl": "https://hotwheelsmedia.com/2025/TH_MysteryMachine.jpg"
+  },
+  {
+    "name": "'69 Dodge Charger Funny Car",
+    "year": 2025,
+    "series": "Muscle Mania",
+    "regularPhotoUrl": "https://hotwheelsmedia.com/2025/TH_DodgeChargerFunnyCar.jpg"
+  },
+  {
+    "name": "Tarmac Attack",
+    "year": 2025,
+    "series": "X-Raycers",
+    "regularPhotoUrl": "https://hotwheelsmedia.com/2025/TH_TarmacAttack.jpg"
+  }
+]

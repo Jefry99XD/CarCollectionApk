@@ -4,7 +4,11 @@ package com.example.carcollection.presentation.navigation
 import CarDetailScreen
 import DataScreen
 import android.annotation.SuppressLint
+import android.app.Application
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -14,6 +18,11 @@ import com.example.carcollection.data.repository.CarRepository
 import com.example.carcollection.data.repository.TagRepository
 import com.example.carcollection.presentation.add_edit_car.AddEditCarScreen
 import com.example.carcollection.presentation.add_edit_car.AddEditCarViewModel
+import com.example.carcollection.presentation.consultas.QueryMenuScreen
+import com.example.carcollection.presentation.consultas.STHScreen
+import com.example.carcollection.presentation.consultas.STHViewModel
+import com.example.carcollection.presentation.consultas.THScreen
+import com.example.carcollection.presentation.consultas.THViewModel
 import com.example.carcollection.presentation.data.AddEditTagViewModel
 import com.example.carcollection.presentation.data.AddTagScreen
 import com.example.carcollection.presentation.data.ViewTagsScreen
@@ -35,7 +44,9 @@ fun AppNavGraph(
         composable(NavRoutes.MENU) {
             MenuScreen(
                 onNavigateToCollection = { navController.navigate(NavRoutes.MAIN) },
-                onNavigateToData = { navController.navigate(NavRoutes.DATA) }
+                onNavigateToData = { navController.navigate(NavRoutes.DATA) },
+                onNavigateToTags = { navController.navigate(NavRoutes.VIEW_TAGS) },
+                onNavigateToConsultas = { navController.navigate(NavRoutes.CONSULTAS) }
             )
         }
 
@@ -125,12 +136,47 @@ fun AppNavGraph(
         }
         composable(NavRoutes.VIEW_TAGS)
         {
-            val viewModel = ViewTagsViewModel(tagRepository)
+            val viewModel = ViewTagsViewModel(tagRepository, repository)
             ViewTagsScreen(
                 viewModel = viewModel,
                 onBackClick = { navController.popBackStack() },
                 onNavigateToAddTag = { navController.navigate(NavRoutes.ADD_EDIT_TAG) }
             )
         }
+        // Pantalla de menú de consultas
+        composable(NavRoutes.CONSULTAS) {
+            QueryMenuScreen(
+                onNavigateToSTH = { navController.navigate(NavRoutes.VIEW_STH) },
+                onNavigateToTH = { navController.navigate(NavRoutes.VIEW_TH) },
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(NavRoutes.VIEW_STH) {
+            val context = LocalContext.current
+            val viewModel = remember { STHViewModel(context.applicationContext as Application) }
+            val sthList = viewModel.sthEntries.collectAsState()
+
+            STHScreen(
+                sthEntries = sthList.value,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+        composable(NavRoutes.VIEW_TH) {
+            val context = LocalContext.current
+            val viewModel = remember { THViewModel(context.applicationContext as Application) }
+            val thList = viewModel.thEntries.collectAsState()
+            THScreen(
+                thEntries = thList.value,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+
+
+
+
+
+
     }
 }

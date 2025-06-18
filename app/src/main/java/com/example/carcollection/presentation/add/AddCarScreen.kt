@@ -48,9 +48,6 @@ fun AddCarScreen(
             selectedTags = car.tags
         }
     }
-
-
-
     Column(
         modifier = Modifier
             .fillMaxSize()

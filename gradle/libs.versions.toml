@@ -13,6 +13,7 @@ navigationCompose = "2.9.0"
 roomCommonJvm = "2.7.1"
 roomRuntimeAndroid = "2.7.1"
 navigationRuntimeAndroid = "2.9.0"
+firebaseCrashlyticsBuildtools = "3.0.4"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -34,6 +35,8 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 androidx-room-common-jvm = { group = "androidx.room", name = "room-common-jvm", version.ref = "roomCommonJvm" }
 androidx-room-runtime-android = { group = "androidx.room", name = "room-runtime-android", version.ref = "roomRuntimeAndroid" }
 androidx-navigation-runtime-android = { group = "androidx.navigation", name = "navigation-runtime-android", version.ref = "navigationRuntimeAndroid" }
+firebase-crashlytics-buildtools = { group = "com.google.firebase", name = "firebase-crashlytics-buildtools", version.ref = "firebaseCrashlyticsBuildtools" }
+gson = "com.google.code.gson:gson:2.10.1"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

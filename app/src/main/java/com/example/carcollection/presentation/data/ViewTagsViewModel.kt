@@ -3,13 +3,14 @@ package com.example.carcollection.presentation.data
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.carcollection.data.local.Tag
+import com.example.carcollection.data.repository.CarRepository
 import com.example.carcollection.data.repository.TagRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class ViewTagsViewModel(private val repository: TagRepository) : ViewModel() {
+class ViewTagsViewModel(private val repository: TagRepository, private val carRepository: CarRepository) : ViewModel() {
 
     val tags: StateFlow<List<Tag>> = repository.getAllTagsFlow().stateIn(
         scope = viewModelScope,
@@ -20,6 +21,7 @@ class ViewTagsViewModel(private val repository: TagRepository) : ViewModel() {
     fun deleteTag(tag: Tag) {
         viewModelScope.launch {
             repository.removeTag(tag)
+            carRepository.removeTagFromAllCars(tag.name)
         }
     }
 }

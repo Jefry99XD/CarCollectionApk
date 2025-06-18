@@ -1,0 +1,37 @@
+[
+  {
+    "name": "’87 Audi quattro (Mix A)",
+    "year": "2025",
+    "series": "Mainline",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/f/fd/87_Audi_quattro_Teal.jpg/revision/latest/scale-to-width-down/1000?cb=20240911140329",
+    "sthPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/4/46/87_Audi_quattro_STH.jpg/revision/latest/scale-to-width-down/1000?cb=20240911141021"
+  },
+  {
+    "name": "Hirohata Merc (Mix B)",
+    "year": "2025",
+    "series": "Rod Squad",
+    "regularPhotoUrl": "",
+    "sthPhotoUrl": ""
+  },
+  {
+    "name": "Hi‑Roller II (Mix C)",
+    "year": "2025",
+    "series": "HW Art Cars",
+    "regularPhotoUrl": "",
+    "sthPhotoUrl": ""
+  },
+  {
+    "name": "1975 Datsun Sunny Truck (B120) (Mix D)",
+    "year": "2025",
+    "series": "HW Hot Trucks",
+    "regularPhotoUrl": "",
+    "sthPhotoUrl": ""
+  },
+  {
+    "name": "Aston Martin DB4GT High‑Speed Edition (Mix E)",
+    "year": "2025",
+    "series": "HW Dream Garage",
+    "regularPhotoUrl": "",
+    "sthPhotoUrl": ""
+  }
+]

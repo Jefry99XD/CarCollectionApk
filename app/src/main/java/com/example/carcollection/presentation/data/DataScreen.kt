@@ -91,12 +91,6 @@ fun DataScreen(
                 Text("Importar desde archivo")
             }
 
-            Button(onClick = { onNavigateToTags() }) {
-                Text("Tags para colección")
-            }
-
-
-
             Button(
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                 onClick = {

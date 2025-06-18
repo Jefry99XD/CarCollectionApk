@@ -10,6 +10,9 @@ object NavRoutes {
     const val CAR_DETAIL = "car_detail"
     const val ADD_EDIT_TAG = "add_edit_tag"
     const val VIEW_TAGS = "view_tags"
+    const val CONSULTAS = "consultas_menu"
+    const val VIEW_STH = "view_sth"
+    const val VIEW_TH = "view_th"
 }
 
 

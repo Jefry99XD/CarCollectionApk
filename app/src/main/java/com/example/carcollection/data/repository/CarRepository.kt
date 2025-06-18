@@ -22,5 +22,16 @@ class CarRepository(private val dao: CarDao) {
     suspend fun deleteAll() = dao.deleteAll()
     suspend fun getAllTags(): List<String> = dao.getAllTags()
 
+    suspend fun removeTagFromAllCars(tagName: String) {
+        val cars = dao.getAllCarsList()
+        cars.forEach { car ->
+            if (tagName in car.tags) {
+                val updatedCar = car.copy(tags = car.tags - tagName)
+                dao.updateCar(updatedCar)
+            }
+        }
+    }
+
+
 
 }

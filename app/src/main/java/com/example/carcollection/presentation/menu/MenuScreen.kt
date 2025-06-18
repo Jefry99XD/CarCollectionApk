@@ -13,7 +13,9 @@ import com.example.carcollection.R
 @Composable
 fun MenuScreen(
     onNavigateToCollection: () -> Unit,
-    onNavigateToData: () -> Unit
+    onNavigateToData: () -> Unit,
+    onNavigateToTags: () -> Unit,
+    onNavigateToConsultas: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -35,17 +37,13 @@ fun MenuScreen(
             Text("Datos")
         }
 
-        // Imagen debajo de los botones
-        /*
-        Image(
-            painter = painterResource(id = R.drawable.logo),
-            contentDescription = "Logo",
-            modifier = Modifier
-                .padding(top = 16.dp)
-                .size(220.dp)
-        )
+        Button(onClick = onNavigateToTags, modifier = Modifier.fillMaxWidth()) {
+            Text("Tags")
+        }
+        Button(onClick = onNavigateToConsultas, modifier = Modifier.fillMaxWidth()) {
+            Text("Consultas")
+        }
 
-         */
     }
 
 }

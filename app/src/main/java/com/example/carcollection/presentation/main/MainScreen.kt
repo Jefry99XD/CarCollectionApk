@@ -75,6 +75,8 @@ fun MainScreen(
 
     var savedPage by mutableStateOf(0)
 
+    val allTags by viewModel.allTags.collectAsState(initial = emptyList())
+
     Scaffold(
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState)
@@ -168,6 +170,7 @@ fun MainScreen(
                 items(paginatedCars, key = { it.id }) { car ->
                     CarCard(
                         car = car,
+                        allTags = allTags,
                         onEdit = {
                             viewModel.savedPage = currentPage
                             navController.navigate("add_edit_car?carId=${car.id}")

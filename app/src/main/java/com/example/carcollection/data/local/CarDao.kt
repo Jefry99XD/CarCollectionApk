@@ -33,5 +33,8 @@ interface CarDao {
     @Query("SELECT DISTINCT tags FROM cars")
     suspend fun getAllTags(): List<String>
 
+    @Query("SELECT * FROM cars WHERE tags LIKE '%' || :tagName || '%'")
+    suspend fun getCarsByTag(tagName: String): List<Car>
+
 
 }
