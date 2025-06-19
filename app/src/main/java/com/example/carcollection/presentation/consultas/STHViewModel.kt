@@ -1,14 +1,17 @@
 package com.example.carcollection.presentation.consultas
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.InputStreamReader
+import java.net.URL
 
 class STHViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -38,4 +41,18 @@ class STHViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+
+    fun loadSTHFromWeb(url: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val json = URL(url).readText()
+                val gson = Gson()
+                val entries = gson.fromJson(json, Array<STHEntry>::class.java).toList()
+                _sthEntries.value = entries
+            } catch (e: Exception) {
+                Log.e("STHViewModel", "Error loading STH data from web", e)
+            }
+        }
+    }
+
 }

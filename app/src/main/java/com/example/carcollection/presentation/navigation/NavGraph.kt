@@ -6,6 +6,7 @@ import DataScreen
 import android.annotation.SuppressLint
 import android.app.Application
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
@@ -157,6 +158,9 @@ fun AppNavGraph(
             val viewModel = remember { STHViewModel(context.applicationContext as Application) }
             val sthList = viewModel.sthEntries.collectAsState()
 
+            LaunchedEffect(Unit) {
+                viewModel.loadSTHFromWeb("https://raw.githubusercontent.com/Jefry99XD/CarCollectionApk/main/app/src/main/assets/sth.json")
+            }
             STHScreen(
                 sthEntries = sthList.value,
                 onBackClick = { navController.popBackStack() }
@@ -166,17 +170,14 @@ fun AppNavGraph(
             val context = LocalContext.current
             val viewModel = remember { THViewModel(context.applicationContext as Application) }
             val thList = viewModel.thEntries.collectAsState()
+
+            LaunchedEffect(Unit) {
+                viewModel.loadTHFromWeb("https://raw.githubusercontent.com/Jefry99XD/CarCollectionApk/main/app/src/main/assets/th.json")
+            }
             THScreen(
                 thEntries = thList.value,
                 onBackClick = { navController.popBackStack() }
             )
         }
-
-
-
-
-
-
-
     }
 }

@@ -1,38 +1,8 @@
 [
   {
-    "name": "Fiat 500e",
+    "name": "Ford Performance Supervan 4 (Caja A)",
     "year": 2025,
-    "series": "HW Green Speed",
-    "regularPhotoUrl": "https://hotwheelsmedia.com/2025/TH_Fiat500e.jpg"
-  },
-  {
-    "name": "Surf 'N Turf",
-    "year": 2025,
-    "series": "Tooned",
-    "regularPhotoUrl": "https://hotwheelsmedia.com/2025/TH_SurfNTurf.jpg"
-  },
-  {
-    "name": "Custom '01 Acura Integra GSR",
-    "year": 2025,
-    "series": "HW J-Imports",
-    "regularPhotoUrl": "https://hotwheelsmedia.com/2025/TH_AcuraIntegra.jpg"
-  },
-  {
-    "name": "The Mystery Machine",
-    "year": 2025,
-    "series": "HW Screen Time",
-    "regularPhotoUrl": "https://hotwheelsmedia.com/2025/TH_MysteryMachine.jpg"
-  },
-  {
-    "name": "'69 Dodge Charger Funny Car",
-    "year": 2025,
-    "series": "Muscle Mania",
-    "regularPhotoUrl": "https://hotwheelsmedia.com/2025/TH_DodgeChargerFunnyCar.jpg"
-  },
-  {
-    "name": "Tarmac Attack",
-    "year": 2025,
-    "series": "X-Raycers",
-    "regularPhotoUrl": "https://hotwheelsmedia.com/2025/TH_TarmacAttack.jpg"
+    "series": " HW First Response",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/8/83/FirstResponseSupervan.jpg/revision/latest/scale-to-width-down/1000?cb=20241111104248"
   }
 ]
