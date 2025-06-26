@@ -13,6 +13,8 @@ object NavRoutes {
     const val CONSULTAS = "consultas_menu"
     const val VIEW_STH = "view_sth"
     const val VIEW_TH = "view_th"
+    const val STATISTICS = "statistics"
+
 }
 
 

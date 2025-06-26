@@ -19,7 +19,7 @@ fun CarDetailScreen(
     car: Car,
     onBackClick: () -> Unit
 ) {
-    var isImageFullScreen by remember { mutableStateOf(false) }
+    var showImageDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -45,8 +45,8 @@ fun CarDetailScreen(
                 contentDescription = "${car.brand} ${car.name}",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(if (isImageFullScreen) 400.dp else 200.dp)
-                    .clickable { isImageFullScreen = !isImageFullScreen },
+                    .height(200.dp)
+                    .clickable { showImageDialog = true },
                 contentScale = ContentScale.Crop
             )
 
@@ -57,6 +57,25 @@ fun CarDetailScreen(
             Text("Año: ${car.year}", style = MaterialTheme.typography.bodySmall)
             Text("Tipo: ${car.type}", style = MaterialTheme.typography.bodySmall)
             Text("Tags: ${car.tags.joinToString(", ")}", style = MaterialTheme.typography.bodySmall)
+        }
+
+        if (showImageDialog) {
+            AlertDialog(
+                onDismissRequest = { showImageDialog = false },
+                confirmButton = {
+                    TextButton(onClick = { showImageDialog = false }) {
+                        Text("Cerrar")
+                    }
+                },
+                text = {
+                    AsyncImage(
+                        model = car.photoUrl,
+                        contentDescription = "Imagen del carro ampliada",
+                        modifier = Modifier.fillMaxWidth(),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+            )
         }
     }
 }

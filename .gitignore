@@ -1,15 +1,50 @@
+# ==============================
+# Android & Android Studio
+# ==============================
+
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+.idea/
+.gradle/
 local.properties
+.DS_Store
+
+# Ignorar cachés y configuraciones de IntelliJ/Android Studio innecesarias
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/httpRequests/
+
+# Build system
+build/
+*/build/
+
+# Capturas, artefactos y salida de compilación temporal
+captures/
+output.json
+navigation.json
+
+# Native code (NDK / CMake)
+.cxx/
+.externalNativeBuild/
+
+# Logs, temporales y archivos personales
+*.log
+*.tmp
+*.bak
+*.swp
+
+# ==============================
+# APKs y releases
+# ==============================
+
+# ⛔ Evita ignorar APKs si deseas subirlos al repo
+# ✅ Asegúrate de guardar tus APKs en una carpeta como /release/
+# Esta línea ignora APKs por defecto:
+*.apk
+
+
+!app/release/*.apk
+

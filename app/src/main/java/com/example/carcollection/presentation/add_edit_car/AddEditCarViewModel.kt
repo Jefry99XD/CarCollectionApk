@@ -7,9 +7,13 @@ import com.example.carcollection.data.local.Car
 import com.example.carcollection.data.local.Tag
 import com.example.carcollection.data.repository.CarRepository
 import com.example.carcollection.data.repository.TagRepository
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.update
+
 
 class AddEditCarViewModel(
     private val repository: CarRepository,
@@ -43,17 +47,45 @@ class AddEditCarViewModel(
         initialValue = emptyList()
     )
 
-    val selectedTags = mutableStateOf<List<String>>(emptyList())
+    val brandSuggestions = MutableStateFlow<List<String>>(emptyList())
+    val yearSuggestions = MutableStateFlow<List<String>>(emptyList())
+    val typeSuggestions = MutableStateFlow<List<String>>(emptyList())
+    val serieSuggestions = MutableStateFlow<List<String>>(emptyList())
+    val colorSuggestions = MutableStateFlow<List<String>>(emptyList())
+
+    init {
+        viewModelScope.launch {
+            repository.getAllCars().collect { cars ->
+                brandSuggestions.value =
+                    cars.map { it.brand }.filter { it.isNotBlank() }.distinct()
+                yearSuggestions.value =
+                    cars.map { it.year }.filter { it.isNotBlank() }.distinct()
+                typeSuggestions.value =
+                    cars.map { it.type }.filter { it.isNotBlank() }.distinct()
+                serieSuggestions.value =
+                    cars.map { it.serie }.filter { it.isNotBlank() }.distinct()
+                colorSuggestions.value =
+                    cars.map { it.color }.filter { it.isNotBlank() }.distinct()
+            }
+        }
+    }
+
+
+
+
+    private val _selectedTags = MutableStateFlow<List<String>>(emptyList())
+    val selectedTags = _selectedTags.asStateFlow()
 
     fun toggleTag(tagName: String) {
-        val current = selectedTags.value.toMutableList()
-        if (current.contains(tagName)) {
-            current.remove(tagName)
-        } else {
-            current.add(tagName)
+        _selectedTags.update { current ->
+            if (tagName in current) {
+                current.filterNot { it == tagName }  // lo quita
+            } else {
+                current + tagName                    // lo añade al final → mantiene el orden
+            }
         }
-        selectedTags.value = current
     }
+
 
     fun onEvent(event: AddEditCarEvent) {
         when (event) {
@@ -64,7 +96,7 @@ class AddEditCarViewModel(
             is AddEditCarEvent.EnteredColor -> color.value = event.value
             is AddEditCarEvent.EnteredType -> type.value = event.value
             is AddEditCarEvent.EnteredPhotoUrl -> photoUrl.value = event.value
-            is AddEditCarEvent.EnteredTags -> selectedTags.value = event.value
+            is AddEditCarEvent.EnteredTags -> _selectedTags.value = event.value
 
 
             is AddEditCarEvent.SaveCar -> {
@@ -97,7 +129,7 @@ class AddEditCarViewModel(
                 color.value = car.color
                 type.value = car.type
                 currentCarId = car.id
-                selectedTags.value = car.tags
+                _selectedTags.value = car.tags
 
             }
 

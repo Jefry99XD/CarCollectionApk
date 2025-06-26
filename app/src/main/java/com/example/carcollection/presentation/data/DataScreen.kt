@@ -3,7 +3,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -12,13 +11,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.carcollection.data.local.Car
 import com.example.carcollection.data.repository.CarRepository
-import com.example.carcollection.utils.exportCarsToCSV
-import com.example.carcollection.utils.importCarsFromCSV
 import kotlinx.coroutines.runBlocking
 import com.example.carcollection.utils.importCarsFromUri
 import android.net.Uri
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import com.example.carcollection.utils.exportCarsToUri
@@ -28,7 +24,7 @@ import com.example.carcollection.utils.exportCarsToUri
 fun DataScreen(
     repository: CarRepository,
     onBackClick: () -> Unit,
-    onNavigateToTags: () -> Unit
+    onNavigateToTags: () -> Unit,
 ) {
     val context = LocalContext.current
 

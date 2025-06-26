@@ -3,63 +3,36 @@ package com.example.carcollection.presentation.data
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.example.carcollection.presentation.main.DropdownMenuBox
+import androidx.core.graphics.toColorInt
 
 
 @Composable
-fun AddTagScreen(viewModel: AddEditTagViewModel,
-                 onTagAdded: () -> Unit,
-                 onBackClick: () -> Unit
+fun AddTagScreen(
+    viewModel: AddEditTagViewModel,
+    onTagAdded: () -> Unit,
+    onBackClick: () -> Unit
 ) {
     val tagName = viewModel.tagName.value
     val tagColor = viewModel.tagColor.value
 
     val colorOptions = listOf(
-        "#EF9A9A", // suave rojo
-        "#F48FB1", // suave rosa
-        "#CE93D8", // suave púrpura
-        "#B39DDB", // suave índigo
-        "#9FA8DA", // suave azul
-        "#90CAF9", // suave celeste
-        "#81D4FA", // suave azul claro
-        "#80DEEA", // suave cian
-        "#80CBC4", // suave verde azulado
-        "#A5D6A7", // suave verde
-        "#C5E1A5", // suave verde lima
-        "#E6EE9C", // suave amarillo verdoso
-        "#FFF59D", // suave amarillo
-        "#FFE082", // suave ámbar
-        "#FFCC80", // suave naranja
-        "#FFAB91", // suave rojo anaranjado
-        "#BCAAA4", // marrón claro
-        "#E0E0E0", // gris claro
-        "#B0BEC5", // azul grisáceo claro
-        "#9E9E9E"  // gris medio
+        "#EF9A9A", "#F48FB1", "#CE93D8", "#B39DDB",
+        "#9FA8DA", "#90CAF9", "#81D4FA", "#80DEEA",
+        "#80CBC4", "#A5D6A7", "#C5E1A5", "#E6EE9C",
+        "#FFF59D", "#FFE082", "#FFCC80", "#FFAB91",
+        "#BCAAA4", "#E0E0E0", "#B0BEC5", "#9E9E9E"
     )
-
-
 
     Column(
         modifier = Modifier
@@ -79,37 +52,39 @@ fun AddTagScreen(viewModel: AddEditTagViewModel,
         )
 
         Text("Color del Tag")
-        Row(
+
+        /** Matriz de colores: 4 columnas **/
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(4),
             modifier = Modifier
-                .horizontalScroll(rememberScrollState())
-                .padding(vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                .fillMaxWidth()
+                .weight(1f)                        // ocupa todo el espacio disponible
+                .padding(bottom = 2.dp),          // margen inferior para que no choque con el botón
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            userScrollEnabled = true              // permite desplazarse si se desborda
         ) {
-            colorOptions.forEach { colorHex ->
-                val color = Color(android.graphics.Color.parseColor(colorHex))
+            items(colorOptions) { colorHex ->
+                val color = Color(colorHex.toColorInt())
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(48.dp)
                         .background(color)
-                        .clickable {
-                            viewModel.tagColor.value = colorHex
-                        }
                         .border(
                             width = if (tagColor == colorHex) 3.dp else 1.dp,
                             color = if (tagColor == colorHex) Color.Black else Color.Gray
                         )
+                        .clickable { viewModel.tagColor.value = colorHex }
                 )
             }
         }
-
-
-        Button(onClick = {
-            viewModel.saveTag {
-                onTagAdded()
-            }
-        }) {
+        Button(
+            onClick = {
+                viewModel.saveTag { onTagAdded() }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text("Guardar")
         }
     }
-
 }

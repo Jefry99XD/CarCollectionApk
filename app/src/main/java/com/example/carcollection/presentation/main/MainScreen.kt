@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.carcollection.data.local.Car
 import com.example.carcollection.presentation.main.components.CarCard
 
 
@@ -68,19 +69,16 @@ fun MainScreen(
     var itemsPerPage by remember { mutableStateOf(20) }
     var currentPage by rememberSaveable { mutableStateOf(viewModel.savedPage) }
 
-
     val totalPages = maxOf(1, (carsList.size + itemsPerPage - 1) / itemsPerPage)
-
     val paginatedCars = carsList.drop(currentPage * itemsPerPage).take(itemsPerPage)
-
-    var savedPage by mutableStateOf(0)
 
     val allTags by viewModel.allTags.collectAsState(initial = emptyList())
 
+    // Estado para manejar el diálogo de confirmación y el carro seleccionado
+    var carToDelete by remember { mutableStateOf<Car?>(null) }
+
     Scaffold(
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState)
-        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -92,8 +90,7 @@ fun MainScreen(
                         Spacer(modifier = Modifier.weight(1f))
                         Text("Total: (${carsList.size})  ")
                     }
-                }
-                ,
+                },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver al menú")
@@ -109,7 +106,6 @@ fun MainScreen(
                 Icon(Icons.Default.Add, contentDescription = "Agregar carro")
             }
         }
-
     ) { padding ->
         Column(
             modifier = Modifier
@@ -121,6 +117,7 @@ fun MainScreen(
                 value = searchQuery,
                 onValueChange = viewModel::onSearchQueryChange,
                 label = { Text("Buscar") },
+                placeholder = { Text("Busqueda por cualquier campo") },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -161,8 +158,6 @@ fun MainScreen(
                 }
             }
 
-
-
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.weight(1f)
@@ -175,11 +170,10 @@ fun MainScreen(
                             viewModel.savedPage = currentPage
                             navController.navigate("add_edit_car?carId=${car.id}")
                         },
-
                         onDelete = {
-                            viewModel.deleteCar(car)
+                            // En lugar de borrar directamente, guardamos el carro para confirmar
+                            carToDelete = car
                         },
-
                         onClick = {
                             navController.navigate("car_detail/${car.id}")
                         },
@@ -187,7 +181,27 @@ fun MainScreen(
                 }
             }
 
-
+            // Diálogo de confirmación
+            if (carToDelete != null) {
+                AlertDialog(
+                    onDismissRequest = { carToDelete = null },
+                    title = { Text("Confirmar eliminación") },
+                    text = { Text("¿Estás seguro de que deseas eliminar el carro \"${carToDelete?.name}\"?") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            carToDelete?.let { viewModel.deleteCar(it) }
+                            carToDelete = null
+                        }) {
+                            Text("Eliminar")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { carToDelete = null }) {
+                            Text("Cancelar")
+                        }
+                    }
+                )
+            }
         }
     }
 }

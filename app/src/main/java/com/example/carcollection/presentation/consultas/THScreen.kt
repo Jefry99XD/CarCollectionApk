@@ -1,5 +1,6 @@
 package com.example.carcollection.presentation.consultas
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +26,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,6 +46,9 @@ fun THScreen(
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var selectedYear by remember { mutableStateOf("Todos") }
+
+    // Estado para imagen seleccionada y mostrar diálogo
+    var selectedImageUrl by remember { mutableStateOf<String?>(null) }
 
     val availableYears = listOf("Todos") + thEntries.map { it.year.toString() }.distinct()
 
@@ -104,6 +109,9 @@ fun THScreen(
                                 modifier = Modifier
                                     .height(100.dp)
                                     .weight(1f)
+                                    .clickable {
+                                        selectedImageUrl = entry.regularPhotoUrl
+                                    }
                             )
 
                             Column(modifier = Modifier.weight(2f)) {
@@ -114,6 +122,25 @@ fun THScreen(
                         }
                     }
                 }
+            }
+
+            // Diálogo para mostrar la imagen ampliada
+            if (selectedImageUrl != null) {
+                androidx.compose.material3.AlertDialog(
+                    onDismissRequest = { selectedImageUrl = null },
+                    confirmButton = {
+                        TextButton(onClick = { selectedImageUrl = null }) {
+                            Text("Cerrar")
+                        }
+                    },
+                    text = {
+                        AsyncImage(
+                            model = selectedImageUrl,
+                            contentDescription = "Imagen ampliada",
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                )
             }
         }
     }

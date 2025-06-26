@@ -31,6 +31,7 @@ import com.example.carcollection.presentation.data.ViewTagsViewModel
 import com.example.carcollection.presentation.main.MainScreen
 import com.example.carcollection.presentation.main.MainViewModel
 import com.example.carcollection.presentation.menu.MenuScreen
+import com.example.carcollection.presentation.statistics.StatisticsMenu
 
 @SuppressLint("ViewModelConstructorInComposable")
 @Composable
@@ -47,7 +48,8 @@ fun AppNavGraph(
                 onNavigateToCollection = { navController.navigate(NavRoutes.MAIN) },
                 onNavigateToData = { navController.navigate(NavRoutes.DATA) },
                 onNavigateToTags = { navController.navigate(NavRoutes.VIEW_TAGS) },
-                onNavigateToConsultas = { navController.navigate(NavRoutes.CONSULTAS) }
+                onNavigateToConsultas = { navController.navigate(NavRoutes.CONSULTAS)},
+                onNavigateToStatistics = { navController.navigate(NavRoutes.STATISTICS) }
             )
         }
 
@@ -176,6 +178,11 @@ fun AppNavGraph(
             }
             THScreen(
                 thEntries = thList.value,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+        composable(NavRoutes.STATISTICS) {
+            StatisticsMenu(
                 onBackClick = { navController.popBackStack() }
             )
         }

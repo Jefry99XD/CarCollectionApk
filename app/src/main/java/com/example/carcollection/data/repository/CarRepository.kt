@@ -32,6 +32,11 @@ class CarRepository(private val dao: CarDao) {
         }
     }
 
+    fun getDistinctYearsFlow():   Flow<List<String>> = dao.getDistinctYears()
+    fun getDistinctBrandsFlow():  Flow<List<String>> = dao.getDistinctBrands()
+    fun getDistinctSeriesFlow():  Flow<List<String>> = dao.getDistinctSeries()
+    fun getDistinctTypesFlow():   Flow<List<String>> = dao.getDistinctTypes()
+
 
 
 }

@@ -61,8 +61,8 @@ fun CarCard(
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = car.brand, color = textColor, style = MaterialTheme.typography.titleMedium)
-                Text(text = car.name, color = textColor, style = MaterialTheme.typography.bodyLarge)
+                Text(text = car.name, color = textColor, style = MaterialTheme.typography.titleMedium)
+                Text(text = car.brand, color = textColor, style = MaterialTheme.typography.bodyMedium)
                 Text(text = car.serie, color = textColor, style = MaterialTheme.typography.bodyMedium)
                 Text(text = "Color: ${car.color}", color = textColor, style = MaterialTheme.typography.bodySmall)
                 Text(text = "Año: ${car.year}", color = textColor, style = MaterialTheme.typography.bodySmall)

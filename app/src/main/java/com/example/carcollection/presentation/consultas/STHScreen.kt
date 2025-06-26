@@ -1,5 +1,6 @@
 package com.example.carcollection.presentation.consultas
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -25,6 +27,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -45,6 +48,9 @@ fun STHScreen(
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var selectedYear by remember { mutableStateOf<String?>(null) }
+
+    // Estado para imagen seleccionada y mostrar diálogo
+    var selectedImageUrl by remember { mutableStateOf<String?>(null) }
 
     // Obtener años únicos disponibles
     val years = remember(sthEntries) {
@@ -141,6 +147,9 @@ fun STHScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(180.dp)
+                                    .clickable {
+                                        selectedImageUrl = entry.regularPhotoUrl
+                                    }
                             )
                             Spacer(modifier = Modifier.height(8.dp))
 
@@ -151,10 +160,33 @@ fun STHScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(180.dp)
+                                    .clickable {
+                                        selectedImageUrl = entry.sthPhotoUrl
+                                    }
                             )
                         }
                     }
                 }
+            }
+
+            // Diálogo para mostrar la imagen ampliada
+            if (selectedImageUrl != null) {
+                AlertDialog(
+                    onDismissRequest = { selectedImageUrl = null },
+                    confirmButton = {
+                        TextButton(onClick = { selectedImageUrl = null }) {
+                            Text("Cerrar")
+                        }
+                    },
+                    text = {
+                        AsyncImage(
+                            model = selectedImageUrl,
+                            contentDescription = "Imagen ampliada",
+                            modifier = Modifier.fillMaxWidth(),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                        )
+                    }
+                )
             }
         }
     }

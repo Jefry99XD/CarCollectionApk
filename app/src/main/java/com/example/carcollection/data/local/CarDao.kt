@@ -37,4 +37,16 @@ interface CarDao {
     suspend fun getCarsByTag(tagName: String): List<Car>
 
 
+    @Query("SELECT DISTINCT year FROM cars ORDER BY year ASC")
+    fun getDistinctYears(): Flow<List<String>>
+
+    @Query("SELECT DISTINCT brand FROM cars ORDER BY brand ASC")
+    fun getDistinctBrands(): Flow<List<String>>
+
+    @Query("SELECT DISTINCT serie FROM cars ORDER BY serie ASC")
+    fun getDistinctSeries(): Flow<List<String>>
+
+    @Query("SELECT DISTINCT type FROM cars ORDER BY type ASC")
+    fun getDistinctTypes(): Flow<List<String>>
+
 }
