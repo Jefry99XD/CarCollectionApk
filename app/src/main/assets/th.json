@@ -2,19 +2,19 @@
   {
     "name": "Ford Performance Supervan 4 (Caja A)",
     "year": 2025,
-    "series": " HW First Response",
+    "series": "HW First Response",
     "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/8/83/FirstResponseSupervan.jpg/revision/latest/scale-to-width-down/1000?cb=20241111104248"
   },
   {
     "name": "Fish'd & Chip'd (Caja B)",
     "year": 2025,
-    "series": " HW Designed By",
+    "series": "HW Designed By",
     "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/9/98/Fish%27dandChip%27d.jpg/revision/latest/scale-to-width-down/1000?cb=20241109071953"
   },
   {
     "name": "Mailed It! (Caja C)",
     "year": 2025,
-    "series": " HW Metro",
+    "series": "HW Metro",
     "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/8/8f/LubetskyMailedIt.jpg/revision/latest/scale-to-width-down/1000?cb=20241125121043"
   },
   {
@@ -32,8 +32,317 @@
   {
     "name": "'85 Honda City Turbo II(Caja F)",
     "year": 2025,
-    "series": " HW J-Imports",
+    "series": "HW J-Imports",
     "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/5/58/1985HondaCity.jpg/revision/latest/scale-to-width-down/1000?cb=20250120090624"
+  },
+  {
+    "name": "'Birthday Burner(Caja G)",
+    "year": 2025,
+    "series": "HW Celebration Racers",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/9/9f/TreasureBurner.jpg/revision/latest/scale-to-width-down/1000?cb=20250224122255"
+  },
+  {
+    "name": "'Chill Mill(Caja H)",
+    "year": 2025,
+    "series": "Fast Foodie",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/1/1d/2025_Chill_Mill_%28HWLR%29.jpg/revision/latest/scale-to-width-down/1000?cb=20250608031129"
+  },
+  {
+    "name": "'Nissan Leaf NISMO RC 02(Caja J)",
+    "year": 2025,
+    "series": "HW EV",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/2/2f/LeafNISMO.jpg/revision/latest/scale-to-width-down/75?cb=20250416123651"
+  },
+  {
+    "name": "'Chevrolator(Caja K)",
+    "year": 2025,
+    "series": "Track Aces",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/f/fa/Chevrolator.jpg/revision/latest/scale-to-width-down/1000?cb=20250618144114"
+  },
+  {
+    "name": "'Honda S800 Racing(Caja L)",
+    "year": 2025,
+    "series": "Compact Kings",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/4/4b/Honda_S800_Racing_RTH_2025.jpg/revision/latest?cb=20250528062120"
+  },
+  {
+    "name": "'Shark Bite(Caja M)",
+    "year": 2025,
+    "series": "Experimotors",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/c/c7/Shark_Bite_RTH_2025.jpg/revision/latest?cb=20250606151521"
+  },
+  {
+    "name": "'47 Chevy Fleetline (Caja A)",
+    "year": 2024,
+    "series": "HW First Response2/10",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/f/f8/ChevroletFleetline.jpg/revision/latest?cb=20231012052604"
+  },
+  {
+    "name": "Ain't Fare (Caja B)",
+    "year": 2024,
+    "series": "HW Fast Transit3/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/8/80/WorldTourFare.jpg/revision/latest?cb=20231117073319"
+  },
+  {
+    "name": "Tooligan (Caja C)",
+    "year": 2024,
+    "series": "Experimotors3/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/a/a3/HWTooligan.jpg/revision/latest?cb=20231217070915"
+  },
+  {
+    "name": "Custom '53 Chevy (Caja D)",
+    "year": 2024,
+    "series": "Rod Squad4/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/3/31/2024_Custom_%2753_Chevy.jpg/revision/latest?cb=20250128164802"
+  },
+  {
+    "name": "Batman Forever Batmobile (Caja E)",
+    "year": 2024,
+    "series": "Batman3/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/1/12/2024_Batman_Thunt_Left_Side.JPG/revision/latest?cb=20250307022944"
+  },
+  {
+    "name": "Ford Mustang Mach-E 1400 (Caja F)",
+    "year": 2024,
+    "series": "HW Green Speed10/10",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/8/82/2024_Ford_Mustang_Mach-E_1400.jpg/revision/latest?cb=20250128164901"
+  },
+  {
+    "name": "Draggin' Wagon (Caja G)",
+    "year": 2024,
+    "series": "HW Ride-Ons4/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/5/5e/2024_Draggin_Wagon.jpg/revision/latest?cb=20250128164924"
+  },
+  {
+    "name": "Purple Passion (Caja H)",
+    "year": 2024,
+    "series": "HW Art Cars7/10",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/5/5e/ArtPassion.jpg/revision/latest?cb=20240409120630"
+  },
+  {
+    "name": "Honda Super Cub Custom (Caja J)",
+    "year": 2024,
+    "series": "HW Metro7/10",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/b/bd/HondaMetroBike.jpg/revision/latest?cb=20240908133958"
+  },
+  {
+    "name": "Bone Shaker (Caja K)",
+    "year": 2024,
+    "series": "HW Track Champs3/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/3/31/2024_Bone_Shaker.jpg/revision/latest?cb=20250128164950"
+  },
+  {
+    "name": "Car-de-Asada (Caja L)",
+    "year": 2024,
+    "series": "Fast Foodie3/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/e/e0/CarDeAsada.jpg/revision/latest?cb=20240619125554"
+  },
+  {
+    "name": "Hot Wheels Ford Transit Connect (Caja M)",
+    "year": 2024,
+    "series": "HW Vans3/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/f/f3/FordTransitFlowerVan.jpg/revision/latest?cb=20240702101421"
+  },
+  {
+    "name": "DMC DeLorean (Caja N)",
+    "year": 2024,
+    "series": "HW Rolling Metal3/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/4/48/RollingDeLorean.jpg/revision/latest?cb=20240803080955"
+  },
+  {
+    "name": "'59 Chevy Impala (Caja P)",
+    "year": 2024,
+    "series": "HW Celebration Racers10/10",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/8/89/CelebrationImpala.jpg/revision/latest?cb=20241013021328"
+  },
+  {
+    "name": "Porsche 928S Safari (Caja Q)",
+    "year": 2024,
+    "series": "HW Dirt10/10",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/2/24/1977Porsche928Safari.jpg/revision/latest?cb=20240827124635"
+  },
+    {
+    "name": "Raijin Express (Caja A)",
+    "year": 2023,
+    "series": "HW Haulers1/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/b/bc/RaijinHauler.jpg/revision/latest?cb=20230226093117"
+  },
+  {
+    "name": "Surf Crate (Caja B)",
+    "year": 2023,
+    "series": "Surf's Up3/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/5/55/HKL06.jpg/revision/latest?cb=20221026080915"
+  },
+  {
+    "name": "BMW R nineT Racer (Caja C)",
+    "year": 2023,
+    "series": "HW Moto2/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/5/55/BMWRnineTRacer.jpg/revision/latest?cb=20221220121054"
+  },
+  {
+    "name": "Mad Propz (Caja D)",
+    "year": 2023,
+    "series": "Sky Show3/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/d/dd/PropZ.JPG/revision/latest?cb=20230317163305"
+  },
+  {
+    "name": "Mod Rod (Caja E)",
+    "year": 2023,
+    "series": "HW 55 Race Team4/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/5/56/ModRod_2022_HWRaceTeam.jpg/revision/latest?cb=20221230151747"
+  },
+  {
+    "name": "Donut Drifter (Caja F)",
+    "year": 2023,
+    "series": "Sweet Rides5/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/3/3e/HKK97.jpg/revision/latest?cb=20230129022223"
+  },
+  {
+    "name": "Rise 'N Climb (Caja G)",
+    "year": 2023,
+    "series": "HW Sports5/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/e/e8/HKL03.jpg/revision/latest?cb=20230220125822"
+  },
+  {
+    "name": "Ducati 1199 Panigale (Caja H)",
+    "year": 2023,
+    "series": "Factory Fresh5/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/4/4f/164_-_Ducati_1199_Panigale_%28TH%29.jpg/revision/latest?cb=20230613012119"
+  },
+  {
+    "name": "'95 Jeep Cherokee (Caja J)",
+    "year": 2023,
+    "series": "Mud Studs4/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/e/e5/HKL02-LOOSE.jpg/revision/latest?cb=20231022204250"
+  },
+  {
+    "name": "Toyota Land Cruiser (Caja K)",
+    "year": 2023,
+    "series": "Then and Now2/10",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/4/46/Then_and_Now_Toyota_Land_Cruiser.jpg/revision/latest?cb=20230805210847"
+  },
+  {
+    "name": "Madfast (Caja L)",
+    "year": 2023,
+    "series": "HW Drag Strip10/10",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/5/5b/MadfastDragster.jpg/revision/latest?cb=20230714034814"
+  },
+  {
+    "name": "Time Shifter (Caja M)",
+    "year": 2023,
+    "series": "HW Metro8/10",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/4/45/HKK94-LOOSE.jpg/revision/latest?cb=20230820075750"
+  },
+  {
+    "name": "Tooned Volkswagen Golf Mk1 (Caja N)",
+    "year": 2023,
+    "series": "Tooned4/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/9/96/2023-221_HKK96_Tooned_Golf_mk1_Blue_TH_open-00.jpg/revision/latest?cb=20230818011457"
+  },
+  {
+    "name": "2020 Ram 1500 Rebel (Caja P)",
+    "year": 2023,
+    "series": "HW Rescue7/10",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/4/44/CoastPatrolRam.jpg/revision/latest?cb=20230918140128"
+  },
+  {
+    "name": "Volkswagen \"Baja Bug\" (Caja Q)",
+    "year": 2023,
+    "series": "Baja Blazers9/10",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/c/c3/2023-241_HKK93_TH_Volkswagen_Baja_Bug_Red_open-1.jpg/revision/latest?cb=20231230032328"
+  },
+    {
+    "name": "The Dark Knight Batmobile (Caja A)",
+    "year": 2022,
+    "series": "Batman1/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/d/d7/HCX94_007_The_Dark_Knight_Batmobile.jpg/revision/latest?cb=20211211171316"
+  },
+  {
+    "name": "Quick Bite (Caja B)",
+    "year": 2022,
+    "series": "Fast Foodie2/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/3/37/HCX97_037_Quick_Bite.jpg/revision/latest?cb=20211223222917"
+  },
+  {
+    "name": "Pixel Shaker (Caja C)",
+    "year": 2022,
+    "series": "HW Ride-Ons4/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/e/e4/PixelShaker.jpg/revision/latest?cb=20220825103002"
+  },
+  {
+    "name": "Tooned Twin Mill (Caja D)",
+    "year": 2022,
+    "series": "Tooned3/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/2/25/Tooned_Twin_Mill_2022_1_TH_Sealed.jpg/revision/latest?cb=20220208224159"
+  },
+  {
+    "name": "Draftnator (Caja E)",
+    "year": 2022,
+    "series": "HW Speed Team5/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/c/cd/Draftnator_Treasure_Hunt.jpg/revision/latest?cb=20220329210359"
+  },
+  {
+    "name": "'17 Jeep Wrangler (Caja F)",
+    "year": 2022,
+    "series": "Mud Studs3/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/d/d8/17_Jeep_Wrangler_Treasure_Hunt.jpg/revision/latest?cb=20220329210943"
+  },
+  {
+    "name": "Duck N' Roll (Caja G)",
+    "year": 2022,
+    "series": "Street Beasts5/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/3/33/2022-139_HCY06_TH_Duck_N%27_Roll_open-1.jpg/revision/latest?cb=20240303154514"
+  },
+  {
+    "name": "Morris Mini (Caja H)",
+    "year": 2022,
+    "series": "Compact Kings5/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/c/c6/RiehlmanMini.jpg/revision/latest?cb=20221020100549"
+  },
+  {
+    "name": "Gotta Go (Caja J)",
+    "year": 2022,
+    "series": "Experimotors10/10",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/7/7f/GOTTA_GO_HCX96_TH_1.jpg/revision/latest?cb=20220623133047"
+  },
+  {
+    "name": "'87 Dodge D100 (Caja K)",
+    "year": 2022,
+    "series": "HW Daredevils5/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/f/f9/HCX99.jpg/revision/latest?cb=20220527123851"
+  },
+  {
+    "name": "'58 Impala (Caja L)",
+    "year": 2022,
+    "series": "HW Art Cars8/10",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/5/5c/DayOfTheDeadImpala.jpg/revision/latest?cb=20220818101000"
+  },
+  {
+    "name": "HW Warp Speeder (Caja M)",
+    "year": 2022,
+    "series": "X-Raycers4/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/6/63/HW_Warp_Speeder.jpg/revision/latest?cb=20220721004255"
+  },
+  {
+    "name": "'98 Subaru Impreza 22B STI-Version (Caja N)",
+    "year": 2022,
+    "series": "Rally Champs4/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/a/a1/%2798Impreza22B.jpg/revision/latest?cb=20231216082134"
+  },
+  {
+    "name": "Muscle and Blown (Caja P)",
+    "year": 2022,
+    "series": "HW Drift5/5",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/a/ac/DriftandBlown.jpg/revision/latest?cb=20220805064727"
+  },
+  {
+    "name": "'71 Mustang Funny Car (Caja Q)",
+    "year": 2022,
+    "series": "HW Drag Strip9/10",
+    "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/0/0c/%2771_Mustang_Funny_Car_TH.jpg/revision/latest?cb=20221030160310"
   }
+
+  
+
 
 ]
