@@ -33,36 +33,7 @@
     "series": "HW Dream Garage",
     "regularPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/e/ea/AstonSaltFlatRacer.jpg/revision/latest/scale-to-width-down/1000?cb=20250107133103",
     "sthPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/8/85/Aston_Martin_DB4GT_High-Speed_Edition_STH_2025.jpg/revision/latest/scale-to-width-down/1000?cb=20250228113347"
-  },
-  {
-    "name": "Hirohata Merc(Caja B)",
-    "year": 2025,
-    "series": "Rod Squad4/10",
-    "regularPhotoUrl": "",
-    "sthPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/e/ec/JBC36-LOOSE.jpg/revision/latest?cb=20250211182436"
-  },
-  {
-    "name": "Hi-Roller II(Caja C)",
-    "year": 2025,
-    "series": "HW Art Cars6/10",
-    "regularPhotoUrl": "",
-    "sthPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/6/6f/Hi-Roller_II_STH_2025.jpg/revision/latest?cb=20241012135408"
-  },
-  {
-    "name": "1975 Datsun Sunny Truck (B120)(Caja D)",
-    "year": 2025,
-    "series": "HW Hot Trucks6/10",
-    "regularPhotoUrl": "",
-    "sthPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/0/0b/%E6%B7%98%E5%AE%9D%E6%9D%A1%E5%AD%90%E8%BD%A6%E6%A8%A12025%E8%BE%BE%E7%89%B9%E6%A1%91%E8%B6%85%E5%AE%9D.jpg/revision/latest?cb=20250304163932"
-  },
-  {
-    "name": "Aston Martin DB4GT High-Speed Edition(Caja E)",
-    "year": 2025,
-    "series": "HW Dream Garage3/5",
-    "regularPhotoUrl": "",
-    "sthPhotoUrl": "https://static.wikia.nocookie.net/hotwheels/images/8/85/Aston_Martin_DB4GT_High-Speed_Edition_STH_2025.jpg/revision/latest?cb=20250228113347"
-  },
-  {
+  },{
     "name": "'20 Jeep Gladiator(Caja F)",
     "year": 2025,
     "series": "HW Dirt6/10",
