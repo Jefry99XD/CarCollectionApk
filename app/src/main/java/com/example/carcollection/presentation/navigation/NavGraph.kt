@@ -26,6 +26,7 @@ import com.example.carcollection.presentation.consultas.THScreen
 import com.example.carcollection.presentation.consultas.THViewModel
 import com.example.carcollection.presentation.data.AddEditTagViewModel
 import com.example.carcollection.presentation.data.AddTagScreen
+import com.example.carcollection.presentation.data.EditTagScreen
 import com.example.carcollection.presentation.data.ViewTagsScreen
 import com.example.carcollection.presentation.data.ViewTagsViewModel
 import com.example.carcollection.presentation.main.MainScreen
@@ -49,7 +50,8 @@ fun AppNavGraph(
                 onNavigateToData = { navController.navigate(NavRoutes.DATA) },
                 onNavigateToTags = { navController.navigate(NavRoutes.VIEW_TAGS) },
                 onNavigateToConsultas = { navController.navigate(NavRoutes.CONSULTAS)},
-                onNavigateToStatistics = { navController.navigate(NavRoutes.STATISTICS) }
+                onNavigateToStatistics = { navController.navigate(NavRoutes.STATISTICS) },
+                onNavigateToConfig = { navController.navigate(NavRoutes.CONFIG) }
             )
         }
 
@@ -78,11 +80,9 @@ fun AppNavGraph(
                 repository = repository,
                 onBackClick = {
                     navController.popBackStack()
-                }
-                ,
-                onNavigateToTags = {
-                    navController.navigate(NavRoutes.VIEW_TAGS)
-                }
+                },
+                tagRepository = tagRepository
+
             )
         }
         // Pantalla para agregar nuevo auto
@@ -124,26 +124,44 @@ fun AppNavGraph(
             val carId = backStackEntry.arguments?.getString("carId")?.toIntOrNull()
             val car = carId?.let { MainViewModel(repository, tagRepository).getCarByIdSync(it) } // ← necesitarás esta función
             car?.let {
-                CarDetailScreen(car = it, onBackClick = { navController.popBackStack() })
+                CarDetailScreen(car = it, onBackClick = { navController.popBackStack() }, allTags = tagRepository.getAllTagsFlow().collectAsState(emptyList()).value)
 
             }
         }
         composable(NavRoutes.ADD_EDIT_TAG)
         {
-            val viewModel = AddEditTagViewModel(tagRepository)
+            val viewModel = AddEditTagViewModel(tagRepository, repository)
             AddTagScreen(
                 viewModel = viewModel,
                 onBackClick = { navController.popBackStack() },
                 onTagAdded = { navController.popBackStack() }
             )
         }
+        composable("tag_edit/{tagId}") { backStackEntry ->
+            val tagId = backStackEntry.arguments?.getString("tagId")!!.toInt()
+            val viewModel = remember { AddEditTagViewModel(tagRepository, repository) }
+
+            LaunchedEffect(tagId) {
+                viewModel.loadTag(tagId)
+            }
+
+            EditTagScreen(
+                viewModel = viewModel,
+                onBackClick = { navController.popBackStack() },
+                onTagSaved = { navController.popBackStack() },
+            )
+        }
+
         composable(NavRoutes.VIEW_TAGS)
         {
             val viewModel = ViewTagsViewModel(tagRepository, repository)
             ViewTagsScreen(
                 viewModel = viewModel,
                 onBackClick = { navController.popBackStack() },
-                onNavigateToAddTag = { navController.navigate(NavRoutes.ADD_EDIT_TAG) }
+                onNavigateToAddTag = { navController.navigate(NavRoutes.ADD_EDIT_TAG) },
+                onNavigateToEditTag = { tagId ->
+                    navController.navigate("tag_edit/$tagId")
+                }
             )
         }
         // Pantalla de menú de consultas
@@ -183,6 +201,11 @@ fun AppNavGraph(
         }
         composable(NavRoutes.STATISTICS) {
             StatisticsMenu(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+        composable(NavRoutes.CONFIG) {
+            com.example.carcollection.presentation.config.ConfigMenu(
                 onBackClick = { navController.popBackStack() }
             )
         }

@@ -24,4 +24,7 @@ class ViewTagsViewModel(private val repository: TagRepository, private val carRe
             carRepository.removeTagFromAllCars(tag.name)
         }
     }
+
+
+
 }

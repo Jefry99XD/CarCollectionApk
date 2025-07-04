@@ -12,6 +12,7 @@ class TagRepository(private val tagDao: TagDao, ) {
     suspend fun getAllTags(): List<Tag> {
         return tagDao.getAllTags()
     }
+
     fun getAllTagsFlow(): Flow<List<Tag>> {
         return tagDao.getAllTagsFlow()
     }
@@ -33,5 +34,12 @@ class TagRepository(private val tagDao: TagDao, ) {
     fun containsTag(tagName: String): Flow<Boolean> {
         return tagDao.containsTag(tagName)
     }
+    suspend fun updateTag(tag: Tag) {
+        tagDao.updateTag(tag)
+    }
+    suspend fun insertTag(tag: Tag) {
+        tagDao.insertTag(tag)
+    }
+
 
 }

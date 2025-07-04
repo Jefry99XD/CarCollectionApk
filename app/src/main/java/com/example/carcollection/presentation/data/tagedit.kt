@@ -7,14 +7,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -22,11 +21,12 @@ import androidx.core.graphics.toColorInt
 import com.example.carcollection.utils.ColorPickerDialog
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddTagScreen(
+fun EditTagScreen(
     viewModel: AddEditTagViewModel,
-    onTagAdded: () -> Unit,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onTagSaved: () -> Unit,
 ) {
     val tagName = viewModel.tagName.value
     val tagColor = remember { mutableStateOf(Color(viewModel.tagColor.value.toColorInt())) }
@@ -47,50 +47,55 @@ fun AddTagScreen(
             }
         )
     }
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        IconButton(onClick = onBackClick) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Editar Tag") },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                    }
+                }
+            )
         }
-
-        OutlinedTextField(
-            value = tagName,
-            onValueChange = { viewModel.tagName.value = it },
-            label = { Text("Nombre del Tag") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Text("Color del Tag")
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(tagColor.value, shape = CircleShape)
-                    .border(1.dp, Color.Black, shape = CircleShape)
+            OutlinedTextField(
+                value = tagName,
+                onValueChange = { viewModel.tagName.value = it },
+                label = { Text("Nombre del Tag") },
+                modifier = Modifier.fillMaxWidth()
             )
 
-            Button(onClick = { showColorPicker.value = true }) {
-                Text("Elegir color")
+            Text("Color del Tag")
+
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .background(tagColor.value, shape = RoundedCornerShape(8.dp))
+                    .border(1.dp, Color.Black, shape = RoundedCornerShape(8.dp))
+                    .clickable { showColorPicker.value = true }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = {
+                    viewModel.editTag {
+                        onTagSaved()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Guardar cambios")
             }
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        Button(
-            onClick = {
-                viewModel.saveTag { onTagAdded() }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Guardar")
         }
     }
 }

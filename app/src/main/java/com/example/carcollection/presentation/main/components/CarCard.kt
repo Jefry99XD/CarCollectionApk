@@ -54,7 +54,7 @@ fun CarCard(
                 model = car.photoUrl,
                 contentDescription = "${car.brand} ${car.name}",
                 modifier = Modifier
-                    .size(100.dp)
+                    .size(125.dp)
                     .background(Color.LightGray)
             )
 
@@ -67,7 +67,7 @@ fun CarCard(
                 Text(text = "Color: ${car.color}", color = textColor, style = MaterialTheme.typography.bodySmall)
                 Text(text = "Año: ${car.year}", color = textColor, style = MaterialTheme.typography.bodySmall)
                 Text(text = "Tipo: ${car.type}", color = textColor, style = MaterialTheme.typography.bodySmall)
-                Text(text = "Tags: ${car.tags.joinToString(", ")}", color = textColor, style = MaterialTheme.typography.bodySmall)
+                Text(text = car.tags.joinToString(", "), color = textColor, style = MaterialTheme.typography.bodySmall)
             }
 
             Column(

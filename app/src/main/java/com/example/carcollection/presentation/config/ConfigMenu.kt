@@ -1,31 +1,36 @@
-package com.example.carcollection.presentation.statistics
+package com.example.carcollection.presentation.config
 
 import android.media.MediaPlayer
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import coil.decode.GifDecoder
-import coil.ImageLoader
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import coil.ImageLoader
+import coil.compose.AsyncImage
+import coil.decode.GifDecoder
+import coil.request.ImageRequest
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
 import com.example.carcollection.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StatisticsMenu(
+fun ConfigMenu(
     onBackClick: () -> Unit
 ) {
     val gifUrl = "https://media.tenor.com/8QavbrTvkpUAAAAM/god-of-war-kratos-falling.gif"
@@ -49,10 +54,11 @@ fun StatisticsMenu(
         }
     }
 
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Estadísticas") },
+                title = { Text("Configuración") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")

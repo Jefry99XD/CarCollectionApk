@@ -32,6 +32,18 @@ class CarRepository(private val dao: CarDao) {
         }
     }
 
+    suspend fun updateTagNameInAllCars(oldTagName: String, newTagName: String) {
+        val cars = dao.getAllCarsList()
+        cars.forEach { car ->
+            if (oldTagName in car.tags) {
+                val updatedTags = car.tags.map { if (it == oldTagName) newTagName else it }
+                val updatedCar = car.copy(tags = updatedTags)
+                dao.updateCar(updatedCar)
+            }
+        }
+    }
+
+
     fun getDistinctYearsFlow():   Flow<List<String>> = dao.getDistinctYears()
     fun getDistinctBrandsFlow():  Flow<List<String>> = dao.getDistinctBrands()
     fun getDistinctSeriesFlow():  Flow<List<String>> = dao.getDistinctSeries()

@@ -24,6 +24,10 @@ interface TagDao{
     @Query("SELECT EXISTS(SELECT 1 FROM tags WHERE name = :tagName)")
     fun containsTag(tagName: String): Flow<Boolean>
 
+    @Update
+    suspend fun updateTag(tag: Tag)
+
+
 
 
 
