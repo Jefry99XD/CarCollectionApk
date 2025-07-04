@@ -61,8 +61,6 @@ fun AddEditCarScreen(
             .verticalScroll(scrollState),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // It's a common practice to put navigation actions (like a back button)
-        // at the top or within a TopAppBar, consider restructuring for better UX.
         IconButton(onClick = { onBackClick() }) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack, // Using AutoMirrored for better LTR/RTL support
@@ -295,9 +293,6 @@ fun AddEditCarScreen(
                 )
             }
         }
-
-
-
 
         Button(
             onClick = {

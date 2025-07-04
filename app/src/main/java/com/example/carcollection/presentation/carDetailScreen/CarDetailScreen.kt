@@ -162,7 +162,7 @@ fun CarDetailScreen(
                                 Column(
                                     modifier = Modifier
                                         .weight(1f)
-                                        .heightIn(max = 150.dp)
+                                        .heightIn(max = 100.dp)
                                         .verticalScroll(rememberScrollState()),
                                     verticalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
