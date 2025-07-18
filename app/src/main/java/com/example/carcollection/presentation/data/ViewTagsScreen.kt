@@ -40,6 +40,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.core.graphics.toColorInt
 
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.*
+import com.example.carcollection.data.local.Tag
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,24 +55,21 @@ fun ViewTagsScreen(
 ) {
     val tags = viewModel.tags.collectAsState()
 
+    // Estado para tag a eliminar y mostrar el diálogo
+    var tagToDelete by remember { mutableStateOf<Tag?>(null) }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Tags") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver"
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
                 actions = {
                     FilledIconButton(onClick = onNavigateToAddTag) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Agregar Tag"
-                        )
+                        Icon(Icons.Default.Add, contentDescription = "Agregar Tag")
                     }
                 }
             )
@@ -81,52 +82,69 @@ fun ViewTagsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(tags.value.sortedBy { it.name.lowercase() }) { tag ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        tag.name,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = typography.bodyLarge
+                    )
 
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(
-                            tag.name,
-                            modifier = Modifier.weight(1f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = typography.bodyLarge
-                        )
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(24.dp)
-                                        .background(
-                                            color = runCatching { Color(tag.color.toColorInt()) }
-                                                .getOrElse { Color.Transparent },
-                                            shape = CircleShape
-                                        )
-                                )
-                            }
-
-                            IconButton(onClick = { onNavigateToEditTag(tag.id) }) {
-                                Icon(Icons.Default.Edit, contentDescription = "Editar Tag")
-                            }
-
-                            IconButton(onClick = { viewModel.deleteTag(tag) }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Eliminar Tag")
-                            }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .background(
+                                        color = runCatching { Color(tag.color.toColorInt()) }
+                                            .getOrElse { Color.Transparent },
+                                        shape = CircleShape
+                                    )
+                            )
                         }
 
+                        IconButton(onClick = { onNavigateToEditTag(tag.id) }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Editar Tag")
+                        }
+
+                        IconButton(onClick = { tagToDelete = tag }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Eliminar Tag")
+                        }
+                    }
                 }
             }
         }
+
+        // Diálogo de confirmación
+        tagToDelete?.let { tag ->
+            AlertDialog(
+                onDismissRequest = { tagToDelete = null },
+                title = { Text("¿Eliminar tag?") },
+                text = { Text("¿Estás seguro de que deseas eliminar el tag \"${tag.name}\"?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.deleteTag(tag)
+                        tagToDelete = null
+                    }) {
+                        Text("Eliminar")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { tagToDelete = null }) {
+                        Text("Cancelar")
+                    }
+                }
+            )
+        }
     }
 }
-

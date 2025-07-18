@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.LocalCarWash
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,7 +30,9 @@ import androidx.compose.ui.unit.dp
 fun QueryMenuScreen(
     onNavigateToSTH: () -> Unit,
     onNavigateToTH: () -> Unit,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onNavigateToLibrary: () -> Unit
+
 ) {
     Scaffold(
         topBar = {
@@ -66,6 +69,7 @@ fun QueryMenuScreen(
                 }
             }
 
+
             item {
                 Button(
                     onClick = onNavigateToTH,
@@ -77,6 +81,20 @@ fun QueryMenuScreen(
                         contentDescription = null
                     )
                     Text("Treasure Hunt")
+                }
+            }
+            item {
+                Button(
+                    onClick = onNavigateToLibrary,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+
+                        imageVector = Icons.Default.LocalCarWash, // Usa el ícono que quieras
+                        tint =  androidx.compose.ui.graphics.Color.Gray,
+                        contentDescription = null
+                    )
+                    Text("Catalogo completo")
                 }
             }
         }

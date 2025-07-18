@@ -53,7 +53,7 @@ fun CarImagePickerDialog(
     }
 
     val filteredImages = allImages.filter {
-        it.name.contains(searchText, ignoreCase = true)
+        it.name?.contains(searchText, ignoreCase = true) ?: false
     }
 
     val pageCount = (filteredImages.size + pageSize - 1) / pageSize
@@ -97,7 +97,7 @@ fun CarImagePickerDialog(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        onImageSelected(entry.url)
+                                        onImageSelected(entry.url.toString())
                                         onDismiss()
                                     },
                                 elevation = CardDefaults.elevatedCardElevation(4.dp),
@@ -113,7 +113,7 @@ fun CarImagePickerDialog(
                                             .height(140.dp)
                                     )
                                     Text(
-                                        text = entry.name,
+                                        text = entry.name.toString(),
                                         modifier = Modifier.padding(8.dp),
                                         style = MaterialTheme.typography.bodySmall
                                     )

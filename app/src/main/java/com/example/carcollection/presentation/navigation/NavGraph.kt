@@ -164,7 +164,8 @@ fun AppNavGraph(
             QueryMenuScreen(
                 onNavigateToSTH = { navController.navigate(NavRoutes.VIEW_STH) },
                 onNavigateToTH = { navController.navigate(NavRoutes.VIEW_TH) },
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
+                onNavigateToLibrary = { navController.navigate(NavRoutes.LIBRARY) }
             )
         }
 
@@ -203,7 +204,18 @@ fun AppNavGraph(
             com.example.carcollection.presentation.config.ConfigMenu(
                 onBackClick = { navController.popBackStack() },
                 onNavigateToData = { navController.navigate(NavRoutes.DATA) },
-                onNavigateToStatistics = { navController.navigate(NavRoutes.STATISTICS) }
+                onNavigateToStatistics = { navController.navigate(NavRoutes.STATISTICS) },
+                OnNavigateToAbout = { navController.navigate(NavRoutes.ABOUT) },
+            )
+        }
+        composable(NavRoutes.ABOUT) {
+            com.example.carcollection.presentation.config.About(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+        composable(NavRoutes.LIBRARY) {
+            com.example.carcollection.presentation.consultas.LibraryScreen(
+                onBackClick = { navController.popBackStack() }
             )
         }
     }

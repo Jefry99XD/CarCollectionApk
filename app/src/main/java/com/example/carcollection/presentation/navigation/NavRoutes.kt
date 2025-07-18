@@ -14,6 +14,8 @@ object NavRoutes {
     const val VIEW_TH = "view_th"
     const val STATISTICS = "statistics"
     const val CONFIG = "config"
+    const val ABOUT = "about"
+    const val LIBRARY = "library"
 }
 
 

@@ -1,14 +1,13 @@
 package com.example.carcollection.presentation.config
 
-import android.media.MediaPlayer
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Android
+import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Dataset
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -18,7 +17,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -29,7 +27,9 @@ import com.example.carcollection.presentation.menu.MenuButton
 fun ConfigMenu(
     onBackClick: () -> Unit,
     onNavigateToData: () -> Unit,
-    onNavigateToStatistics: () -> Unit
+    onNavigateToStatistics: () -> Unit,
+    OnNavigateToAbout: () -> Unit,
+
 ) {
 
     val context = LocalContext.current
@@ -53,14 +53,14 @@ fun ConfigMenu(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ){
-            item {MenuButton("Respaldos", Icons.Default.Dataset, onNavigateToData)}
+            item {MenuButton("Respaldos", Icons.Default.Cloud, onNavigateToData)}
             item {MenuButton("Temas", Icons.Default.Dataset, onNavigateToStatistics)}
             item {
                 MenuButton("Actualizar", Icons.Default.SystemUpdate) {
                     checkForUpdateAndDownload(context, versionName.toString())
                 }
             }
-            item {MenuButton("Acerca de...", Icons.Default.Dataset, onNavigateToStatistics)}
+            item {MenuButton("Acerca de...", Icons.Default.Android,  OnNavigateToAbout)}
         }
     }
 

@@ -3,9 +3,9 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CarImageEntry(
-    val name: String,
-    val url: String,
-    val year: String,
-    val series: String,
-    val color: String,
+    val name: String? = null,
+    val url: String? = null,
+    val year: String? = null,
+    val series: String? = null,
+    val color: String? = null,
 )

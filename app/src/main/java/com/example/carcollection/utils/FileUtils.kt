@@ -45,8 +45,8 @@ private fun parseCarFromTokens(tokens: List<String>, header: List<String>): Car?
             color = getValue("color"),
             type = getValue("type"),
             photoUrl = getValue("photoUrl"),
-            backgroundName = backgroundName,
-            tags = getValue("tags").split("|").map { it.trim() }.filter { it.isNotEmpty() }
+            tags = getValue("tags").split("|").map { it.trim() }.filter { it.isNotEmpty() },
+            backgroundName = backgroundName
         )
 
 
@@ -178,7 +178,7 @@ fun exportCarsToUri(context: Context, cars: List<Car>, uri: Uri) {
         try {
             val outputStream = context.contentResolver.openOutputStream(uri)
             outputStream?.bufferedWriter()?.use { writer ->
-                writer.write("id,brand,name,serie,year,color,type,photoUrl,tags\n")
+                writer.write("id,brand,name,serie,year,color,type,photoUrl,tags, backgroundName\n")
                 cars.forEach { car ->
                     val tagsJoined = car.tags.joinToString("|")
                     writer.write(listOf(
@@ -190,9 +190,11 @@ fun exportCarsToUri(context: Context, cars: List<Car>, uri: Uri) {
                         car.color,
                         car.type,
                         car.photoUrl,
-                        car.backgroundName,
-                        tagsJoined
+                        tagsJoined,
+                        car.backgroundName
                     ).joinToString(",") { escapeCsvField(it) } + "\n")
+
+
                 }
 
 
