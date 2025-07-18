@@ -25,7 +25,6 @@ import androidx.compose.ui.text.style.TextAlign
 @Composable
 fun MenuScreen(
     onNavigateToCollection: () -> Unit,
-    onNavigateToData: () -> Unit,
     onNavigateToTags: () -> Unit,
     onNavigateToConsultas: () -> Unit,
     onNavigateToStatistics: () -> Unit,
@@ -57,7 +56,6 @@ fun MenuScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     MenuButton("Colección", Icons.Filled.CarCrash, onNavigateToCollection)
-                    MenuButton("Datos", Icons.Default.Dataset, onNavigateToData)
                     MenuButton("Tags", Icons.Filled.Tag, onNavigateToTags)
                     MenuButton("Consultas", Icons.Default.QueryStats, onNavigateToConsultas)
                     MenuButton("Estadísticas", Icons.Default.BarChart, onNavigateToStatistics)

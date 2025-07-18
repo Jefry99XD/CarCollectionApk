@@ -41,6 +41,10 @@ class AddEditCarViewModel(
     var type = mutableStateOf("")
         private set
 
+    var backgroundName = mutableStateOf("fondo")
+        private set
+
+
     val availableTags = tagRepository.getAllTagsFlow().stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5000),
@@ -98,6 +102,12 @@ class AddEditCarViewModel(
             is AddEditCarEvent.EnteredPhotoUrl -> photoUrl.value = event.value
             is AddEditCarEvent.EnteredTags -> _selectedTags.value = event.value
 
+            is AddEditCarEvent.EnteredBackgroundName -> {
+                backgroundName.value = event.value
+            }
+
+
+
 
             is AddEditCarEvent.SaveCar -> {
                 viewModelScope.launch {
@@ -110,7 +120,8 @@ class AddEditCarViewModel(
                         type = type.value,
                         year = (year.value.toIntOrNull() ?: 0).toString(),
                         photoUrl = photoUrl.value,
-                        tags = selectedTags.value
+                        tags = selectedTags.value,
+                        backgroundName = backgroundName.value
                         )
                     repository.insertCar(car)
                 }

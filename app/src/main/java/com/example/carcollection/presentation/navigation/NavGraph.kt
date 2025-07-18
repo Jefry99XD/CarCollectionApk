@@ -41,13 +41,13 @@ fun AppNavGraph(
     repository: CarRepository,
     tagRepository: TagRepository
 ) {
+    val mainViewModel = remember { MainViewModel(repository, tagRepository) }
     NavHost(navController = navController, startDestination = NavRoutes.MENU) {
 
         // Pantalla principal (menú)
         composable(NavRoutes.MENU) {
             MenuScreen(
                 onNavigateToCollection = { navController.navigate(NavRoutes.MAIN) },
-                onNavigateToData = { navController.navigate(NavRoutes.DATA) },
                 onNavigateToTags = { navController.navigate(NavRoutes.VIEW_TAGS) },
                 onNavigateToConsultas = { navController.navigate(NavRoutes.CONSULTAS)},
                 onNavigateToStatistics = { navController.navigate(NavRoutes.STATISTICS) },
@@ -57,21 +57,16 @@ fun AppNavGraph(
 
         // Pantalla de colección
         composable(NavRoutes.MAIN) {
-            val viewModel = MainViewModel(repository, tagRepository)
             MainScreen(
-                viewModel = viewModel,
+                viewModel = mainViewModel,
                 navController = navController,
-                onNavigateToAdd = {
-                    navController.navigate(NavRoutes.ADD_EDIT_CAR)
-                },
-                onEditCar = { carId ->
-                    navController.navigate("add_edit_car?carId=$carId")
-                },
-                onBackClick = {
-                    navController.navigate(NavRoutes.MENU) // o navController.navigate(NavRoutes.MENU) para ir al menú explícitamente
-                }
+                onNavigateToAdd = { navController.navigate(NavRoutes.ADD_EDIT_CAR) },
+                onEditCar = { carId -> navController.navigate("add_edit_car?carId=$carId") },
+                onBackClick = { navController.navigate(NavRoutes.MENU) }
             )
         }
+        // resto del NavGraph...
+
 
 
         // Pantalla de datos (import/export)
@@ -206,7 +201,9 @@ fun AppNavGraph(
         }
         composable(NavRoutes.CONFIG) {
             com.example.carcollection.presentation.config.ConfigMenu(
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
+                onNavigateToData = { navController.navigate(NavRoutes.DATA) },
+                onNavigateToStatistics = { navController.navigate(NavRoutes.STATISTICS) }
             )
         }
     }

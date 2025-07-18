@@ -30,6 +30,12 @@ private fun parseCarFromTokens(tokens: List<String>, header: List<String>): Car?
         val tagsRaw = getValue("tags")
         val tags = if (tagsRaw.isNotBlank()) tagsRaw.split("|") else emptyList()
 
+        val backgroundName = if (header.any { it.equals("backgroundName", ignoreCase = true) }) {
+            getValue("backgroundName").ifBlank { "fondo" }
+        } else {
+            "fondo"
+        }
+
 
         return Car(
             brand = getValue("brand"),
@@ -39,6 +45,7 @@ private fun parseCarFromTokens(tokens: List<String>, header: List<String>): Car?
             color = getValue("color"),
             type = getValue("type"),
             photoUrl = getValue("photoUrl"),
+            backgroundName = backgroundName,
             tags = getValue("tags").split("|").map { it.trim() }.filter { it.isNotEmpty() }
         )
 
@@ -183,6 +190,7 @@ fun exportCarsToUri(context: Context, cars: List<Car>, uri: Uri) {
                         car.color,
                         car.type,
                         car.photoUrl,
+                        car.backgroundName,
                         tagsJoined
                     ).joinToString(",") { escapeCsvField(it) } + "\n")
                 }

@@ -8,11 +8,9 @@ class CarRepository(private val dao: CarDao) {
 
     fun getAllCars(): Flow<List<Car>> = dao.getAllCars()
 
-    fun searchCars(query: String): Flow<List<Car>> = dao.searchCarsByName(query)
 
     suspend fun insertCar(car: Car) = dao.insertCar(car)
 
-    suspend fun updateCar(car: Car) = dao.updateCar(car)
 
     suspend fun deleteCar(car: Car) = dao.deleteCar(car)
     suspend fun getCarById(id: Int): Car? {
@@ -42,13 +40,6 @@ class CarRepository(private val dao: CarDao) {
             }
         }
     }
-
-
-    fun getDistinctYearsFlow():   Flow<List<String>> = dao.getDistinctYears()
-    fun getDistinctBrandsFlow():  Flow<List<String>> = dao.getDistinctBrands()
-    fun getDistinctSeriesFlow():  Flow<List<String>> = dao.getDistinctSeries()
-    fun getDistinctTypesFlow():   Flow<List<String>> = dao.getDistinctTypes()
-
 
 
 }

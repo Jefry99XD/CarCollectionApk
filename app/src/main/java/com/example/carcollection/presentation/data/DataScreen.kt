@@ -139,7 +139,7 @@ fun DataScreen(
             }
 
             // ===== TAGS =====
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(15.dp))
             Text("Tags", style = MaterialTheme.typography.titleMedium)
             Button(
                 onClick = {
@@ -164,7 +164,7 @@ fun DataScreen(
             }
 
             // ===== ACCIONES PELIGROSAS =====
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(15.dp))
             Text(
                 "Acciones peligrosas",
                 style = MaterialTheme.typography.titleMedium,

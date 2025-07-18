@@ -1,12 +1,18 @@
 package com.example.carcollection.presentation.add_edit_car
 
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack // Changed to autoMirrored
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -16,9 +22,15 @@ import androidx.compose.runtime.remember // This import is not used, consider re
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
+import android.content.Context
+import coil.compose.AsyncImage
 
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
@@ -28,7 +40,7 @@ fun AddEditCarScreen(
     onSaveSuccess: () -> Unit,
     onBackClick: () -> Unit
 ) {
-    val scrollState = rememberScrollState()
+    val backgroundOptions = listOf("fondo", "fondo2")
     var expandedColor by remember { mutableStateOf(false) }
     var expandedBrand by remember { mutableStateOf(false) }
     var expandedYear by remember { mutableStateOf(false) }
@@ -52,54 +64,80 @@ fun AddEditCarScreen(
         .filter { it.contains(viewModel.serie.value, ignoreCase = true) }
 
 
-
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Agregar/Editar Carro") },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                    }
+                }
+            )
+        },
+        bottomBar = {
+            Surface(
+                tonalElevation = 4.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Button(
+                    onClick = {
+                        viewModel.onEvent(AddEditCarEvent.SaveCar)
+                        onSaveSuccess()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Text("Guardar")
+                }
+            }
+        }
+    ) { padding ->
 
     Column(
         modifier = Modifier
+            .padding(padding)
             .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(scrollState),
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        IconButton(onClick = { onBackClick() }) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack, // Using AutoMirrored for better LTR/RTL support
-                contentDescription = "Volver"
-            )
-        } // <<<<--- ADD THIS CLOSING BRACE
 
         ExposedDropdownMenuBox(
-            expanded = expandedBrand && brandSuggestions.isNotEmpty(),
-            onExpandedChange = { expandedBrand = !expandedBrand && brandSuggestions.isNotEmpty() }
+            expanded = expandedBrand,
+            onExpandedChange = { expandedBrand = it }
         ) {
             OutlinedTextField(
                 value = viewModel.brand.value,
                 onValueChange = {
                     viewModel.onEvent(AddEditCarEvent.EnteredBrand(it))
-                    expandedBrand = true
                 },
                 label = { Text("Marca") },
                 modifier = Modifier
                     .menuAnchor()
-                    .fillMaxWidth()
+                    .fillMaxWidth(),
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedBrand)
+                }
             )
+
             ExposedDropdownMenu(
-                expanded = expandedBrand && brandSuggestions.isNotEmpty(),
+                expanded = expandedBrand,
                 onDismissRequest = { expandedBrand = false }
             ) {
-                brandSuggestions
-                    .filter { it.contains(viewModel.brand.value, ignoreCase = true) }
-                    .forEach { suggestion ->
-                        DropdownMenuItem(
-                            text = { Text(suggestion) },
-                            onClick = {
-                                viewModel.onEvent(AddEditCarEvent.EnteredBrand(suggestion))
-                                expandedBrand = false
-                            }
-                        )
-                    }
+                filteredBrandSuggestions.forEach { suggestion ->
+                    DropdownMenuItem(
+                        text = { Text(suggestion) },
+                        onClick = {
+                            viewModel.onEvent(AddEditCarEvent.EnteredBrand(suggestion))
+                            expandedBrand = false
+                        }
+                    )
+                }
             }
         }
+
 
         OutlinedTextField(
             value = viewModel.name.value,
@@ -110,22 +148,24 @@ fun AddEditCarScreen(
         )
 
         ExposedDropdownMenuBox(
-            expanded = expandedSerie && filteredSerieSuggestions.isNotEmpty(),
-            onExpandedChange = { expandedSerie = !expandedSerie && filteredSerieSuggestions.isNotEmpty() }
+            expanded = expandedSerie,
+            onExpandedChange = { expandedSerie = it}
         ) {
             OutlinedTextField(
                 value = viewModel.serie.value,
                 onValueChange = {
                     viewModel.onEvent(AddEditCarEvent.EnteredSerie(it))
-                    expandedSerie = true
                 },
                 label = { Text("Serie") },
                 modifier = Modifier
                     .menuAnchor()
-                    .fillMaxWidth()
+                    .fillMaxWidth(),
+                        trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded =  expandedSerie)
+                }
             )
             ExposedDropdownMenu(
-                expanded = expandedSerie && filteredSerieSuggestions.isNotEmpty(),
+                expanded = expandedSerie,
                 onDismissRequest = { expandedSerie = false }
             ) {
                 filteredSerieSuggestions.forEach { suggestion ->
@@ -140,22 +180,24 @@ fun AddEditCarScreen(
             }
         }
         ExposedDropdownMenuBox(
-            expanded = expandedYear && filteredYearSuggestions.isNotEmpty(),
-            onExpandedChange = { expandedYear = !expandedYear && filteredYearSuggestions.isNotEmpty() }
+            expanded = expandedYear,
+            onExpandedChange = { expandedYear = it }
         ) {
             OutlinedTextField(
                 value = viewModel.year.value,
                 onValueChange = {
                     viewModel.onEvent(AddEditCarEvent.EnteredYear(it))
-                    expandedYear = true
                 },
                 label = { Text("Año") },
                 modifier = Modifier
                     .menuAnchor()
-                    .fillMaxWidth()
+                    .fillMaxWidth(),
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded =  expandedYear)
+                }
             )
             ExposedDropdownMenu(
-                expanded = expandedYear && filteredYearSuggestions.isNotEmpty(),
+                expanded = expandedYear ,
                 onDismissRequest = { expandedYear = false }
             ) {
                 yearSuggestions
@@ -172,22 +214,25 @@ fun AddEditCarScreen(
             }
         }
         ExposedDropdownMenuBox(
-            expanded = expandedColor && colorSuggestions.isNotEmpty(),
-            onExpandedChange = { expandedColor = !expandedColor && colorSuggestions.isNotEmpty() }
+            expanded = expandedColor,
+            onExpandedChange = { expandedColor = it}
         ) {
             OutlinedTextField(
                 value = viewModel.color.value,
                 onValueChange = {
                     viewModel.onEvent(AddEditCarEvent.EnteredColor(it))
-                    expandedColor = true
                 },
                 label = { Text("Color") },
                 modifier = Modifier
                     .menuAnchor()
-                    .fillMaxWidth()
+                    .fillMaxWidth(),
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedColor)
+                }
+
             )
             ExposedDropdownMenu(
-                expanded = expandedColor && colorSuggestions.isNotEmpty(),
+                expanded = expandedColor,
                 onDismissRequest = { expandedColor = false }
             ) {
                 colorSuggestions
@@ -205,22 +250,24 @@ fun AddEditCarScreen(
         }
 
         ExposedDropdownMenuBox(
-            expanded = expandedType && typeSuggestions.isNotEmpty(),
-            onExpandedChange = { expandedType = !expandedType && typeSuggestions.isNotEmpty() }
+            expanded = expandedType,
+            onExpandedChange = { expandedType = it }
         ) {
             OutlinedTextField(
                 value = viewModel.type.value,
                 onValueChange = {
                     viewModel.onEvent(AddEditCarEvent.EnteredType(it))
-                    expandedType = true
                 },
                 label = { Text("Tipo") },
                 modifier = Modifier
                     .menuAnchor()
-                    .fillMaxWidth()
+                    .fillMaxWidth(),
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedType)
+                }
             )
             ExposedDropdownMenu(
-                expanded = expandedType && typeSuggestions.isNotEmpty(),
+                expanded = expandedType,
                 onDismissRequest = { expandedType = false }
             ) {
                 typeSuggestions
@@ -244,6 +291,37 @@ fun AddEditCarScreen(
             placeholder = { Text("www.imagen.com/asdasd.jpg") },
             modifier = Modifier.fillMaxWidth()
         )
+        if (viewModel.photoUrl.value.isNotBlank()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            AsyncImage(
+                model = viewModel.photoUrl.value,
+                contentDescription = "Vista previa de imagen",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .padding(4.dp),
+            )
+        }
+
+        var showImagePicker by remember { mutableStateOf(false) }
+
+        Button(
+            onClick = { showImagePicker = true },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Elegir imagen desde la galería")
+        }
+
+        if (showImagePicker) {
+            CarImagePickerDialog(
+                onDismiss = { showImagePicker = false },
+                onImageSelected = { url ->
+                    viewModel.onEvent(AddEditCarEvent.EnteredPhotoUrl(url))
+                }
+            )
+        }
+
+
 
         Text("Tags", style = MaterialTheme.typography.titleMedium)
 
@@ -293,15 +371,82 @@ fun AddEditCarScreen(
                 )
             }
         }
+        Text("Selecciona un fondo", style = MaterialTheme.typography.titleMedium)
 
-        Button(
-            onClick = {
-                viewModel.onEvent(AddEditCarEvent.SaveCar)
-                onSaveSuccess()
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Guardar")
+        BackgroundSelector(
+            availableBackgrounds = listOf("fondo", "fondo2", "fondo3", "fondo4", "fondo5"),
+            selectedBackground = viewModel.backgroundName.value,
+            onBackgroundSelected = { viewModel.onEvent(AddEditCarEvent.EnteredBackgroundName(it)) }
+        )
+    }
+}}
+
+@Composable
+fun getImageResourceIdByName(name: String): Int? {
+    val context = LocalContext.current
+    return remember(name) {
+        context.resources.getIdentifier(name, "drawable", context.packageName)
+            .takeIf { it != 0 }
+    }
+}
+
+@DrawableRes
+fun getDrawableIdByName(context: Context, name: String): Int {
+    return context.resources.getIdentifier(name, "drawable", context.packageName)
+}
+
+
+@Composable
+fun BackgroundSelector(
+    availableBackgrounds: List<String>,
+    selectedBackground: String,
+    onBackgroundSelected: (String) -> Unit
+) {
+    val context = LocalContext.current
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        availableBackgrounds.forEach { bgName ->
+            val drawableId = getDrawableIdByName(context, bgName)
+            if (drawableId != 0) {
+                Box(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { onBackgroundSelected(bgName) }
+                ) {
+                    Image(
+                        painter = painterResource(id = drawableId),
+                        contentDescription = "Fondo $bgName",
+                        modifier = Modifier.matchParentSize(),
+                        contentScale = ContentScale.Crop
+                    )
+
+                    if (bgName == selectedBackground) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(6.dp)
+                                .size(20.dp)
+                                .background(Color.White, shape = CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Seleccionado",
+                                tint = Color.Green,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
+
+

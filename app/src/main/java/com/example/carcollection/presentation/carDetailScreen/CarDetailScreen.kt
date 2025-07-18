@@ -25,10 +25,9 @@ import com.example.carcollection.data.local.Car
 import com.example.carcollection.data.local.Tag
 import androidx.core.graphics.toColorInt
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import com.example.carcollection.presentation.carDetailScreen.AutoSizeText
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun CarDetailScreen(
     car: Car,
@@ -44,6 +43,14 @@ fun CarDetailScreen(
     } catch (e: Exception) {
         Color.Gray
     }
+
+    val resId = when (car.backgroundName) {
+        "fondo1" -> R.drawable.fondo
+        "fondo2" -> R.drawable.fondo2
+        "fondo3" -> R.drawable.fondo3
+        else -> R.drawable.fondo
+    }
+
 
     Scaffold(
         topBar = {
@@ -71,14 +78,14 @@ fun CarDetailScreen(
             )
             {
                 Image(
-                    painter = painterResource(id = R.drawable.f2),
+                    painter = painterResource(id = resId),
                     contentDescription = null,
                     modifier = Modifier.matchParentSize(),
                     contentScale = ContentScale.FillBounds
                 )
 
                 Row(modifier = Modifier.fillMaxSize()) {
-                    /*------------- COLUMNA IZQUIERDA -------------*/
+
                     Column(
                         modifier = Modifier
                             .weight(1f),
@@ -95,8 +102,7 @@ fun CarDetailScreen(
 
                         )
 
-
-                        Spacer(modifier = Modifier.weight(1f)) // Empuja el contenido siguiente al fondo
+                        Spacer(modifier = Modifier.height(8.dp)) // Empuja el contenido siguiente al fondo
 
                         /** Foto del carro */
                         AsyncImage(
@@ -110,88 +116,110 @@ fun CarDetailScreen(
                                 .clickable { showImageDialog = true },
                             contentScale = ContentScale.Fit
                         )
-
-                        /** Card de información */
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-                            elevation = CardDefaults.cardElevation(0.dp)
-                        ) {
-                            Row(modifier = Modifier.padding(16.dp)) {
-                                // Primera columna con datos principales
-                                Column(
-                                    modifier = Modifier.weight(1f),
-                                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Text(
-                                        car.name,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = Color.White
-                                    )
-                                    Text(
-                                        car.brand,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = Color.White
-                                    )
-                                    Text(
-                                        "Año ${car.year}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Color.White
-                                    )
-                                    Text(
-                                        car.color,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Color.White
-                                    )
-                                    Text(
-                                        "Tipo ${car.type}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Color.White
-                                    )
-                                    Text(
-                                        car.serie,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Color.White
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.width(16.dp))
-
-                                // Segunda columna con tags
-                                Column(
+                        Spacer(modifier = Modifier.height(12.dp))
+                                Box(
                                     modifier = Modifier
-                                        .weight(1f)
-                                        .heightIn(max = 100.dp)
-                                        .verticalScroll(rememberScrollState()),
-                                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Text(
-                                        "Tags:",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = Color.White
-                                    )
-                                    if (car.tags.isEmpty()) {
-                                        Text(
-                                            "Sin tags",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = Color.White
+                                        .fillMaxWidth()
+                                        .background(
+                                            color = Color.Black.copy(alpha = 0.6f), // 60% opacidad
+                                            shape = RoundedCornerShape(12.dp)
                                         )
-                                    } else {
-                                        car.tags.forEach { tag ->
+                                        .padding(16.dp)
+                                ){
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.weight(1f),
+                                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
                                             Text(
-                                                "- $tag",
-                                                style = MaterialTheme.typography.bodySmall,
+                                                car.name,
+                                                style = MaterialTheme.typography.titleLarge,
                                                 color = Color.White,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Text(
+                                                "${car.brand} · ${car.year}",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = Color.White
+                                            )
+                                            Text(
+                                                car.color,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = Color.White
+                                            )
+                                            Text(
+                                                car.type,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = Color.White
+                                            )
+                                            Text(
+                                                car.serie,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = Color.White
                                             )
                                         }
+
+                                        // Segunda columna con tags
+                                        Column(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .verticalScroll(rememberScrollState()),
+                                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+
+                                                Text(
+                                                    "Tags:",
+                                                    style = MaterialTheme.typography.titleLarge,
+                                                    color = Color.White,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+
+
+                                            FlowRow( // Requiere accompanist-flowlayout
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                                            ) {
+                                                if (car.tags.isEmpty()) {
+                                                    Text(
+                                                        "Sin tags",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = Color.White
+                                                    )
+                                                } else {
+                                                    car.tags.forEach { tagName ->
+                                                        val tagColor = allTags.find { it.name == tagName }?.color ?: "#888888"
+                                                        val chipColor = try {
+                                                            Color(tagColor.toColorInt())
+                                                        } catch (e: Exception) {
+                                                            Color.Gray
+                                                        }
+
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .background(color = chipColor, shape = RoundedCornerShape(50))
+                                                                .padding(horizontal = 12.dp, vertical = 4.dp)
+                                                        ) {
+                                                            Text(
+                                                                text = tagName,
+                                                                color = Color.White,
+                                                                style = MaterialTheme.typography.bodySmall
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                        }
                                     }
+
                                 }
 
-                            }
-                        }
+
+
+
 
 
                     }

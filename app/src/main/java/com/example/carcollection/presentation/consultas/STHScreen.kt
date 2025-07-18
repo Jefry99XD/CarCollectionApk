@@ -124,7 +124,7 @@ fun STHScreen(
                                 expanded = false
                             }
                         )
-                        years.forEach { year ->
+                        years.sortedDescending().forEach { year ->
                             DropdownMenuItem(
                                 text = { Text(year.toString()) },
                                 onClick = {

@@ -2,14 +2,12 @@ package com.example.carcollection.utils
 
 import android.content.Context
 import android.net.Uri
-import androidx.core.net.toFile
 import com.example.carcollection.data.local.Tag
 import com.example.carcollection.data.repository.TagRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -17,6 +15,7 @@ import java.io.OutputStreamWriter
 
 @Serializable
 private data class TagDTO(val id: Int, val name: String, val color: String)
+private val jsonFormatter = Json { prettyPrint = true }
 
 /*---------------------------------------*
  *  EXPORTAR  TAGS  →  JSON  en un Uri    *
@@ -28,7 +27,7 @@ suspend fun exportTagsToUri(
 ) = withContext(Dispatchers.IO) {
     val tags: List<Tag> = tagRepository.getAllTags()     // suspending DAO call
     val dtoList = tags.map { TagDTO(it.id, it.name, it.color) }
-    val json = Json { prettyPrint = true }.encodeToString(dtoList)
+    val json = jsonFormatter.encodeToString(dtoList)
 
     context.contentResolver.openOutputStream(targetUri)?.use { output ->
         OutputStreamWriter(output).use { writer ->

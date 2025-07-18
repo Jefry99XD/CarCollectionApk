@@ -13,5 +13,6 @@ data class Car(
     val photoUrl: String,
     val color: String,
     val type: String,
-    val tags: List<String> = emptyList()
+    val tags: List<String> = emptyList(),
+    val backgroundName: String = "fondo"
 )

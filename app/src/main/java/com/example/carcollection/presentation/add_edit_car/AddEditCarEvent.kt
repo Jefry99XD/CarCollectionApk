@@ -9,5 +9,7 @@ sealed class AddEditCarEvent {
     data class EnteredColor(val value: String) : AddEditCarEvent()
     data class EnteredType(val value: String) : AddEditCarEvent()
     data class EnteredTags(val value: List<String>) : AddEditCarEvent()
+    data class EnteredBackgroundName(val value: String) : AddEditCarEvent()
+
     object SaveCar : AddEditCarEvent()
 }
