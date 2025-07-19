@@ -48,6 +48,12 @@ fun CarDetailScreen(
         "fondo1" -> R.drawable.fondo
         "fondo2" -> R.drawable.fondo2
         "fondo3" -> R.drawable.fondo3
+        "fondo4" -> R.drawable.fondo4
+        "fondo5" -> R.drawable.fondo5
+        "fondo6" -> R.drawable.fondo6
+        "fondo7" -> R.drawable.fondo7
+        "fondo8" -> R.drawable.fondo8
+        "fondo9" -> R.drawable.fondo9
         else -> R.drawable.fondo
     }
 
@@ -99,7 +105,6 @@ fun CarDetailScreen(
                                 .fillMaxWidth()
                                 .height(200.dp),
                             contentScale = ContentScale.Fit
-
                         )
 
                         Spacer(modifier = Modifier.height(8.dp)) // Empuja el contenido siguiente al fondo

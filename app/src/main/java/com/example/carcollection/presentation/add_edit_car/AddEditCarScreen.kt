@@ -374,7 +374,7 @@ fun AddEditCarScreen(
         Text("Selecciona un fondo", style = MaterialTheme.typography.titleMedium)
 
         BackgroundSelector(
-            availableBackgrounds = listOf("fondo", "fondo2", "fondo3", "fondo4", "fondo5"),
+            availableBackgrounds = listOf("fondo", "fondo2", "fondo3", "fondo4", "fondo5", "fondo6", "fondo7", "fondo8", "fondo9", "fondo10", "fondo11", "fondo13"),
             selectedBackground = viewModel.backgroundName.value,
             onBackgroundSelected = { viewModel.onEvent(AddEditCarEvent.EnteredBackgroundName(it)) }
         )

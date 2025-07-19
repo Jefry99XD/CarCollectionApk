@@ -73,7 +73,7 @@ fun FilterSection(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text("Filters", style = MaterialTheme.typography.titleSmall)
+            Text("Filtrado de coches", style = MaterialTheme.typography.titleSmall)
             IconButton(onClick = { expanded = !expanded }) {
                 Icon(
                     imageVector = if (expanded) Icons.Default.FilterAltOff else Icons.Default.FilterAlt,
@@ -95,28 +95,28 @@ fun FilterSection(
             ) {
                 // Brand filter
                 DropdownMenuBox(
-                    selectedOption = selectedBrand ?: "All Brands",
-                    options = listOf("All Brands") + allBrands,
+                    selectedOption = selectedBrand ?: "Marcas",
+                    options = listOf("Marcas") + allBrands,
                     onOptionSelected = {
-                        viewModel.onBrandSelected(if (it == "All Brands") null else it)
+                        viewModel.onBrandSelected(if (it == "Marcas") null else it)
                     }
                 )
 
                 // Year filter
                 DropdownMenuBox(
-                    selectedOption = selectedYear ?: "All Years",
-                    options = listOf("All Years") + allYears,
+                    selectedOption = selectedYear ?: "Años",
+                    options = listOf("Años") + allYears,
                     onOptionSelected = {
-                        viewModel.onYearSelected(if (it == "All Years") null else it)
+                        viewModel.onYearSelected(if (it == "Años") null else it)
                     }
                 )
 
                 // Series filter
                 DropdownMenuBox(
-                    selectedOption = selectedSeries ?: "All Series",
-                    options = listOf("All Series") + allSeries,
+                    selectedOption = selectedSeries ?: "Serie",
+                    options = listOf("Serie") + allSeries,
                     onOptionSelected = {
-                        viewModel.onSeriesSelected(if (it == "All Series") null else it)
+                        viewModel.onSeriesSelected(if (it == "Serie") null else it)
                     }
                 )
 
@@ -124,10 +124,10 @@ fun FilterSection(
                 if (allTags.isNotEmpty()) {
                     val tagNames = allTags.map { it.name }
                     DropdownMenuBox(
-                        selectedOption = selectedTag ?: "All Tags",
-                        options = listOf("All Tags") + tagNames,
+                        selectedOption = selectedTag ?: "Tag",
+                        options = listOf("Tag") + tagNames,
                         onOptionSelected = {
-                            viewModel.onTagSelected(if (it == "All Tags") null else it)
+                            viewModel.onTagSelected(if (it == "Tag") null else it)
                         }
                     )
 
@@ -177,7 +177,7 @@ fun MainScreen(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Car Collection")
+                        Text("Mi Colección")
                         Spacer(modifier = Modifier.weight(1f))
                         Icon(
                             imageVector = Icons.Default.DirectionsCar,
@@ -216,7 +216,7 @@ fun MainScreen(
                     viewModel.onSearchQueryChange(it)
                     currentPage = 0
                 },
-                label = { Text("Search") },
+                label = { Text("Buscar...") },
                 placeholder = { Text("Search by any field") },
                 modifier = Modifier.fillMaxWidth()
             )
@@ -250,7 +250,7 @@ fun MainScreen(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Page ${currentPage + 1} / $totalPages")
+                    Text("Pag ${currentPage + 1} / $totalPages")
                     IconButton(
                         onClick = { if (currentPage > 0) currentPage-- },
                         enabled = currentPage > 0
@@ -290,19 +290,19 @@ fun MainScreen(
             carToDelete?.let { car ->
                 AlertDialog(
                     onDismissRequest = { carToDelete = null },
-                    title = { Text("Confirm deletion") },
-                    text = { Text("Delete ${car.name}?") },
+                    title = { Text("Deseas borrarlo?") },
+                    text = { Text("Borrar ${car.name}?") },
                     confirmButton = {
                         TextButton(onClick = {
                             viewModel.deleteCar(car)
                             carToDelete = null
                         }) {
-                            Text("Delete")
+                            Text("Borrar")
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { carToDelete = null }) {
-                            Text("Cancel")
+                            Text("Cancelar")
                         }
                     }
                 )

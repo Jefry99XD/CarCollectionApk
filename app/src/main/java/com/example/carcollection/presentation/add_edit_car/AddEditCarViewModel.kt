@@ -141,6 +141,7 @@ class AddEditCarViewModel(
                 type.value = car.type
                 currentCarId = car.id
                 _selectedTags.value = car.tags
+                backgroundName.value = car.backgroundName
 
             }
 
