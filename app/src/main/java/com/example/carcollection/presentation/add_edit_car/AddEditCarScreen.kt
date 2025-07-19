@@ -79,6 +79,7 @@ fun AddEditCarScreen(
             Surface(
                 tonalElevation = 4.dp,
                 modifier = Modifier.fillMaxWidth()
+                    .navigationBarsPadding()
             ) {
                 Button(
                     onClick = {
@@ -88,10 +89,12 @@ fun AddEditCarScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp)
+
                 ) {
                     Text("Guardar")
                 }
             }
+
         }
     ) { padding ->
 
