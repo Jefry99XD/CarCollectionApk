@@ -1,6 +1,8 @@
 package com.example.carcollection.presentation.consultas
 
 import android.app.Application
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.carcollection.presentation.add_edit_car.CarImageEntry
@@ -10,7 +12,15 @@ import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import io.ktor.client.*
+import io.ktor.client.engine.android.*
+import io.ktor.client.request.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.serialization.gson.*
+import io.ktor.client.request.*
+import io.ktor.client.call.*
 
+@RequiresApi(Build.VERSION_CODES.O)
 class carLibraryViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _allCars = MutableStateFlow<List<CarImageEntry>>(emptyList())
@@ -26,17 +36,36 @@ class carLibraryViewModel(application: Application) : AndroidViewModel(applicati
 
     private val itemsPerPage = 15
 
-    init {
-        loadCarsFromAssets()
+    private val client = HttpClient(Android) {
+        install(ContentNegotiation) {
+            gson()
+        }
     }
 
-    private fun loadCarsFromAssets() {
+
+    init {
+        loadCarsFromWeb()
+    }
+
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun loadCarsFromWeb() {
         viewModelScope.launch {
-            val jsonString = readJsonFromAssets("diecast_images.json")
-            val type = object : TypeToken<List<CarImageEntry>>() {}.type
-            val cars = Gson().fromJson<List<CarImageEntry>>(jsonString, type)
-            _allCars.value = cars
-            updatePagination()
+            try {
+                val url =
+                    "https://raw.githubusercontent.com/Jefry99XD/CarCollectionApk/refs/heads/main/app/src/main/assets/diecast_images.json"
+                val response = client.get(url) // Make the GET request
+                val json: String = response.body() // Explicitly get the body as String
+
+                val type = object : TypeToken<List<CarImageEntry>>() {}.type
+                val cars = Gson().fromJson<List<CarImageEntry>>(json, type)
+
+                _allCars.value = cars
+                updatePagination()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                // Puedes emitir un estado de error si deseas
+            }
         }
     }
 

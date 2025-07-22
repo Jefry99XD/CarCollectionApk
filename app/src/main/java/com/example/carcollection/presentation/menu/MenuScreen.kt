@@ -67,7 +67,7 @@ fun MenuScreen(
         item {
             Spacer(modifier = Modifier.height(48.dp))
             Text(
-                text = "Powered by Jefry Cuendiz. V2.01",
+                text = "Powered by Jefry Cuendiz. V2.03",
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center
