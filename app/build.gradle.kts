@@ -15,7 +15,7 @@ android {
         minSdk = 24
         targetSdk = 35
         versionCode = 3
-        versionName = "2.03"
+        versionName = "2.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -43,12 +43,13 @@ android {
 
 dependencies {
     implementation(libs.firebase.crashlytics.buildtools)
-    val room_version = "2.7.1" // Use the latest stable version
+    val roomVersion = "2.7.1" // Use the latest stable version
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-    implementation("androidx.room:room-runtime:$room_version")
-    kapt("androidx.room:room-compiler:$room_version") // Use kapt
+    implementation("androidx.room:room-runtime:$roomVersion")
+    kapt("androidx.room:room-compiler:$roomVersion") // Use kapt
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation ("androidx.compose.material:material-icons-extended")
+    implementation ("androidx.datastore:datastore-preferences:1.0.0")
     implementation("io.ktor:ktor-client-core:2.3.4")
     implementation("io.ktor:ktor-client-cio:2.3.4")
     implementation("io.ktor:ktor-client-android:2.3.4") // importante para Android

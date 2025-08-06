@@ -40,7 +40,7 @@ import androidx.compose.foundation.layout.size
 @Composable
 fun About(
     onBackClick: () -> Unit,
-    appVersion: String = "2.03"
+    appVersion: String = "2.1"
 ) {
     Scaffold(
         topBar = {

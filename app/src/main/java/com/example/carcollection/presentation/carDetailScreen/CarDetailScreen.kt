@@ -54,6 +54,26 @@ fun CarDetailScreen(
         "fondo7" -> R.drawable.fondo7
         "fondo8" -> R.drawable.fondo8
         "fondo9" -> R.drawable.fondo9
+        "fondo10" -> R.drawable.fondo10
+        "fondo11" -> R.drawable.fondo11
+        "fondo12" -> R.drawable.fondo12
+        "fondo13" -> R.drawable.fondo13
+        "fondo14" -> R.drawable.fondo14
+        "fondo15" -> R.drawable.fondo15
+        "fondo16" -> R.drawable.fondo16
+        "fondo17" -> R.drawable.fondo17
+        "fondo18" -> R.drawable.fondo18
+        "fondo19" -> R.drawable.fondo19
+        "fondo20" -> R.drawable.fondo20
+        "fondo21" -> R.drawable.fondo21
+        "fondo22" -> R.drawable.fondo22
+        "fondo23" -> R.drawable.fondo23
+        "fondo24" -> R.drawable.fondo24
+        "fondo25" -> R.drawable.fondo25
+        "fondo26" -> R.drawable.fondo26
+        "fondo27" -> R.drawable.fondo27
+        "fondo28" -> R.drawable.fondo28
+        "fondo29" -> R.drawable.fondo29
         else -> R.drawable.fondo
     }
 

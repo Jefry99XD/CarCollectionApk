@@ -11,14 +11,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack // Changed to autoMirrored
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember // This import is not used, consider removing it
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,7 +29,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import android.content.Context
+import androidx.compose.runtime.rememberCoroutineScope
 import coil.compose.AsyncImage
+import com.example.carcollection.presentation.common.ConfirmBackButton
+import kotlinx.coroutines.launch
 
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
@@ -40,7 +42,6 @@ fun AddEditCarScreen(
     onSaveSuccess: () -> Unit,
     onBackClick: () -> Unit
 ) {
-    val backgroundOptions = listOf("fondo", "fondo2")
     var expandedColor by remember { mutableStateOf(false) }
     var expandedBrand by remember { mutableStateOf(false) }
     var expandedYear by remember { mutableStateOf(false) }
@@ -51,50 +52,55 @@ fun AddEditCarScreen(
     val typeSuggestions = viewModel.typeSuggestions.collectAsState().value
     val serieSuggestions = viewModel.serieSuggestions.collectAsState().value
     val colorSuggestions = viewModel.colorSuggestions.collectAsState().value
+    val availableTags by viewModel.availableTags.collectAsState()
 
     val filteredBrandSuggestions = brandSuggestions
         .filter { it.contains(viewModel.brand.value, ignoreCase = true) }
-    val filteredYearSuggestions = yearSuggestions
-        .filter { it.contains(viewModel.year.value, ignoreCase = true) }
-    val filteredTypeSuggestions = typeSuggestions
-        .filter { it.contains(viewModel.type.value, ignoreCase = true) }
-    val filteredColorSuggestions = colorSuggestions
-        .filter { it.contains(viewModel.color.value, ignoreCase = true) }
     val filteredSerieSuggestions = serieSuggestions
         .filter { it.contains(viewModel.serie.value, ignoreCase = true) }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    val context = LocalContext.current
+    val categories = remember {
+        loadBackgroundCategories(context)
+    }
+    val selected = viewModel.selectedTags.collectAsState().value
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Agregar/Editar Carro") },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
-                    }
+                    ConfirmBackButton(onConfirmBack = onBackClick)
                 }
             )
         },
         bottomBar = {
             Surface(
                 tonalElevation = 4.dp,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
                     .navigationBarsPadding()
             ) {
                 Button(
                     onClick = {
                         viewModel.onEvent(AddEditCarEvent.SaveCar)
                         onSaveSuccess()
+
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("¡Carro guardado con éxito!")
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp)
-
                 ) {
                     Text("Guardar")
                 }
             }
-
         }
     ) { padding ->
 
@@ -332,8 +338,8 @@ fun AddEditCarScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            val selected = viewModel.selectedTags.collectAsState().value
-            viewModel.availableTags.collectAsState().value.forEach { tag ->
+
+                availableTags.forEach { tag ->
                 val isSelected = tag.name in selected
                 val orderNumber = if (isSelected) selected.indexOf(tag.name) + 1 else null
 
@@ -377,79 +383,11 @@ fun AddEditCarScreen(
         Text("Selecciona un fondo", style = MaterialTheme.typography.titleMedium)
 
         BackgroundSelector(
-            availableBackgrounds = listOf("fondo", "fondo2", "fondo3", "fondo4", "fondo5", "fondo6", "fondo7", "fondo8", "fondo9", "fondo10", "fondo11", "fondo13"),
+            availableCategories = categories,
             selectedBackground = viewModel.backgroundName.value,
             onBackgroundSelected = { viewModel.onEvent(AddEditCarEvent.EnteredBackgroundName(it)) }
         )
+
+
     }
 }}
-
-@Composable
-fun getImageResourceIdByName(name: String): Int? {
-    val context = LocalContext.current
-    return remember(name) {
-        context.resources.getIdentifier(name, "drawable", context.packageName)
-            .takeIf { it != 0 }
-    }
-}
-
-@DrawableRes
-fun getDrawableIdByName(context: Context, name: String): Int {
-    return context.resources.getIdentifier(name, "drawable", context.packageName)
-}
-
-
-@Composable
-fun BackgroundSelector(
-    availableBackgrounds: List<String>,
-    selectedBackground: String,
-    onBackgroundSelected: (String) -> Unit
-) {
-    val context = LocalContext.current
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        availableBackgrounds.forEach { bgName ->
-            val drawableId = getDrawableIdByName(context, bgName)
-            if (drawableId != 0) {
-                Box(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onBackgroundSelected(bgName) }
-                ) {
-                    Image(
-                        painter = painterResource(id = drawableId),
-                        contentDescription = "Fondo $bgName",
-                        modifier = Modifier.matchParentSize(),
-                        contentScale = ContentScale.Crop
-                    )
-
-                    if (bgName == selectedBackground) {
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(6.dp)
-                                .size(20.dp)
-                                .background(Color.White, shape = CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = "Seleccionado",
-                                tint = Color.Green,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-

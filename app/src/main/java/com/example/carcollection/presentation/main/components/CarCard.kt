@@ -13,11 +13,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.carcollection.data.local.Car
 import com.example.carcollection.data.local.Tag
 import androidx.core.graphics.toColorInt
+import com.example.carcollection.R
+
 fun getContrastingTextColor(background: Color): Color {
     return if (background.luminance() > 0.5) Color.Black else Color.White
 }
@@ -27,7 +30,8 @@ fun CarCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onClick: () -> Unit,
-    allTags: List<Tag>
+    allTags: List<Tag>,
+    modifier: Modifier = Modifier
 ) {
     val firstTagColor = car.tags.firstOrNull()?.let { tagName ->
         allTags.find { it.name == tagName }?.color
@@ -39,55 +43,91 @@ fun CarCard(
         Color.White
     }
     val textColor = getContrastingTextColor(cardColor)
+
     Card(
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 2.dp), // Menor separación entre cards
         colors = CardDefaults.cardColors(containerColor = cardColor)
     ) {
         Row(
             modifier = Modifier
-                .padding(12.dp)
+                .padding(8.dp) // Reducido de 12.dp
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
                 model = car.photoUrl,
                 contentDescription = "${car.brand} ${car.name}",
+                placeholder = painterResource(R.drawable.placeholder),
                 modifier = Modifier
-                    .size(140.dp)
+                    .size(100.dp) // Reducido de 140.dp
                     .background(Color.Transparent)
             )
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(8.dp)) // Reducido
 
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(vertical = 4.dp)
+                    .padding(vertical = 2.dp)
             ) {
-                Text(text = car.name, color = textColor, style = MaterialTheme.typography.titleMedium)
-                Text(text = car.brand, color = textColor, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    text = car.name,
+                    color = textColor,
+                    style = MaterialTheme.typography.bodyMedium, // Más compacto
+                    maxLines = 1
+                )
+                Text(
+                    text = car.brand,
+                    color = textColor,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1
+                )
                 car.tags.firstOrNull()?.let { firstTag ->
-                    Text(text = firstTag, color = textColor, style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        text = firstTag,
+                        color = textColor,
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1
+                    )
                 }
             }
 
             Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                IconButton(onClick = onClick) {
-                    Icon(Icons.Default.Info, contentDescription = "Ver detalles", tint = textColor)
+                IconButton(onClick = onClick, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        Icons.Default.Info,
+                        contentDescription = "Ver detalles",
+                        tint = textColor,
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
-                IconButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, contentDescription = "Editar", tint = textColor)
+                IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = "Editar",
+                        tint = textColor,
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = textColor)
+                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Eliminar",
+                        tint = textColor,
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
             }
         }
     }
 }
+
+
 

@@ -1,0 +1,62 @@
+[
+  {
+    "category": "HotWheels",
+    "backgrounds": [
+      { "name": "uno", "resource": "fondo" },
+      { "name": "dos", "resource": "fondo2" },
+      { "name": "ocho", "resource": "fondo8" },
+      { "name": "tres", "resource": "fondo3" }
+    ]
+  },
+  {
+    "category": "Juegos",
+    "backgrounds": [
+      { "name": "diez", "resource": "fondo10" },
+      { "name": "once", "resource": "fondo11" },
+      { "name": "doce", "resource": "fondo12" },
+      { "name": "trece", "resource": "fondo13" },
+      { "name": "catorce", "resource": "fondo14" },
+      { "name": "quince", "resource": "fondo15" },
+      { "name": "dieciseis", "resource": "fondo16" },
+      { "name": "diecisiete", "resource": "fondo17" },
+      { "name": "dieciocho", "resource": "fondo18" },
+      { "name": "diecinueve", "resource": "fondo19" },
+      { "name": "veinte", "resource": "fondo20" },
+      { "name": "veintiuno", "resource": "fondo21" },
+      { "name": "veintidos", "resource": "fondo22" },
+      { "name": "veinticinco", "resource": "fondo25" }
+
+    ]
+  },
+  {
+    "category": "Simples",
+    "backgrounds": [
+      { "name": "cinco", "resource": "fondo5" },
+      { "name": "seis", "resource": "fondo6" },
+      { "name": "siete", "resource": "fondo7" },
+      { "name": "veintitres", "resource": "fondo23" },
+      { "name": "veinticuatro", "resource": "fondo24" }
+    ]
+  },
+  {
+    "category": "Films",
+    "backgrounds": [
+      { "name": "nueve", "resource": "fondo9" }
+      ]
+  },
+  {
+    "category": "Matchbox",
+    "backgrounds": [
+      { "name": "cuatro", "resource": "fondo4" }
+    ]
+  },
+  {
+    "category": "Anime",
+    "backgrounds": [
+      { "name": "veintiseis", "resource": "fondo26" },
+      { "name": "veintisete", "resource": "fondo27" },
+      { "name": "veintochincho", "resource": "fondo28" },
+      { "name": "veintinueve", "resource": "fondo29" }
+    ]
+  }
+]
