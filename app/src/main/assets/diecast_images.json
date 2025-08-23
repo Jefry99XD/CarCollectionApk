@@ -1,5 +1,47 @@
 [
   {
+    "name": "BMW M1 Procar",
+    "year": "2017",
+    "series": "Car Culture: Cars & Donuts 4/5",
+    "color": "White",
+    "url": "https://static.wikia.nocookie.net/hotwheels/images/4/4f/BMW_M1_Procar-HW_2017_Car_Culture_%28Cars_%26_Donuts%29--4.jpg/revision/latest?cb=20171228175856"
+  },
+  {
+    "name": "BMW M1 Procar",
+    "year": "2018",
+    "series": "Car Culture: Eurospeed 2/5",
+    "color": "Black",
+    "url": "https://static.wikia.nocookie.net/hotwheels/images/b/bd/EuroSpeedSeries_%281%29.JPG/revision/latest?cb=20180624033533"
+  },
+  {
+    "name": "BMW M1 Procar",
+    "year": "2019",
+    "series": "Anti Social Social Club",
+    "color": "Blue",
+    "url": "https://static.wikia.nocookie.net/hotwheels/images/a/a3/HWASSCBMWM1ProCar.png/revision/latest?cb=20200327193248"
+  },
+  {
+    "name": "BMW M1 Procar",
+    "year": "2022",
+    "series": "Group 5 Car Culture 2-Pack",
+    "color": "White",
+    "url": "https://static.wikia.nocookie.net/hotwheels/images/7/7e/Group_5_2_Car_BMW.JPG/revision/latest?cb=20230218050551"
+  },
+  {
+    "name": "BMW M1 Procar",
+    "year": "2024",
+    "series": "Car Culture: Exotic Envy 3/5",
+    "color": "Red",
+    "url": "https://static.wikia.nocookie.net/hotwheels/images/e/ef/BMWProcar.jpg/revision/latest?cb=20240408120416"
+  },
+  {
+    "name": "BMW M1 Procar",
+    "year": "2025",
+    "series": "The Hot Ones 8/8",
+    "color": "Spectraflame blue",
+    "url": "https://static.wikia.nocookie.net/hotwheels/images/a/ac/BMWM1Procar.jpg/revision/latest?cb=20250610150249"
+  },
+  {
     "name": "bknascar",
     "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/diecast/bknascar.png"
   },

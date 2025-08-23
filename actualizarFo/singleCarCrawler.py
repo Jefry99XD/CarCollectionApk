@@ -106,5 +106,5 @@ def scrape_single_model(full_url):
 
 # ---- Configura aquí tu link de modelo ----
 if __name__ == "__main__":
-    url_del_carro = "https://matchbox.fandom.com/wiki/2000_Nissan_Xterra_(Moving_Parts)"
+    url_del_carro = "https://hotwheels.fandom.com/wiki/BMW_M1_Procar"
     scrape_single_model(url_del_carro)
