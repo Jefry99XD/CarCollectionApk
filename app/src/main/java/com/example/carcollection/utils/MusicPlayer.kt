@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -21,7 +22,7 @@ object MusicPreferences {
 
     fun isPlayingFlow(context: Context): Flow<Boolean> =
         context.dataStore.data.map { prefs ->
-            prefs[MUSIC_PLAYING] ?: true
+            prefs[MUSIC_PLAYING] != false
         }
 
     suspend fun setIsPlaying(context: Context, playing: Boolean) {
@@ -41,7 +42,6 @@ object MusicPlayer {
     private var songs: MutableList<Song> = mutableListOf()
     private var currentIndex = 0
 
-    /** Inicializa con JSON remoto o local */
     suspend fun initialize() {
         val songList = loadSongsFromJson()
         if (songList.isNotEmpty()) {
@@ -64,7 +64,7 @@ object MusicPlayer {
                         mp.start()
                         // Update UI or state to indicate playback has started
                     }
-                    setOnErrorListener { mp, what, extra ->
+                    setOnErrorListener { _, what, extra ->
                         // Handle errors during preparation or playback
                         // Log the error, inform the user, try next song, etc.
                         Log.e("MusicPlayer", "MediaPlayer Error: what=$what, extra=$extra for ${songToPlay.name}")
@@ -134,25 +134,27 @@ object MusicPlayer {
     }
 
     /** Carga canciones desde JSON en assets */
-    private suspend fun loadSongsFromJson(): List<Song> = withContext(Dispatchers.IO) {
-        val list = mutableListOf<Song>()
-        try {
-            val url = URL("https://raw.githubusercontent.com/Jefry99XD/CarCollectionApk/main/app/src/main/assets/songs.json")
-            val json = url.readText()
+    private suspend fun loadSongsFromJson(dispatcher: CoroutineDispatcher = Dispatchers.IO): List<Song> =
+        withContext(dispatcher) {
+            val list = mutableListOf<Song>()
+            try {
+                val url = URL("https://raw.githubusercontent.com/Jefry99XD/CarCollectionApk/main/app/src/main/assets/songs.json")
+                val json = url.readText()
 
-            val jsonArray = JSONArray(json)
-            for (i in 0 until jsonArray.length()) {
-                val obj = jsonArray.getJSONObject(i)
-                val name = obj.getString("name")
-                val urlSong = obj.getString("url")
-                if (urlSong.endsWith(".mp3")) {
-                    list.add(Song(name, urlSong))
+                val jsonArray = JSONArray(json)
+                for (i in 0 until jsonArray.length()) {
+                    val obj = jsonArray.getJSONObject(i)
+                    val name = obj.getString("name")
+                    val urlSong = obj.getString("url")
+                    if (urlSong.endsWith(".mp3")) {
+                        list.add(Song(name, urlSong))
+                    }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
+            list
         }
-        list
-    }
+
 
 }
