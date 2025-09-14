@@ -41,5 +41,11 @@ class CarRepository(private val dao: CarDao) {
         }
     }
 
+    // 🔹 Nuevo método (versión reactiva con Flow)
+    fun getCarCount(): Flow<Int> = dao.getCarCount()
+
+    // 🔹 Nuevo método (versión inmediata suspendida)
+    suspend fun getCarCountOnce(): Int = dao.getCarCountOnce()
+
 
 }

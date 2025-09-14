@@ -9,6 +9,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -22,7 +23,7 @@ object MusicPreferences {
 
     fun isPlayingFlow(context: Context): Flow<Boolean> =
         context.dataStore.data.map { prefs ->
-            prefs[MUSIC_PLAYING] != false
+            prefs[MUSIC_PLAYING] ?: false
         }
 
     suspend fun setIsPlaying(context: Context, playing: Boolean) {
@@ -42,14 +43,24 @@ object MusicPlayer {
     private var songs: MutableList<Song> = mutableListOf()
     private var currentIndex = 0
 
-    suspend fun initialize() {
+    suspend fun initialize(context: Context) {
         val songList = loadSongsFromJson()
         if (songList.isNotEmpty()) {
             songs = songList.toMutableList()
             currentIndex = 0
-            playCurrent()
+
+            // 👇 Verificar DataStore antes de reproducir
+            val shouldPlay = MusicPreferences.isPlayingFlow(context)
+                .first() // suspende y obtiene el valor actual
+
+            if (shouldPlay) {
+                playCurrent()
+            } else {
+                Log.d("MusicPlayer", "Music is disabled by user preference")
+            }
         }
     }
+
 
 
     private fun playCurrent() {

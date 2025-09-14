@@ -44,6 +44,8 @@ android {
 
 dependencies {
     implementation(libs.firebase.crashlytics.buildtools)
+    implementation(libs.androidx.drawerlayout)
+    implementation(libs.androidx.fragment.ktx)
     val roomVersion = "2.7.1" // Use the latest stable version
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     implementation("androidx.room:room-runtime:$roomVersion")
@@ -56,6 +58,8 @@ dependencies {
     implementation("io.ktor:ktor-client-android:2.3.4") // importante para Android
     implementation("io.ktor:ktor-client-content-negotiation:2.3.4")
     implementation("io.ktor:ktor-serialization-gson:2.3.4")
+    implementation("com.google.dagger:hilt-android:2.48")
+    implementation("androidx.hilt:hilt-lifecycle-viewmodel:1.0.0-alpha03")
     implementation(libs.gson)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.navigation.compose)

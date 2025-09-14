@@ -1,6 +1,11 @@
 package com.example.carcollection.data.local
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -48,5 +53,11 @@ interface CarDao {
 
     @Query("SELECT DISTINCT type FROM cars ORDER BY type ASC")
     fun getDistinctTypes(): Flow<List<String>>
+
+    @Query("SELECT COUNT(*) FROM cars")
+    fun getCarCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM cars")
+    suspend fun getCarCountOnce(): Int
 
 }

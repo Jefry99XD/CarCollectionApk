@@ -2,5 +2,5 @@ projectKey=carcolection
 serverUrl=http://localhost:9000
 serverVersion=25.9.0.112764
 dashboardUrl=http://localhost:9000/dashboard?id=carcolection
-ceTaskId=36deec72-b38f-40a7-8c56-9ea29c8468f6
-ceTaskUrl=http://localhost:9000/api/ce/task?id=36deec72-b38f-40a7-8c56-9ea29c8468f6
+ceTaskId=3172ae2f-0701-4487-98ab-3d7506617633
+ceTaskUrl=http://localhost:9000/api/ce/task?id=3172ae2f-0701-4487-98ab-3d7506617633
