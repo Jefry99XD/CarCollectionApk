@@ -1,10 +1,9 @@
-package com.example.carcollection.util
+package com.example.carcollection.utils
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
-import java.net.URLEncoder
 import java.net.URL
+import java.net.URLEncoder
 import java.util.regex.Pattern
 
 object ImageSearchUtil {
@@ -23,7 +22,7 @@ object ImageSearchUtil {
             }
 
             null
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }

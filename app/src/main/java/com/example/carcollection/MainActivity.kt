@@ -27,7 +27,7 @@ class MainActivity : ComponentActivity() {
                 val tagRepository = TagRepository(db.tagDao())
                 val navController = rememberNavController()
 
-                TubaCollectionApp(navController = navController) {
+                TubaCollectionApp() {
                     AppNavGraph(navController = navController, repository = repository, tagRepository = tagRepository)
                 }
             }

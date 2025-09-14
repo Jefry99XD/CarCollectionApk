@@ -2,7 +2,7 @@
 package com.example.carcollection.presentation.navigation
 
 import CarDetailScreen
-import DataScreen
+import com.example.carcollection.presentation.data.*
 import android.annotation.SuppressLint
 import android.app.Application
 import androidx.compose.runtime.Composable
@@ -205,7 +205,7 @@ fun AppNavGraph(
                 onBackClick = { navController.popBackStack() },
                 onNavigateToData = { navController.navigate(NavRoutes.DATA) },
                 onNavigateToStatistics = { navController.navigate(NavRoutes.STATISTICS) },
-                OnNavigateToAbout = { navController.navigate(NavRoutes.ABOUT) },
+                onNavigateToAbout = { navController.navigate(NavRoutes.ABOUT) },
             )
         }
         composable(NavRoutes.ABOUT) {

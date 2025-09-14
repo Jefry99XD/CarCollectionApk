@@ -9,7 +9,6 @@ import com.example.carcollection.presentation.add_edit_car.CarImageEntry
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import java.io.BufferedReader
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import io.ktor.client.*
@@ -17,11 +16,10 @@ import io.ktor.client.engine.android.*
 import io.ktor.client.request.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.gson.*
-import io.ktor.client.request.*
 import io.ktor.client.call.*
 
 @RequiresApi(Build.VERSION_CODES.O)
-class carLibraryViewModel(application: Application) : AndroidViewModel(application) {
+class CarLibraryViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _allCars = MutableStateFlow<List<CarImageEntry>>(emptyList())
 
@@ -69,11 +67,6 @@ class carLibraryViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    private fun readJsonFromAssets(fileName: String): String {
-        val context = getApplication<Application>().applicationContext
-        val inputStream = context.assets.open(fileName)
-        return BufferedReader(inputStream.reader()).use { it.readText() }
-    }
 
     fun updateSearch(query: String) {
         _searchQuery.value = query
@@ -100,7 +93,7 @@ class carLibraryViewModel(application: Application) : AndroidViewModel(applicati
             _allCars.value
         } else {
             _allCars.value.filter {
-                it.name?.contains(_searchQuery.value, ignoreCase = true) ?:  false
+                it.name?.contains(_searchQuery.value, ignoreCase = true) == true
             }
         }
     }

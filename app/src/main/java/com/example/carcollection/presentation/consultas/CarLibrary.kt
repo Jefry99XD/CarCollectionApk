@@ -45,7 +45,7 @@ import coil.compose.AsyncImage
 @Composable
 fun LibraryScreen(
     onBackClick: () -> Unit,
-    viewModel: carLibraryViewModel = viewModel()
+    viewModel: CarLibraryViewModel = viewModel()
 ) {
     val searchQuery by viewModel.searchQuery.collectAsState()
     val cars by viewModel.paginatedCars.collectAsState()

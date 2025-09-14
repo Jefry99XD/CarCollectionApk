@@ -3,7 +3,6 @@ package com.example.carcollection.presentation.config
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,7 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -91,7 +90,7 @@ fun About(
                         style = MaterialTheme.typography.bodyMedium
                     )
 
-                    Divider()
+                    HorizontalDivider()
 
                     Text(
                         "Desarrollado por: Jefry Cuendiz",
@@ -115,7 +114,7 @@ fun About(
 
                     Text("Licencia: MIT", style = MaterialTheme.typography.bodyMedium)
 
-                    Divider()
+                    HorizontalDivider()
 
                     Text(
                         "¡Gracias por usar la app!",

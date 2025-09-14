@@ -15,7 +15,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.carcollection.data.local.Car
 import com.example.carcollection.presentation.main.MainViewModel
-import com.example.carcollection.util.ImageSearchUtil
+import com.example.carcollection.utils.ImageSearchUtil
 import kotlinx.coroutines.launch
 
 @Composable

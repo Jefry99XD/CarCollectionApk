@@ -39,7 +39,7 @@ fun CarCard(
 
     val cardColor = try {
         Color(firstTagColor.toColorInt())
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         Color.White
     }
     val textColor = getContrastingTextColor(cardColor)

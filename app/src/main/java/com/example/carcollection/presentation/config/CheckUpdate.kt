@@ -48,7 +48,7 @@ fun checkForUpdateAndDownload(context: Context, currentVersion: String) {
                 }
             }
 
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             CoroutineScope(Dispatchers.Main).launch {
                 Toast.makeText(context, "Error al buscar actualización", Toast.LENGTH_SHORT).show()
             }

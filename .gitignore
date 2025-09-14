@@ -8,6 +8,7 @@
 local.properties
 .DS_Store
 
+
 # Ignorar cachés y configuraciones de IntelliJ/Android Studio innecesarias
 .idea/caches/
 .idea/libraries/
@@ -47,4 +48,6 @@ navigation.json
 
 
 !app/release/*.apk
+
+sonar-project.properties
 

@@ -17,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.google.firebase.crashlytics.buildtools.reloc.com.google.common.reflect.TypeToken
@@ -29,7 +28,6 @@ fun BackgroundSelector(
     selectedBackground: String,
     onBackgroundSelected: (String) -> Unit
 ) {
-    val context = LocalContext.current
 
     Column(modifier = Modifier.fillMaxWidth()) {
         availableCategories.forEach { category ->
@@ -95,7 +93,7 @@ fun loadBackgroundCategories(context: Context): List<BackgroundCategory> {
         val json = context.assets.open("backgrounds.json").bufferedReader().use { it.readText() }
         val type = object : TypeToken<List<BackgroundCategory>>() {}.type
         Gson().fromJson(json, type)
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         emptyList()
     }
 }

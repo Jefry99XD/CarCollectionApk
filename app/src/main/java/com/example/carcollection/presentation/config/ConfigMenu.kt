@@ -28,7 +28,7 @@ fun ConfigMenu(
     onBackClick: () -> Unit,
     onNavigateToData: () -> Unit,
     onNavigateToStatistics: () -> Unit,
-    OnNavigateToAbout: () -> Unit,
+    onNavigateToAbout: () -> Unit,
 
 ) {
 
@@ -60,7 +60,7 @@ fun ConfigMenu(
                     checkForUpdateAndDownload(context, versionName.toString())
                 }
             }
-            item {MenuButton("Acerca de...", Icons.Default.Android,  OnNavigateToAbout)}
+            item {MenuButton("Acerca de...", Icons.Default.Android,  onNavigateToAbout)}
         }
     }
 

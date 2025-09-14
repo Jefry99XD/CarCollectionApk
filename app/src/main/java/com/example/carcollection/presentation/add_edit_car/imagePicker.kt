@@ -40,20 +40,20 @@ fun CarImagePickerDialog(
     var searchText by remember { mutableStateOf("") }
     var allImages by remember { mutableStateOf<List<CarImageEntry>>(emptyList()) }
     var currentPage by remember { mutableIntStateOf(0) }
-    val pageSize = 30 // Cuántas imágenes mostrar por página
+    val pageSize = 30
 
     LaunchedEffect(Unit) {
         allImages = try {
             val inputStream = context.assets.open("diecast_images.json")
             val json = inputStream.bufferedReader().use { it.readText() }
             Json.decodeFromString(json)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             emptyList()
         }
     }
 
     val filteredImages = allImages.filter {
-        it.name?.contains(searchText, ignoreCase = true) ?: false
+        it.name?.contains(searchText, ignoreCase = true) != false
     }
 
     val pageCount = (filteredImages.size + pageSize - 1) / pageSize
