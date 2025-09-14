@@ -58,7 +58,7 @@ fun TubaCollectionApp(content: @Composable () -> Unit) {
     }
 
     LaunchedEffect(Unit) {
-        MusicPlayer.initialize(context)
+        MusicPlayer.initialize()
         currentSongName = MusicPlayer.currentSongName()
     }
 

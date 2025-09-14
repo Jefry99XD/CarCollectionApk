@@ -6,8 +6,10 @@ import android.util.Log
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import java.net.URL
 import kotlin.random.Random
@@ -40,7 +42,7 @@ object MusicPlayer {
     private var currentIndex = 0
 
     /** Inicializa con JSON remoto o local */
-    fun initialize(context: Context) {
+    suspend fun initialize() {
         val songList = loadSongsFromJson()
         if (songList.isNotEmpty()) {
             songs = songList.toMutableList()
@@ -48,6 +50,7 @@ object MusicPlayer {
             playCurrent()
         }
     }
+
 
     private fun playCurrent() {
         stop() // Release previous player first
@@ -131,12 +134,11 @@ object MusicPlayer {
     }
 
     /** Carga canciones desde JSON en assets */
-    private fun loadSongsFromJson(): List<Song> {
+    private suspend fun loadSongsFromJson(): List<Song> = withContext(Dispatchers.IO) {
         val list = mutableListOf<Song>()
         try {
-            // URL raw de GitHub (ejemplo)
-            val url = URL("https://raw.githubusercontent.com/usuario/repositorio/rama/songs.json")
-            val json = url.readText()  // 👈 descarga el JSON como String
+            val url = URL("https://raw.githubusercontent.com/Jefry99XD/CarCollectionApk/main/app/src/main/assets/songs.json")
+            val json = url.readText()
 
             val jsonArray = JSONArray(json)
             for (i in 0 until jsonArray.length()) {
@@ -150,7 +152,7 @@ object MusicPlayer {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        return list
+        list
     }
 
 }
