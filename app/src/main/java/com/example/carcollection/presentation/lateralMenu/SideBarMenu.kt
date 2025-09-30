@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CarCrash
+import androidx.compose.material.icons.filled.Collections
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -53,8 +55,6 @@ fun AppNavigationDrawer(userViewModel: UserViewModel,
             // MENÚ SUPERIOR
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp), // separación entre items
-                horizontalAlignment = Alignment.Start, // centrado a la izquierda
-                modifier = Modifier.align(Alignment.Start)
             ) {
                 SidebarButton(
                     text = "Agregar Carro",
@@ -62,11 +62,26 @@ fun AppNavigationDrawer(userViewModel: UserViewModel,
                 ) {
                     navController.navigate(NavRoutes.ADD_EDIT_CAR)
                 }
-                Text("Configuración", style = MaterialTheme.typography.bodyLarge)
+
+                SidebarButton(
+                    text = "Catalogo Completo",
+                    icon = Icons.Default.Collections
+                ) {
+                    navController.navigate(NavRoutes.LIBRARY)
+                }
+                SidebarButton(
+                    text = "Configuración",
+                    icon = Icons.Default.Settings
+                ) {
+                    navController.navigate(NavRoutes.CONFIG)
+                }
+
+
+                // PLAYER ABAJO
+                SidebarMusicPlayer()
             }
 
-            // PLAYER ABAJO
-            SidebarMusicPlayer()
+
         }
     }
 }

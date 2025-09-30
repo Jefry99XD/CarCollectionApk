@@ -14,7 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CarCrash
 import androidx.compose.material.icons.filled.QueryStats
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -63,7 +62,6 @@ fun MenuScreen(
                     MenuButton("Tags", Icons.Filled.Tag, onNavigateToTags)
                     MenuButton("Consultas", Icons.Default.QueryStats, onNavigateToConsultas)
                     MenuButton("Estadísticas", Icons.Default.BarChart, onNavigateToStatistics)
-                    MenuButton("Configuración", Icons.Default.Settings, onNavigateToConfig)
                 }
             }
 

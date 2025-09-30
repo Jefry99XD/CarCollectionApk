@@ -35,7 +35,9 @@ object MusicPreferences {
 
 data class Song(
     val name: String,
-    val url: String
+    val url: String,
+    val album: String,
+    val albumCover: String
 )
 
 object MusicPlayer {
@@ -157,8 +159,10 @@ object MusicPlayer {
                     val obj = jsonArray.getJSONObject(i)
                     val name = obj.getString("name")
                     val urlSong = obj.getString("url")
+                    val album = obj.optString("album", "")
+                    val albumCover = obj.optString("albumCover", "")
                     if (urlSong.endsWith(".mp3")) {
-                        list.add(Song(name, urlSong))
+                        list.add(Song(name, urlSong, album, albumCover))
                     }
                 }
             } catch (e: Exception) {
@@ -166,6 +170,10 @@ object MusicPlayer {
             }
             list
         }
+
+    fun currentSong(): Song? {
+        return songs.getOrNull(currentIndex)
+    }
 
 
 }
