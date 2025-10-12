@@ -31,7 +31,8 @@ fun MenuScreen(
     onNavigateToTags: () -> Unit,
     onNavigateToConsultas: () -> Unit,
     onNavigateToStatistics: () -> Unit,
-    onNavigateToConfig: () -> Unit
+    onNavigateToRegister: () -> Unit,
+    onNavigateToLogin: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -51,20 +52,20 @@ fun MenuScreen(
         }
 
         item {
-
-                Column(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    MenuButton("Colección", Icons.Filled.CarCrash, onNavigateToCollection)
-                    MenuButton("Tags", Icons.Filled.Tag, onNavigateToTags)
-                    MenuButton("Consultas", Icons.Default.QueryStats, onNavigateToConsultas)
-                    MenuButton("Estadísticas", Icons.Default.BarChart, onNavigateToStatistics)
-                }
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                MenuButton("Colección", Icons.Filled.CarCrash, onNavigateToCollection)
+                MenuButton("Tags", Icons.Filled.Tag, onNavigateToTags)
+                MenuButton("Consultas", Icons.Default.QueryStats, onNavigateToConsultas)
+                MenuButton("Estadísticas", Icons.Default.BarChart, onNavigateToStatistics)
+                MenuButton("Registrar", Icons.Filled.CarCrash, onNavigateToRegister)
+                MenuButton("Login", Icons.Filled.Tag, onNavigateToLogin)
             }
-
+        }
 
         item {
             Spacer(modifier = Modifier.height(48.dp))

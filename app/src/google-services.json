@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "597214583039",
+    "project_id": "tuba-collection",
+    "storage_bucket": "tuba-collection.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:597214583039:android:16d363284eb5c9aa7014ca",
+        "android_client_info": {
+          "package_name": "com.example.carcollection"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCQRrVj6uSZj3DwFVO00mQ6rzbKY3fJGUk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

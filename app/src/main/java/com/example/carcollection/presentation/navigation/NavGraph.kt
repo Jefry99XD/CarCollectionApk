@@ -2,7 +2,6 @@
 package com.example.carcollection.presentation.navigation
 
 import CarDetailScreen
-import com.example.carcollection.presentation.data.*
 import android.annotation.SuppressLint
 import android.app.Application
 import androidx.compose.runtime.Composable
@@ -26,6 +25,7 @@ import com.example.carcollection.presentation.consultas.THScreen
 import com.example.carcollection.presentation.consultas.THViewModel
 import com.example.carcollection.presentation.data.AddEditTagViewModel
 import com.example.carcollection.presentation.data.AddTagScreen
+import com.example.carcollection.presentation.data.DataScreen
 import com.example.carcollection.presentation.data.EditTagScreen
 import com.example.carcollection.presentation.data.ViewTagsScreen
 import com.example.carcollection.presentation.data.ViewTagsViewModel
@@ -51,7 +51,8 @@ fun AppNavGraph(
                 onNavigateToTags = { navController.navigate(NavRoutes.VIEW_TAGS) },
                 onNavigateToConsultas = { navController.navigate(NavRoutes.CONSULTAS)},
                 onNavigateToStatistics = { navController.navigate(NavRoutes.STATISTICS) },
-                onNavigateToConfig = { navController.navigate(NavRoutes.CONFIG) }
+                onNavigateToRegister = { navController.navigate(NavRoutes.REGISTER) },
+                onNavigateToLogin = { navController.navigate(NavRoutes.LOGIN) }
             )
         }
 
@@ -218,5 +219,16 @@ fun AppNavGraph(
                 onBackClick = { navController.popBackStack() }
             )
         }
+        composable(NavRoutes.REGISTER) {
+            com.example.carcollection.presentation.user.register.RegisterForm(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+        composable(NavRoutes.LOGIN) {
+            com.example.carcollection.presentation.user.login.LoginForm(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
     }
 }

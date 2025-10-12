@@ -5,6 +5,7 @@ plugins {
     id("kotlin-kapt")
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.10"
     id("org.sonarqube") version "6.3.1.5724"
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -43,11 +44,31 @@ android {
 }
 
 dependencies {
+    // Ensure the Firebase BoM is declared FIRST to manage versions consistently
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0")) // Keep this at the top of your Firebase dependencies!
+
+    // Firebase Authentication
+    implementation("com.google.firebase:firebase-auth-ktx") // ADDED: Firebase Authentication with Kotlin extensions
+
+    // Cloud Firestore (Consolidated and managed by BoM)
+    implementation("com.google.firebase:firebase-firestore-ktx")
+
+    // Firebase Analytics (Using KTX version for consistency and BoM management)
+    implementation("com.google.firebase:firebase-analytics-ktx")
+
+    // Kotlin Coroutines for Play Services (Provides .await() for Firebase Tasks)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.1") // ADDED: Or check for the very latest version
+
+    // Your existing Crashlytics buildtools (Note: this often works with a separate Crashlytics SDK)
     implementation(libs.firebase.crashlytics.buildtools)
+
+    // --- Your other existing dependencies ---
+
     implementation(libs.androidx.drawerlayout)
     implementation(libs.androidx.fragment.ktx)
+    // implementation(libs.firebase.firestore.ktx) // REMOVED: Redundant
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0") // Keep your serialization version
     val roomVersion = "2.7.1" // Use the latest stable version
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     implementation("androidx.room:room-runtime:$roomVersion")
     kapt("androidx.room:room-compiler:$roomVersion") // Use kapt
     implementation("androidx.navigation:navigation-compose:2.7.7")
@@ -61,8 +82,8 @@ dependencies {
     implementation("com.google.dagger:hilt-android:2.48")
     implementation("androidx.hilt:hilt-lifecycle-viewmodel:1.0.0-alpha03")
     implementation(libs.gson)
-    implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.navigation.compose) // You have this twice, consider consolidating if not intended
+    // implementation(libs.androidx.navigation.compose) // Removed potential duplicate
     implementation(libs.coil.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

@@ -16,6 +16,8 @@ object NavRoutes {
     const val CONFIG = "config"
     const val ABOUT = "about"
     const val LIBRARY = "library"
+    const val LOGIN = "login"
+    const val REGISTER = "register"
 }
 
 
