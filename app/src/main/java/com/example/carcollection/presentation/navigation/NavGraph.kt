@@ -229,6 +229,12 @@ fun AppNavGraph(
                 onBackClick = { navController.popBackStack() }
             )
         }
-
+        composable(NavRoutes.PROFILE) {
+            com.example.carcollection.presentation.user.UserMain(
+                userViewModel = com.example.carcollection.presentation.user.UserViewModel(
+                    repository
+                )
+            )
+        }
     }
 }

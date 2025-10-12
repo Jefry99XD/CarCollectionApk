@@ -37,6 +37,9 @@ private const val DefaultDrawerWidthFraction = 0.75f
 fun AppNavigationDrawer(userViewModel: UserViewModel,
                         navController: NavController) {
     val carCount by userViewModel.carCount.collectAsState()
+    val user by userViewModel.user.collectAsState()
+    val userName = user?.username ?: ""
+    val photoUrl = user?.photoUrl ?: ""
     Surface(
         modifier = Modifier
             .fillMaxHeight()
@@ -49,8 +52,11 @@ fun AppNavigationDrawer(userViewModel: UserViewModel,
                 .padding(vertical = 24.dp, horizontal = 16.dp), // margen superior e inferior
             verticalArrangement = Arrangement.Top
         ) {
-            UserProfileSection(userName = "KiraSlayer", carCount)
-
+            UserProfileSection(
+                userName = userName, carCount = carCount, photoUrl = photoUrl, onEditClick = {
+                    navController.navigate(NavRoutes.PROFILE)
+                }
+            )
 
             // MENÚ SUPERIOR
             Column(
@@ -75,18 +81,19 @@ fun AppNavigationDrawer(userViewModel: UserViewModel,
                 ) {
                     navController.navigate(NavRoutes.CONFIG)
                 }
-
-
+                SidebarButton(
+                    text = "Transferir todo a la nube",
+                    icon = Icons.Default.CarCrash // Puedes cambiar el icono si lo prefieres
+                ) {
+                    // Lógica para transferir todos los carros locales a Firebase
+                    userViewModel.transferAllLocalCarsToFirebase()
+                }
                 // PLAYER ABAJO
                 SidebarMusicPlayer()
             }
-
-
         }
     }
 }
-
-
 
 @Composable
 fun SidebarButton(text: String, icon: ImageVector, onClick: () -> Unit) {

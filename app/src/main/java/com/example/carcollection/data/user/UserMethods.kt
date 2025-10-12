@@ -126,4 +126,68 @@ class UserMethods {
             Result.failure(Exception("No user logged in to add car to collection."))
         }
     }
+
+    suspend fun getUserProfile(): Result<User> {
+        val firebaseUser = auth.currentUser // Get the currently authenticated user
+
+        return if (firebaseUser != null) {
+            val userId = firebaseUser.uid
+            try {
+                val userDocRef = db.collection("users").document(userId)
+                val documentSnapshot = userDocRef.get().await() // Fetch the document from Firestore
+
+                if (documentSnapshot.exists()) {
+                    // Convert the document snapshot to your User data class
+                    val user = documentSnapshot.toObject(User::class.java)
+                    if (user != null) {
+                        // For consistency, ensure the uid is set if @Exclude is used
+                        // (though it's implicitly part of the document ID)
+                        Result.success(user.copy(uid = userId))
+                    } else {
+                        Result.failure(Exception("Failed to parse user data from Firestore."))
+                    }
+                } else {
+                    Result.failure(Exception("User profile document not found in Firestore."))
+                }
+            } catch (e: Exception) {
+                Result.failure(Exception("Error fetching user profile: ${e.message}"))
+            }
+        } else {
+            Result.failure(Exception("No user currently logged in."))
+        }
+    }
+
+    suspend fun getUserCars(): Result<List<Car>> {
+        val firebaseUser = auth.currentUser
+        return if (firebaseUser != null) {
+            val userId = firebaseUser.uid
+            try {
+                val carsCollectionRef = db.collection("users")
+                    .document(userId)
+                    .collection("carsCollection")
+                val querySnapshot = carsCollectionRef.get().await()
+                val cars = querySnapshot.documents.mapNotNull { it.toObject(Car::class.java) }
+                Result.success(cars)
+            } catch (e: Exception) {
+                Result.failure(Exception("Error fetching cars: ${e.message}"))
+            }
+        } else {
+            Result.failure(Exception("No user currently logged in."))
+        }
+    }
+
+    suspend fun syncLocalCarsToFirebase(localCars: List<Car>): Result<Pair<Int, Int>> {
+        var successCount = 0
+        var errorCount = 0
+        for (car in localCars) {
+            val result = addCarToCollection(car)
+            if (result.isSuccess) {
+                successCount++
+            } else {
+                errorCount++
+            }
+        }
+        return Result.success(Pair(successCount, errorCount))
+    }
+
 }
