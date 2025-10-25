@@ -3,8 +3,11 @@ package com.example.carcollection.presentation.user
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.carcollection.data.repository.CarRepository
-import com.example.carcollection.data.user.User
-import com.example.carcollection.data.user.UserMethods
+import com.example.carcollection.featurecar.data.CarMethods
+import com.example.carcollection.featurecar.domain.Car
+import com.example.carcollection.featureuser.data.UserMethods
+import com.example.carcollection.featureuser.domain.User
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -20,10 +23,38 @@ class UserViewModel(
     val carCount: StateFlow<Int> = _carCount
 
     private val userMethods = UserMethods()
+    private val carMethods = CarMethods()
+    private val auth = FirebaseAuth.getInstance()
+
+    private val authStateListener = FirebaseAuth.AuthStateListener {
+        // React to auth state changes: if user logged in, fetch profile and cars; if logged out, clear state
+        viewModelScope.launch {
+            val current = auth.currentUser
+            if (current != null) {
+                fetchUserProfile()
+                fetchCarCount()
+            } else {
+                _user.value = null
+                _carCount.value = 0
+            }
+        }
+    }
 
     init {
+        // Fetch initial state
         fetchUserProfile()
         fetchCarCount()
+        // Register auth listener so ViewModel updates automatically when auth state changes
+        auth.addAuthStateListener(authStateListener)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        try {
+            auth.removeAuthStateListener(authStateListener)
+        } catch (e: Exception) {
+            // ignore
+        }
     }
 
     fun fetchUserProfile() {
@@ -35,7 +66,7 @@ class UserViewModel(
 
     fun fetchCarCount() {
         viewModelScope.launch {
-            val result = userMethods.getUserCars()
+            val result = carMethods.getUserCars()
             _carCount.value = result.getOrNull()?.size ?: 0
         }
     }
@@ -44,7 +75,7 @@ class UserViewModel(
         viewModelScope.launch {
             val localCars = carRepository.getAllCarsList()
             val remoteCars = localCars.map { localCar ->
-                com.example.carcollection.data.car.Car(
+                Car(
                     brand = localCar.brand,
                     name = localCar.name,
                     serie = localCar.serie,
@@ -56,7 +87,23 @@ class UserViewModel(
                     backgroundName = localCar.backgroundName
                 )
             }
-            userMethods.syncLocalCarsToFirebase(remoteCars)
+            carMethods.syncLocalCarsToFirebase(remoteCars)
+        }
+    }
+
+    fun logoutUser() {
+        viewModelScope.launch {
+            userMethods.logoutUser()
+            _user.value = null
+            _carCount.value = 0 }
+    }
+
+    fun editUser(username: String, photoUrl: String, password: String, email: String) {
+        viewModelScope.launch {
+            val result = userMethods.editUserProfile(username, photoUrl, password, email)
+            if (result.isSuccess) {
+                fetchUserProfile()
+            }
         }
     }
 }

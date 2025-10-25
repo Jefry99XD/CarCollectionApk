@@ -19,6 +19,7 @@ object NavRoutes {
     const val LOGIN = "login"
     const val REGISTER = "register"
     const val PROFILE = "profile"
+    const val EDIT_PROFILE = "edit_profile"
 }
 
 

@@ -16,7 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.example.carcollection.data.user.UserMethods
+import com.example.carcollection.featureuser.data.UserMethods
 import kotlinx.coroutines.launch
 
 @Composable

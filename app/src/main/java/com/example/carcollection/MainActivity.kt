@@ -10,9 +10,8 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.compose.rememberNavController
 import com.example.carcollection.data.local.CarDatabase
 import com.example.carcollection.data.repository.CarRepository
-import com.example.carcollection.data.repository.TagRepository
-import com.example.carcollection.presentation.lateralMenu.SidebarMusicPlayer
-import com.example.carcollection.presentation.main.TubaCollectionApp
+import com.example.carcollection.featuremenu.lateralMenu.SidebarMusicPlayer
+import com.example.carcollection.featuremenu.main.TubaCollectionApp
 import com.example.carcollection.presentation.user.UserViewModel
 import com.example.carcollection.ui.theme.CarCollectionTheme
 
@@ -39,14 +38,12 @@ class MainActivity : ComponentActivity() {
             CarCollectionTheme {
                 val db = CarDatabase.getDatabase(this)
                 val repository = CarRepository(db.carDao())
-                val tagRepository = TagRepository(db.tagDao())
                 val navController = rememberNavController()
 
                 TubaCollectionApp(
                     userViewModel = UserViewModel(repository),
                     navController = navController,
-                    repository = repository,
-                    tagRepository = tagRepository
+                    repository = repository
                 )
             }
             }

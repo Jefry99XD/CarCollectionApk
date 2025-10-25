@@ -32,7 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
-import com.example.carcollection.presentation.add_edit_car.CarImageEntry
+import com.example.carcollection.featurecar.presentation.add_edit_car.CarImageEntry
 import androidx.compose.runtime.getValue
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.automirrored.filled.ArrowBack

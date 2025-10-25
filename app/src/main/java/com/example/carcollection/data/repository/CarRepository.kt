@@ -18,17 +18,6 @@ class CarRepository(private val dao: CarDao) {
     }
     suspend fun getAllCarsList(): List<Car> = dao.getAllCarsList()
     suspend fun deleteAll() = dao.deleteAll()
-    suspend fun getAllTags(): List<String> = dao.getAllTags()
-
-    suspend fun removeTagFromAllCars(tagName: String) {
-        val cars = dao.getAllCarsList()
-        cars.forEach { car ->
-            if (tagName in car.tags) {
-                val updatedCar = car.copy(tags = car.tags - tagName)
-                dao.updateCar(updatedCar)
-            }
-        }
-    }
 
     suspend fun updateTagNameInAllCars(oldTagName: String, newTagName: String) {
         val cars = dao.getAllCarsList()
@@ -40,12 +29,4 @@ class CarRepository(private val dao: CarDao) {
             }
         }
     }
-
-    // 🔹 Nuevo método (versión reactiva con Flow)
-    fun getCarCount(): Flow<Int> = dao.getCarCount()
-
-    // 🔹 Nuevo método (versión inmediata suspendida)
-    suspend fun getCarCountOnce(): Int = dao.getCarCountOnce()
-
-
 }

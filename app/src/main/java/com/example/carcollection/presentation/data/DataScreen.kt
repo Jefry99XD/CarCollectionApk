@@ -1,32 +1,46 @@
 package com.example.carcollection.presentation.data
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material3.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.carcollection.data.local.Car
 import com.example.carcollection.data.repository.CarRepository
-import com.example.carcollection.utils.importCarsFromUri
-import android.net.Uri
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Upload
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import com.example.carcollection.data.repository.TagRepository
 import com.example.carcollection.utils.exportCarsToUri
-import com.example.carcollection.utils.exportTagsToUri
-import com.example.carcollection.utils.importTagsFromUri
+import com.example.carcollection.utils.importCarsFromUri
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,7 +48,6 @@ import kotlinx.coroutines.launch
 fun DataScreen(
     repository: CarRepository,
     onBackClick: () -> Unit,
-    tagRepository: TagRepository,
 ) {
     val scrollState = rememberScrollState()
     val context = LocalContext.current
@@ -59,31 +72,6 @@ fun DataScreen(
             }
         }
     )
-
-    // Tag Export/Import
-    val exportTagsLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json"),
-        onResult = { uri ->
-            uri?.let {
-                coroutineScope.launch {
-                    exportTagsToUri(context, tagRepository, it)
-                    Toast.makeText(context, "Tags exportados", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-    )
-    val importTagsLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument(),
-        onResult = { uri ->
-            uri?.let {
-                coroutineScope.launch {
-                    importTagsFromUri(context, tagRepository, it)
-                    Toast.makeText(context, "Tags importados", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-    )
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -130,31 +118,6 @@ fun DataScreen(
                 Icon(Icons.Default.Upload, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
                 Text("Importar colección")
-            }
-
-            // ===== TAGS =====
-            Spacer(Modifier.height(15.dp))
-            Text("Tags", style = MaterialTheme.typography.titleMedium)
-            Button(
-                onClick = {
-                    exportTagsLauncher.launch("tags_backup.json")
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Default.Download, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text("Exportar Tags")
-            }
-
-            Button(
-                onClick = {
-                    importTagsLauncher.launch(arrayOf("application/json"))
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Default.Upload, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text("Importar Tags")
             }
 
             // ===== ACCIONES PELIGROSAS =====

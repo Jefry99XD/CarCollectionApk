@@ -20,7 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.carcollection.presentation.menu.MenuButton
+import com.example.carcollection.featuremenu.menu.MenuButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

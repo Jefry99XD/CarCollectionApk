@@ -29,7 +29,11 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 
 @Composable
-fun UserMain(userViewModel: UserViewModel, onEditClick: () -> Unit = {}) {
+fun UserMain(
+    userViewModel: UserViewModel,
+    onEditClick: () -> Unit = {},
+    onBackClick: () -> Unit,
+) {
     val user by userViewModel.user.collectAsState()
     Column(
         modifier = Modifier
@@ -72,17 +76,10 @@ fun UserMain(userViewModel: UserViewModel, onEditClick: () -> Unit = {}) {
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
-        Text(
-            text = "UID: ${user?.uid ?: ""}",
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center,
-            color = Color.Gray
-        )
         Spacer(modifier = Modifier.height(24.dp))
         Button(
-            onClick = onEditClick,
-            enabled = false,
+            onClick = { onEditClick() },
+            enabled = true,
             modifier = Modifier.fillMaxWidth()
         ) {
             Icon(Icons.Default.Edit, contentDescription = "Editar")
