@@ -8,10 +8,11 @@ import com.example.carcollection.featuretags.domain.Tag
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-
 
 
 class CarViewModel(
@@ -106,5 +107,50 @@ class CarViewModel(
             if (result.isSuccess) loadUserCars()
         }
     }
+
+    // Para listas de sugerencias
+    val allBrands: StateFlow<List<String>> = _cars
+        .map { cars -> cars.mapNotNull { it.brand }.distinct() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val allYears: StateFlow<List<String>> = _cars
+        .map { cars -> cars.mapNotNull { it.year }.distinct() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val allSeries: StateFlow<List<String>> = _cars
+        .map { cars -> cars.mapNotNull { it.serie }.distinct() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Para filtros seleccionados
+    val selectedBrand: StateFlow<String?> = _filterState.map { it.brand }.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), null
+    )
+    val selectedYear: StateFlow<String?> = _filterState.map { it.year }.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), null
+    )
+    val selectedSeries: StateFlow<String?> = _filterState.map { it.series }.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), null
+    )
+    val selectedTag: StateFlow<String?> = _filterState.map { it.tag }.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), null
+    )
+
+    // 🔹 Variables para búsqueda y paginación
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private val _savedItemsPerPage = MutableStateFlow(20) // Default 20 items por página
+    val savedItemsPerPage: StateFlow<Int> = _savedItemsPerPage.asStateFlow()
+
+    private val _savedPage = MutableStateFlow(1)
+    val savedPage = MutableStateFlow(0)
+
+    fun setItemsPerPage(items: Int) { _savedItemsPerPage.value = items }
+
+    fun setPage(page: Int) { _savedPage.value = page }
+
+
+
+
 
 }

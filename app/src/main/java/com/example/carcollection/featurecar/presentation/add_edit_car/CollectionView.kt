@@ -63,7 +63,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.example.carcollection.data.local.Car
+import com.example.carcollection.featurecar.domain.Car
+import com.example.carcollection.featurecar.domain.CarViewModel
 import com.example.carcollection.featuremenu.main.components.CarCard
 
 @Composable
@@ -97,7 +98,7 @@ fun DropdownMenuBox(
 
 @Composable
 fun FilterSection(
-    viewModel: MainViewModel,
+    viewModel: CarViewModel,
     modifier: Modifier = Modifier,
     expanded: Boolean
 ) {
@@ -184,11 +185,11 @@ fun FilterSection(
 @SuppressLint("UnrememberedMutableState")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun MainScreen(
-    viewModel: MainViewModel,
+fun CollectionViewScreen(
+    viewModel: CarViewModel,
     onNavigateToAdd: () -> Unit,
     onBackClick: () -> Unit,
-    onEditCar: (Int) -> Unit,
+    onEditCar: (String) -> Unit,
     navController: NavHostController
 ) {
     val carsList by viewModel.filteredCars.collectAsState()
@@ -198,9 +199,10 @@ fun MainScreen(
     val allTags by viewModel.allTags.collectAsState(initial = emptyList())
 
     val itemsPerPageOptions = listOf(5, 10, 20, 50)
-    var itemsPerPage by rememberSaveable { mutableIntStateOf(viewModel.savedItemsPerPage) }
+    var itemsPerPage by remember { mutableIntStateOf(viewModel.savedItemsPerPage.value) } // Changed to remember
+    // Corrected line:
+    var currentPage by rememberSaveable { mutableIntStateOf(viewModel.savedPage.value) }
 
-    var currentPage by rememberSaveable { mutableIntStateOf(viewModel.savedPage) }
 
     val totalPages = maxOf(1, (carsList.size + itemsPerPage - 1) / itemsPerPage)
     val paginatedCars = carsList.drop(currentPage * itemsPerPage).take(itemsPerPage)
@@ -266,7 +268,7 @@ fun MainScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = {
-                viewModel.savedPage = currentPage
+                viewModel.savedPage.value = currentPage
                 onNavigateToAdd()
             }) {
                 Icon(Icons.Default.Add, contentDescription = "Add car")
@@ -370,7 +372,7 @@ fun MainScreen(
                         .animateContentSize(),  // Animar cambios en tamaño del LazyColumn
                     state = listState
                 ) {
-                    itemsIndexed(paginatedCars, key = { _, car -> car.id }) { _, car ->
+                    itemsIndexed(paginatedCars, key = { _, car -> car.id!! }) { _, car ->
                         // Animar el item individualmente
                         AnimatedVisibility(
                             visible = true,
@@ -382,8 +384,8 @@ fun MainScreen(
                                 allTags = allTags,
                                 modifier = Modifier.animateItem(fadeInSpec = tween(300), fadeOutSpec = tween(300)),
                                 onEdit = {
-                                    viewModel.savedPage = currentPage
-                                    onEditCar(car.id)
+                                    viewModel.savedPage.value = currentPage
+                                    onEditCar(car.id.toString())
                                 },
                                 onDelete = { carToDelete = car },
                                 onClick = { navController.navigate("car_detail/${car.id}") }
@@ -402,7 +404,7 @@ fun MainScreen(
                     text = { Text("Borrar ${car.name}?") },
                     confirmButton = {
                         TextButton(onClick = {
-                            viewModel.deleteCar(car)
+                            viewModel.deleteCar(car.id.toString())
                             carToDelete = null
                         }) {
                             Text("Borrar")

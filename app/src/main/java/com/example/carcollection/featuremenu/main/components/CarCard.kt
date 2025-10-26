@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import coil.compose.AsyncImage
 import com.example.carcollection.R
-import com.example.carcollection.data.local.Car
+import com.example.carcollection.featurecar.domain.Car
 import com.example.carcollection.featuretags.domain.Tag
 
 fun getContrastingTextColor(background: Color): Color {
@@ -87,13 +87,13 @@ fun CarCard(
                     .padding(vertical = 2.dp)
             ) {
                 Text(
-                    text = car.name,
+                    text = car.name.toString(),
                     color = textColor,
                     style = MaterialTheme.typography.bodyMedium, // Más compacto
                     maxLines = 1
                 )
                 Text(
-                    text = car.brand,
+                    text = car.brand.toString(),
                     color = textColor,
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 1

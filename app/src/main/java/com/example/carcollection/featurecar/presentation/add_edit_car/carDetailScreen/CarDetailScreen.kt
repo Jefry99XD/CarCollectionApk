@@ -50,7 +50,6 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import coil.compose.AsyncImage
 import com.example.carcollection.R
-import com.example.carcollection.data.local.Car
 import com.example.carcollection.featuretags.domain.Tag
 import com.example.carcollection.featurecar.presentation.add_edit_car.carDetailScreen.AutoSizeText
 

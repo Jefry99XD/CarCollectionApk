@@ -8,8 +8,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.ui.platform.ComposeView
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.compose.rememberNavController
-import com.example.carcollection.data.local.CarDatabase
-import com.example.carcollection.data.repository.CarRepository
 import com.example.carcollection.featuremenu.lateralMenu.SidebarMusicPlayer
 import com.example.carcollection.featuremenu.main.TubaCollectionApp
 import com.example.carcollection.presentation.user.UserViewModel
@@ -36,14 +34,10 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             CarCollectionTheme {
-                val db = CarDatabase.getDatabase(this)
-                val repository = CarRepository(db.carDao())
                 val navController = rememberNavController()
 
                 TubaCollectionApp(
-                    userViewModel = UserViewModel(repository),
                     navController = navController,
-                    repository = repository
                 )
             }
             }

@@ -4,6 +4,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.carcollection.featurecar.data.CarMethods
+import com.example.carcollection.featurecar.presentation.add_edit_car.BackgroundCategory
 import com.example.carcollection.featuretags.data.TagsMethods
 import com.example.carcollection.featuretags.domain.Tag
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +14,8 @@ import kotlinx.coroutines.launch
 
 class CarFormViewModel(
     private val carMethods: CarMethods,
-    private val tagsMethods: TagsMethods
+    private val tagsMethods: TagsMethods,
+    private val backgroundLoader: suspend () -> List<BackgroundCategory>
 ) : ViewModel() {
 
     // Form fields
@@ -36,10 +38,14 @@ class CarFormViewModel(
 
     private var currentCarId: String? = null
 
+
     // Tags
     val availableTags = MutableStateFlow<List<Tag>>(emptyList())
     private val _selectedTags = MutableStateFlow<List<String>>(emptyList())
     val selectedTags = _selectedTags.asStateFlow()
+
+    private val _backgroundCategories = MutableStateFlow<List<BackgroundCategory>>(emptyList())
+    val backgroundCategories = _backgroundCategories.asStateFlow()
 
     // Suggestions
     val brandSuggestions = MutableStateFlow<List<String>>(emptyList())
@@ -50,7 +56,10 @@ class CarFormViewModel(
 
     init {
         viewModelScope.launch {
-            // Cargar tags disponibles
+            // Cargar backgrounds
+            _backgroundCategories.value = backgroundLoader()
+
+            // Cargar tags
             availableTags.value = tagsMethods.getAllTags()
 
             // Cargar sugerencias basadas en autos existentes

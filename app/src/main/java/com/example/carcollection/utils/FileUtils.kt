@@ -3,8 +3,6 @@ package com.example.carcollection.utils
 import android.content.Context
 import android.net.Uri
 import android.widget.Toast
-import com.example.carcollection.data.local.Car
-import com.example.carcollection.data.repository.CarRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

@@ -37,8 +37,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.carcollection.data.local.Car
-import com.example.carcollection.data.repository.CarRepository
 import com.example.carcollection.utils.exportCarsToUri
 import com.example.carcollection.utils.importCarsFromUri
 import kotlinx.coroutines.launch

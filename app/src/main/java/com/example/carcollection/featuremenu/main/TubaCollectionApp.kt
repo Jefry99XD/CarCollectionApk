@@ -29,7 +29,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.carcollection.R
-import com.example.carcollection.data.repository.CarRepository
 import com.example.carcollection.featuremenu.lateralMenu.AppNavigationDrawer
 import com.example.carcollection.presentation.navigation.AppNavGraph
 import com.example.carcollection.presentation.user.UserViewModel
@@ -41,7 +40,6 @@ import kotlinx.coroutines.launch
 fun TubaCollectionApp(
     userViewModel: UserViewModel,
     navController: NavHostController,
-    repository: CarRepository,
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -100,7 +98,6 @@ fun TubaCollectionApp(
             ) {
                 AppNavGraph(
                     navController = navController,
-                    repository = repository,
                     userViewModel = userViewModel
                 )
             }
