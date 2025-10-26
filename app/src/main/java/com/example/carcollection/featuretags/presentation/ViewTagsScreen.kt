@@ -12,6 +12,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -25,7 +26,6 @@ import androidx.compose.ui.unit.dp
 import com.example.carcollection.featuretags.domain.Tag
 import com.example.carcollection.featuretags.presentation.component.DeleteTagDialog
 import com.example.carcollection.featuretags.presentation.component.TagItem
-import androidx.compose.material3.Text
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,7 +33,7 @@ fun ViewTagsScreen(
     viewModel: TagViewModel,
     onBackClick: () -> Unit,
     onNavigateToAddTag: () -> Unit,
-    onNavigateToEditTag: (Tag) -> Unit
+    onNavigateToEditTag: (String) -> Unit
 ) {
     val tags by viewModel.tags.collectAsState()
     var tagToDelete by remember { mutableStateOf<Tag?>(null) }
@@ -66,7 +66,7 @@ fun ViewTagsScreen(
             items(tags.sortedBy { it.name.lowercase() }) { tag ->
                 TagItem(
                     tag = tag,
-                    onEdit = onNavigateToEditTag,
+                    onEdit = { onNavigateToEditTag(tag.id.toString()) },
                     onDelete = { tagToDelete = it }
                 )
             }

@@ -1,5 +1,5 @@
 // presentation/main/MainScreen.kt
-package com.example.carcollection.featuremenu.main
+package com.example.carcollection.featurecar.presentation.add_edit_car
 
 import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedVisibility

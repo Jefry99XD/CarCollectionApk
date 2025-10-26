@@ -10,8 +10,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -26,11 +24,13 @@ fun TagColorPicker(
     colorHex: String,
     onColorSelected: (String) -> Unit
 ) {
-    val tagColor by remember { derivedStateOf { Color(colorHex.toColorIntSafe()) } }
-    val currentColor = remember { mutableStateOf(tagColor) }
+    val currentColor = remember { mutableStateOf(Color(colorHex.toColorIntSafe())) }
     val showColorPicker = remember { mutableStateOf(false) }
 
-    LaunchedEffect(tagColor) { currentColor.value = tagColor }
+    // 🔹 sincronizar siempre que cambie colorHex
+    LaunchedEffect(colorHex) {
+        currentColor.value = Color(colorHex.toColorIntSafe())
+    }
 
     if (showColorPicker.value) {
         ColorPickerDialog(

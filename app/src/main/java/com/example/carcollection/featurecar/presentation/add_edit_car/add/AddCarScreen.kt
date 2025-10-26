@@ -30,7 +30,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.carcollection.data.local.Car
 import com.example.carcollection.featuretags.domain.Tag
-import com.example.carcollection.featuremenu.main.MainViewModel
+import com.example.carcollection.featurecar.presentation.add_edit_car.MainViewModel
 import com.example.carcollection.utils.ImageSearchUtil
 import kotlinx.coroutines.launch
 

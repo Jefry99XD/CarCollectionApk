@@ -20,6 +20,9 @@ object NavRoutes {
     const val REGISTER = "register"
     const val PROFILE = "profile"
     const val EDIT_PROFILE = "edit_profile"
+    const val EDIT_TAG = "edit_tag/{tagId}"
+
+    fun editTag(tagId: String) = "edit_tag/$tagId"
 }
 
 

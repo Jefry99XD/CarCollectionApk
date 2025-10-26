@@ -112,7 +112,7 @@ class TagViewModel(
         }
     }
 
-    private fun loadTag(id: String) {
+    internal fun loadTag(id: String) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
@@ -121,7 +121,7 @@ class TagViewModel(
                     _tagState.value = TagUiState(
                         id = it.id,
                         name = it.name,
-                        color = it.color.toString(),
+                        color = it.color?:"#FFFFFF",
                         originalName = it.name
                     )
                 }

@@ -1,4 +1,4 @@
-package com.example.carcollection.featuremenu.main
+package com.example.carcollection.featurecar.presentation.add_edit_car
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -19,6 +19,7 @@ import kotlinx.coroutines.runBlocking
 class MainViewModel(
     internal val repository: CarRepository,
 ) : ViewModel() {
+
 
     private val _cars = repository.getAllCars()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())

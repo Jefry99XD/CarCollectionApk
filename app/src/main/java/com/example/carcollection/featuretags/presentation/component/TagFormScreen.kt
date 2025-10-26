@@ -18,7 +18,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -36,7 +36,12 @@ fun TagFormScreen(
     onSave: () -> Unit,
     onBackClick: () -> Unit
 ) {
-    val animatedColor by remember { mutableStateOf(tagColorHex) }
+    // 🔹 Mantener el color sincronizado con tagColorHex
+    val currentColor = remember { mutableStateOf(tagColorHex) }
+
+    LaunchedEffect(tagColorHex) {
+        currentColor.value = tagColorHex
+    }
 
     Scaffold(
         topBar = {
@@ -61,7 +66,13 @@ fun TagFormScreen(
 
             Text("Color del Tag", style = MaterialTheme.typography.titleMedium)
 
-            TagColorPicker(colorHex = tagColorHex, onColorSelected = onColorSelected)
+            TagColorPicker(
+                colorHex = currentColor.value,
+                onColorSelected = {
+                    currentColor.value = it
+                    onColorSelected(it)
+                }
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 

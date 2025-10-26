@@ -15,6 +15,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.carcollection.data.repository.CarRepository
+import com.example.carcollection.featurecar.presentation.add_edit_car.AddEditCarScreen
+import com.example.carcollection.featurecar.presentation.add_edit_car.AddEditCarViewModel
+import com.example.carcollection.featurecar.presentation.add_edit_car.MainScreen
+import com.example.carcollection.featurecar.presentation.add_edit_car.MainViewModel
+import com.example.carcollection.featuremenu.menu.MenuScreen
 import com.example.carcollection.featuretags.data.TagsMethods
 import com.example.carcollection.featuretags.domain.Tag
 import com.example.carcollection.featuretags.presentation.AddTagScreen
@@ -22,17 +27,12 @@ import com.example.carcollection.featuretags.presentation.EditTagScreen
 import com.example.carcollection.featuretags.presentation.TagViewModel
 import com.example.carcollection.featuretags.presentation.TagsEvent
 import com.example.carcollection.featuretags.presentation.ViewTagsScreen
-import com.example.carcollection.featurecar.presentation.add_edit_car.AddEditCarScreen
-import com.example.carcollection.featurecar.presentation.add_edit_car.AddEditCarViewModel
 import com.example.carcollection.presentation.consultas.QueryMenuScreen
 import com.example.carcollection.presentation.consultas.STHScreen
 import com.example.carcollection.presentation.consultas.STHViewModel
 import com.example.carcollection.presentation.consultas.THScreen
 import com.example.carcollection.presentation.consultas.THViewModel
 import com.example.carcollection.presentation.data.DataScreen
-import com.example.carcollection.featuremenu.main.MainScreen
-import com.example.carcollection.featuremenu.main.MainViewModel
-import com.example.carcollection.featuremenu.menu.MenuScreen
 import com.example.carcollection.presentation.statistics.StatisticsMenu
 import com.example.carcollection.presentation.user.UserViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -149,24 +149,39 @@ fun AppNavGraph(
             }
 
             EditTagScreen(
+                tagId = tagId,
                 viewModel = viewModel,
                 onBackClick = { navController.popBackStack() },
                 onTagSaved = { navController.popBackStack() },
             )
         }
 
-        composable(NavRoutes.VIEW_TAGS)
-        {
-            val viewModel = TagViewModel(tagsMethods = TagsMethods())
+
+        composable(NavRoutes.VIEW_TAGS) {
+            val viewModel = remember { TagViewModel(tagsMethods = TagsMethods()) }
+
             ViewTagsScreen(
                 viewModel = viewModel,
                 onBackClick = { navController.popBackStack() },
                 onNavigateToAddTag = { navController.navigate(NavRoutes.ADD_EDIT_TAG) },
                 onNavigateToEditTag = { tagId ->
-                    navController.navigate("tag_edit/$tagId")
+                    navController.navigate(NavRoutes.editTag(tagId))
                 }
             )
         }
+        composable(NavRoutes.EDIT_TAG) { backStackEntry ->
+            val tagId = backStackEntry.arguments?.getString("tagId") ?: return@composable
+
+            val viewModel = remember { TagViewModel(tagsMethods = TagsMethods()) }
+
+            EditTagScreen(
+                tagId = tagId,
+                viewModel = viewModel,
+                onTagSaved = { navController.popBackStack() },
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
         composable(NavRoutes.CONSULTAS) {
             QueryMenuScreen(
                 onNavigateToSTH = { navController.navigate(NavRoutes.VIEW_STH) },
