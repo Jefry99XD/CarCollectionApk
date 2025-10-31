@@ -2,6 +2,7 @@
 package com.example.carcollection.featurecar.presentation.add_edit_car
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
@@ -66,6 +67,7 @@ import androidx.navigation.NavHostController
 import com.example.carcollection.featurecar.domain.Car
 import com.example.carcollection.featurecar.domain.CarViewModel
 import com.example.carcollection.featuremenu.main.components.CarCard
+import com.example.carcollection.presentation.navigation.NavRoutes
 
 @Composable
 fun DropdownMenuBox(
@@ -372,8 +374,8 @@ fun CollectionViewScreen(
                         .animateContentSize(),  // Animar cambios en tamaño del LazyColumn
                     state = listState
                 ) {
-                    itemsIndexed(paginatedCars, key = { _, car -> car.id!! }) { _, car ->
-                        // Animar el item individualmente
+                    itemsIndexed(paginatedCars, key = { index, car -> car.id ?: index.toString() }) { _, car ->
+                    // Animar el item individualmente
                         AnimatedVisibility(
                             visible = true,
                             enter = fadeIn(animationSpec = tween(300)),
@@ -385,10 +387,20 @@ fun CollectionViewScreen(
                                 modifier = Modifier.animateItem(fadeInSpec = tween(300), fadeOutSpec = tween(300)),
                                 onEdit = {
                                     viewModel.savedPage.value = currentPage
-                                    onEditCar(car.id.toString())
+                                    onEditCar(car.id.toString()) // 👈 Ya no lo conviertas a String, porque ya lo es
                                 },
                                 onDelete = { carToDelete = car },
-                                onClick = { navController.navigate("car_detail/${car.id}") }
+                                onClick = {
+                                    car.id?.let { id ->
+                                        navController.navigate("${NavRoutes.DETAIL}/${car.id}")
+                                    } ?: run {
+                                        // Opcional: mostrar snackbar o log
+                                        Log.w("CollectionView",
+                                            "Car id es null, no se puede navegar$car"
+                                        )
+                                    }
+                                }
+
                             )
                         }
                     }

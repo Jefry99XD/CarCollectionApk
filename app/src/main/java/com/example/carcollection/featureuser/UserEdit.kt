@@ -1,4 +1,4 @@
-package com.example.carcollection.presentation.user
+package com.example.carcollection.featureuser
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

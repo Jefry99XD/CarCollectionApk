@@ -10,7 +10,7 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.compose.rememberNavController
 import com.example.carcollection.featuremenu.lateralMenu.SidebarMusicPlayer
 import com.example.carcollection.featuremenu.main.TubaCollectionApp
-import com.example.carcollection.presentation.user.UserViewModel
+import com.example.carcollection.featureuser.UserViewModel
 import com.example.carcollection.ui.theme.CarCollectionTheme
 
 class MainActivity : ComponentActivity() {
@@ -35,9 +35,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             CarCollectionTheme {
                 val navController = rememberNavController()
+                val userViewModel = UserViewModel()
 
                 TubaCollectionApp(
-                    navController = navController,
+                    userViewModel, navController
                 )
             }
             }

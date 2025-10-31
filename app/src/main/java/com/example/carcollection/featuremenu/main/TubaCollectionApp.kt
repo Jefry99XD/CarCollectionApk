@@ -31,7 +31,7 @@ import androidx.navigation.NavHostController
 import com.example.carcollection.R
 import com.example.carcollection.featuremenu.lateralMenu.AppNavigationDrawer
 import com.example.carcollection.presentation.navigation.AppNavGraph
-import com.example.carcollection.presentation.user.UserViewModel
+import com.example.carcollection.featureuser.UserViewModel
 import com.example.carcollection.ui.theme.sidebar
 import kotlinx.coroutines.launch
 

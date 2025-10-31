@@ -116,3 +116,19 @@ fun BackgroundThumbnail(
         }
     }
 }
+
+suspend fun loadBackgroundCategories(): List<BackgroundCategory> {
+    val items = backgroundResourceMap.keys.map { key ->
+        BackgroundItem(
+            name = key.replaceFirstChar { it.uppercase() },
+            resource = key
+        )
+    }
+
+    return listOf(
+        BackgroundCategory(
+            category = "Fondos predeterminados",
+            backgrounds = items
+        )
+    )
+}

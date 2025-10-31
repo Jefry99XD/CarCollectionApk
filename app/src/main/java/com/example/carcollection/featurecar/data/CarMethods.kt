@@ -97,8 +97,13 @@ class CarMethods {
                 val carsCollectionRef = db.collection("users")
                     .document(userId)
                     .collection("carsCollection")
+
                 val querySnapshot = carsCollectionRef.get().await()
-                val cars = querySnapshot.documents.mapNotNull { it.toObject(Car::class.java) }
+
+                val cars = querySnapshot.documents.mapNotNull { doc ->
+                    doc.toObject(Car::class.java)?.copy(id = doc.id)
+                }
+
                 Result.success(cars)
             } catch (e: Exception) {
                 Result.failure(Exception("Error fetching cars: ${e.message}"))

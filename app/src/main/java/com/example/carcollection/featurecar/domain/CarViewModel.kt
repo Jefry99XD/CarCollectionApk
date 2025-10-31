@@ -57,7 +57,8 @@ class CarViewModel(
     }
 
     // 🔹 Funciones para actualizar filtros
-    fun onSearchQueryChange(query: String) { _filterState.value = _filterState.value.copy(query = query) }
+    fun onSearchQueryChange(query: String) {    _searchQuery.value = query
+        _filterState.value = _filterState.value.copy(query = query) }
     fun onBrandSelected(brand: String?) { _filterState.value = _filterState.value.copy(brand = brand) }
     fun onYearSelected(year: String?) { _filterState.value = _filterState.value.copy(year = year) }
     fun onSeriesSelected(series: String?) { _filterState.value = _filterState.value.copy(series = series) }

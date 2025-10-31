@@ -28,13 +28,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.carcollection.featurecar.domain.Car
+import com.example.carcollection.featurecar.domain.CarViewModel
 import com.example.carcollection.featuretags.domain.Tag
 import com.example.carcollection.utils.ImageSearchUtil
 import kotlinx.coroutines.launch
 
 @Composable
 fun AddCarScreen(
-    viewModel: MainViewModel,
+    viewModel: CarViewModel,
     onCarSaved: () -> Unit
 ) {
     val context = LocalContext.current
@@ -55,13 +57,13 @@ fun AddCarScreen(
     var selectedTags by remember { mutableStateOf<List<String>>(emptyList()) }
     LaunchedEffect(viewModel.currentCar) {
         viewModel.currentCar?.let { car ->
-            brand = car.brand
-            name = car.name
-            serie = car.serie
-            year = car.year
-            color = car.color
-            photo = car.photoUrl
-            type = car.type
+            brand = car.brand.toString()
+            name = car.name.toString()
+            serie = car.serie.toString()
+            year = car.year.toString()
+            color = car.color.toString()
+            photo = car.photoUrl.toString()
+            type = car.type.toString()
             selectedTags = car.tags
         }
     }
@@ -159,7 +161,7 @@ fun AddCarScreen(
 
                             photoUrl = finalPhoto,
                         )
-                        viewModel.insertCar(car)
+                        viewModel.addCar(car)
                         Toast.makeText(context, "Carro guardado", Toast.LENGTH_SHORT).show()
                         onCarSaved()
                     }

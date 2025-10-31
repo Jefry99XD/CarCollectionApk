@@ -21,21 +21,22 @@ import com.example.carcollection.featurecar.presentation.add_edit_car.AddEditCar
 import com.example.carcollection.featurecar.presentation.add_edit_car.CollectionViewScreen
 import com.example.carcollection.featuremenu.menu.MenuScreen
 import com.example.carcollection.featuretags.data.TagsMethods
-import com.example.carcollection.featuretags.domain.Tag
 import com.example.carcollection.featuretags.presentation.AddTagScreen
 import com.example.carcollection.featuretags.presentation.EditTagScreen
 import com.example.carcollection.featuretags.presentation.TagViewModel
 import com.example.carcollection.featuretags.presentation.TagsEvent
 import com.example.carcollection.featuretags.presentation.ViewTagsScreen
+import com.example.carcollection.featureuser.UserEdit
+import com.example.carcollection.featureuser.UserMain
+import com.example.carcollection.featureuser.UserViewModel
+import com.example.carcollection.featureuser.login.LoginForm
+import com.example.carcollection.featureuser.register.RegisterForm
 import com.example.carcollection.presentation.consultas.QueryMenuScreen
 import com.example.carcollection.presentation.consultas.STHScreen
 import com.example.carcollection.presentation.consultas.STHViewModel
 import com.example.carcollection.presentation.consultas.THScreen
 import com.example.carcollection.presentation.consultas.THViewModel
-import com.example.carcollection.presentation.data.DataScreen
 import com.example.carcollection.presentation.statistics.StatisticsMenu
-import com.example.carcollection.presentation.user.UserViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
 
 @SuppressLint("ViewModelConstructorInComposable")
 @Composable
@@ -43,13 +44,15 @@ fun AppNavGraph(
     navController: NavHostController,
     userViewModel: UserViewModel
 ) {
-    val mainViewModel = remember { MainViewModel(repository) }
+    val carMethods = CarMethods()
+    val tagsMethods = TagsMethods()
+    val CollectionViewModel = remember { CarViewModel( carMethods, tagsMethods) }
     NavHost(navController = navController, startDestination = NavRoutes.MENU) {
 
         // Pantalla principal (menú)
         composable(NavRoutes.MENU) {
             MenuScreen(
-                onNavigateToCollection = { navController.navigate(NavRoutes.MAIN) },
+                onNavigateToCollection = { navController.navigate(NavRoutes.COLLECTION) },
                 onNavigateToTags = { navController.navigate(NavRoutes.VIEW_TAGS) },
                 onNavigateToConsultas = { navController.navigate(NavRoutes.CONSULTAS)},
                 onNavigateToStatistics = { navController.navigate(NavRoutes.STATISTICS) },
@@ -58,9 +61,9 @@ fun AppNavGraph(
         }
 
         // Pantalla de colección
-        composable(NavRoutes.MAIN) {
+        composable(NavRoutes.COLLECTION) {
             CollectionViewScreen(
-                viewModel = mainViewModel,
+                viewModel = CollectionViewModel,
                 navController = navController,
                 onNavigateToAdd = { navController.navigate(NavRoutes.ADD_EDIT_CAR) },
                 onEditCar = { carId -> navController.navigate("add_edit_car?carId=$carId") },
@@ -71,9 +74,7 @@ fun AppNavGraph(
 
         // Pantalla para agregar nuevo auto
         composable(NavRoutes.ADD_EDIT_CAR) {
-            val carMethods: CarMethods = CarMethods()
-            val tagsMethods: TagsMethods = TagsMethods()
-            val viewModel = CarFormViewModel(carMethods, tagsMethods,  )
+            val viewModel = CarFormViewModel(carMethods, tagsMethods )
             AddEditCarScreen(
                 viewModel = viewModel,
                 onSaveSuccess = { navController.popBackStack() },
@@ -87,16 +88,16 @@ fun AppNavGraph(
             route = NavRoutes.ADD_EDIT_CAR_WITH_ID,
             arguments = listOf(
                 navArgument("carId") {
-                    type = NavType.IntType
-                    defaultValue = -1
+                    type = NavType.StringType
+                    defaultValue = ""
                 }
             )
         ) { backStackEntry ->
-            val carId = backStackEntry.arguments?.getInt("carId") ?: -1
-            val viewModel = CarFormViewModel(repository, carId)
+            val carId = backStackEntry.arguments?.getString("carId")
+            val viewModel = CarFormViewModel(carMethods, tagsMethods )
 
-            if (carId != -1) {
-                viewModel.loadCar(carId)
+            if (carId?.isNotEmpty() == true) {
+                viewModel.loadCar(carId.toString())
             }
 
             AddEditCarScreen(
@@ -106,31 +107,23 @@ fun AppNavGraph(
             )
         }
         // Pantalla de detalle del auto
-        composable("car_detail/{carId}") { backStackEntry ->
-            val carId = backStackEntry.arguments?.getString("carId")?.toIntOrNull() ?: return@composable
+        composable(
+            route = "${NavRoutes.DETAIL}/{carId}"
+        ) { backStackEntry ->
+            val carId = backStackEntry.arguments?.getString("carId")
 
-            // Obtener el ViewModel compartido (mismo que usas en CollectionViewScreen)
-            val carViewModel: CarViewModel = viewModel()
+            val cars = CollectionViewModel.cars.collectAsState(initial = emptyList()).value
+            val allTags = CollectionViewModel.allTags.collectAsState(initial = emptyList()).value
 
-            // Obtener el carro por ID desde el ViewModel
-            val car by remember(carId) {
-                derivedStateOf {
-                    carViewModel.cars.value.find { it.id == carId }
-                }
-            }
+            val car = cars.find { it.id == carId }
 
-            // Cargar tags disponibles
-            val availableTags by carViewModel.allTags.collectAsState(initial = emptyList())
-
-            // Mostrar pantalla solo si el carro existe
-            car?.let {
-                CarDetailScreen(
-                    car = it,
-                    availableTags = availableTags,
-                    onBackClick = { navController.popBackStack() }
-                )
-            }
+            CarDetailScreen(
+                car = car,
+                allTags = allTags,
+                onBackClick = { navController.popBackStack() }
+            )
         }
+
 
         composable(NavRoutes.ADD_EDIT_TAG)
         {
@@ -242,26 +235,28 @@ fun AppNavGraph(
             )
         }
         composable(NavRoutes.REGISTER) {
-            com.example.carcollection.presentation.user.register.RegisterForm(
+            RegisterForm(
+                userViewModel = userViewModel,
+                navController = navController,
                 onBackClick = { navController.popBackStack() }
             )
         }
         composable(NavRoutes.LOGIN) {
-            com.example.carcollection.presentation.user.login.LoginForm(
+            LoginForm(
                 onBackClick = { navController.popBackStack() },
                 navController = navController,
                 userViewModel = userViewModel
             )
         }
         composable(NavRoutes.PROFILE) {
-            com.example.carcollection.presentation.user.UserMain(
+            UserMain(
                 userViewModel = userViewModel,
                 onBackClick = { navController.popBackStack() },
                 onEditClick = { navController.navigate(NavRoutes.EDIT_PROFILE) },
             )
         }
         composable(NavRoutes.EDIT_PROFILE) {
-            com.example.carcollection.presentation.user.UserEdit(
+            UserEdit(
                 userViewModel = userViewModel,
                 onBackClick = { navController.popBackStack() }
             )

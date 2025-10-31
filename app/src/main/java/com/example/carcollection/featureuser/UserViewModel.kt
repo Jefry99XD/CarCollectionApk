@@ -1,9 +1,8 @@
-package com.example.carcollection.presentation.user
+package com.example.carcollection.featureuser
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.carcollection.featurecar.data.CarMethods
-import com.example.carcollection.featurecar.domain.Car
 import com.example.carcollection.featureuser.data.UserMethods
 import com.example.carcollection.featureuser.domain.User
 import com.google.firebase.auth.FirebaseAuth
@@ -12,7 +11,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class UserViewModel(
-    private val carRepository: CarRepository
 ) : ViewModel() {
 
     private val _user = MutableStateFlow<User?>(null)
@@ -70,25 +68,57 @@ class UserViewModel(
         }
     }
 
-    fun transferAllLocalCarsToFirebase(){
+    fun loginUser(email: String, password: String, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
-            val localCars = carRepository.getAllCarsList()
-            val remoteCars = localCars.map { localCar ->
-                Car(
-                    brand = localCar.brand,
-                    name = localCar.name,
-                    serie = localCar.serie,
-                    year = localCar.year,
-                    photoUrl = localCar.photoUrl,
-                    color = localCar.color,
-                    type = localCar.type,
-                    tags = localCar.tags,
-                    backgroundName = localCar.backgroundName
-                )
+            val result = userMethods.loginUser(email, password)
+            result.onSuccess {
+                fetchUserProfile()
+                fetchCarCount()
+                onResult(true, null)
+            }.onFailure {
+                onResult(false, it.message)
             }
-            carMethods.syncLocalCarsToFirebase(remoteCars)
         }
     }
+
+    fun registerUser(
+        username: String,
+        email: String,
+        photoUrl: String,
+        password: String,
+        onResult: (Boolean, String?) -> Unit
+    ) {
+        viewModelScope.launch {
+            val result = userMethods.registerUser(username, email, photoUrl, password)
+            result.onSuccess {
+                fetchUserProfile()
+                fetchCarCount()
+                onResult(true, null)
+            }.onFailure {
+                onResult(false, it.message)
+            }
+        }
+    }
+
+//    fun transferAllLocalCarsToFirebase(){
+//        viewModelScope.launch {
+//            val localCars = carRepository.getAllCarsList()
+//            val remoteCars = localCars.map { localCar ->
+//                Car(
+//                    brand = localCar.brand,
+//                    name = localCar.name,
+//                    serie = localCar.serie,
+//                    year = localCar.year,
+//                    photoUrl = localCar.photoUrl,
+//                    color = localCar.color,
+//                    type = localCar.type,
+//                    tags = localCar.tags,
+//                    backgroundName = localCar.backgroundName
+//                )
+//            }
+//            carMethods.syncLocalCarsToFirebase(remoteCars)
+//        }
+//    }
 
     fun logoutUser() {
         viewModelScope.launch {

@@ -9,5 +9,3 @@ data class BackgroundItem(
     val name: String,
     val resource: String
 )
-
-

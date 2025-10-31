@@ -3,7 +3,7 @@ package com.example.carcollection.presentation.navigation
 
 object NavRoutes {
     const val MENU = "menu"
-    const val MAIN = "main" // Colección
+    const val COLLECTION = "collection_view" // Colección
     const val DATA = "data"
     const val ADD_EDIT_CAR = "add_edit_car"
     const val ADD_EDIT_CAR_WITH_ID = "add_edit_car?carId={carId}"
@@ -21,6 +21,7 @@ object NavRoutes {
     const val PROFILE = "profile"
     const val EDIT_PROFILE = "edit_profile"
     const val EDIT_TAG = "edit_tag/{tagId}"
+    const val DETAIL = "car_detail"
 
     fun editTag(tagId: String) = "edit_tag/$tagId"
 }

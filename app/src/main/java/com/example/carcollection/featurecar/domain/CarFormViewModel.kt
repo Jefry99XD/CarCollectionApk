@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.carcollection.featurecar.data.CarMethods
 import com.example.carcollection.featurecar.presentation.add_edit_car.BackgroundCategory
+import com.example.carcollection.featurecar.presentation.add_edit_car.loadBackgroundCategories
 import com.example.carcollection.featuretags.data.TagsMethods
 import com.example.carcollection.featuretags.domain.Tag
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +16,6 @@ import kotlinx.coroutines.launch
 class CarFormViewModel(
     private val carMethods: CarMethods,
     private val tagsMethods: TagsMethods,
-    private val backgroundLoader: suspend () -> List<BackgroundCategory>
 ) : ViewModel() {
 
     // Form fields
@@ -57,7 +57,7 @@ class CarFormViewModel(
     init {
         viewModelScope.launch {
             // Cargar backgrounds
-            _backgroundCategories.value = backgroundLoader()
+            _backgroundCategories.value = loadBackgroundCategories()
 
             // Cargar tags
             availableTags.value = tagsMethods.getAllTags()
