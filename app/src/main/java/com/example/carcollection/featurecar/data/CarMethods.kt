@@ -5,6 +5,8 @@ import com.example.carcollection.featurecar.domain.Car
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
+import com.google.firebase.firestore.Source
+
 
 class CarMethods {
 
@@ -148,7 +150,10 @@ class CarMethods {
                 val carsCollectionRef = db.collection("users")
                     .document(userId)
                     .collection("carsCollection")
-                val querySnapshot = carsCollectionRef.get().await()
+                val querySnapshot = carsCollectionRef
+                    .get(Source.SERVER)
+                    .await()
+
                 val batch = db.batch()
 
                 for (document in querySnapshot.documents) {
@@ -170,5 +175,63 @@ class CarMethods {
             Result.failure(Exception("No user logged in to update tags in cars."))
         }
     }
+
+    suspend fun getRecentCars(limit: Long = 3): List<Car> {
+        val firebaseUser = auth.currentUser ?: return emptyList()
+        val userId = firebaseUser.uid
+
+        return try {
+            val snapshot = db.collection("users")
+                .document(userId)
+                .collection("carsCollection")
+                .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .limit(limit)
+                .get()
+                .await()
+
+            snapshot.toObjects(Car::class.java)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun addMissingCreatedAtToAllCars(): Result<Int> {
+        val firebaseUser = auth.currentUser
+        return if (firebaseUser != null) {
+            val userId = firebaseUser.uid
+            try {
+                val carsCollectionRef = db.collection("users")
+                    .document(userId)
+                    .collection("carsCollection")
+
+                val querySnapshot = carsCollectionRef.get().await()
+                val batch = db.batch()
+                var updatedCount = 0
+
+                for (document in querySnapshot.documents) {
+                    val data = document.data ?: continue
+                    // Solo actualizar si no tiene createdAt
+                    if (!data.containsKey("createdAt")) {
+                        val docRef = carsCollectionRef.document(document.id)
+                        batch.update(docRef, "createdAt", System.currentTimeMillis())
+                        updatedCount++
+                    }
+                }
+
+                // Ejecutar el batch si hay documentos por actualizar
+                if (updatedCount > 0) {
+                    batch.commit().await()
+                }
+
+                Result.success(updatedCount)
+            } catch (e: Exception) {
+                Result.failure(Exception("Error al agregar createdAt: ${e.message}"))
+            }
+        } else {
+            Result.failure(Exception("No hay usuario logueado."))
+        }
+    }
+
+
 
 }

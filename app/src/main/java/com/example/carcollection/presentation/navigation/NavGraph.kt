@@ -9,11 +9,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.example.carcollection.featureAchievements.presentation.AchievementScreen
+import com.example.carcollection.featureAchievements.presentation.AchievementViewModel
+import com.example.carcollection.featureAchievements.presentation.AddAchievementForm
 import com.example.carcollection.featurecar.data.CarMethods
 import com.example.carcollection.featurecar.domain.CarFormViewModel
 import com.example.carcollection.featurecar.domain.CarViewModel
@@ -31,12 +35,16 @@ import com.example.carcollection.featureuser.UserMain
 import com.example.carcollection.featureuser.UserViewModel
 import com.example.carcollection.featureuser.login.LoginForm
 import com.example.carcollection.featureuser.register.RegisterForm
+import com.example.carcollection.presentation.config.About
+import com.example.carcollection.presentation.config.ConfigMenu
+import com.example.carcollection.presentation.consultas.LibraryScreen
 import com.example.carcollection.presentation.consultas.QueryMenuScreen
 import com.example.carcollection.presentation.consultas.STHScreen
 import com.example.carcollection.presentation.consultas.STHViewModel
 import com.example.carcollection.presentation.consultas.THScreen
 import com.example.carcollection.presentation.consultas.THViewModel
 import com.example.carcollection.presentation.statistics.StatisticsMenu
+
 
 @SuppressLint("ViewModelConstructorInComposable")
 @Composable
@@ -46,6 +54,7 @@ fun AppNavGraph(
 ) {
     val carMethods = CarMethods()
     val tagsMethods = TagsMethods()
+    val achievementViewModel: AchievementViewModel = viewModel()
     val CollectionViewModel = remember { CarViewModel( carMethods, tagsMethods) }
     NavHost(navController = navController, startDestination = NavRoutes.MENU) {
 
@@ -55,8 +64,7 @@ fun AppNavGraph(
                 onNavigateToCollection = { navController.navigate(NavRoutes.COLLECTION) },
                 onNavigateToTags = { navController.navigate(NavRoutes.VIEW_TAGS) },
                 onNavigateToConsultas = { navController.navigate(NavRoutes.CONSULTAS)},
-                onNavigateToStatistics = { navController.navigate(NavRoutes.STATISTICS) },
-                onNavigateToRegister = { navController.navigate(NavRoutes.REGISTER) }
+                onNavigateToAddAchievement = { navController.navigate(NavRoutes.ADD_ACHIEVEMENT) }
             )
         }
 
@@ -217,7 +225,7 @@ fun AppNavGraph(
             )
         }
         composable(NavRoutes.CONFIG) {
-            com.example.carcollection.presentation.config.ConfigMenu(
+            ConfigMenu(
                 onBackClick = { navController.popBackStack() },
                 onNavigateToData = { navController.navigate(NavRoutes.DATA) },
                 onNavigateToStatistics = { navController.navigate(NavRoutes.STATISTICS) },
@@ -225,12 +233,12 @@ fun AppNavGraph(
             )
         }
         composable(NavRoutes.ABOUT) {
-            com.example.carcollection.presentation.config.About(
+            About(
                 onBackClick = { navController.popBackStack() }
             )
         }
         composable(NavRoutes.LIBRARY) {
-            com.example.carcollection.presentation.consultas.LibraryScreen(
+            LibraryScreen(
                 onBackClick = { navController.popBackStack() }
             )
         }
@@ -253,12 +261,26 @@ fun AppNavGraph(
                 userViewModel = userViewModel,
                 onBackClick = { navController.popBackStack() },
                 onEditClick = { navController.navigate(NavRoutes.EDIT_PROFILE) },
+                navController = navController
             )
         }
         composable(NavRoutes.EDIT_PROFILE) {
             UserEdit(
                 userViewModel = userViewModel,
                 onBackClick = { navController.popBackStack() }
+            )
+        }
+        composable(NavRoutes.ACHIEVEMENTS) {
+            AchievementScreen(
+                achievementViewModel,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(NavRoutes.ADD_ACHIEVEMENT) {
+            AddAchievementForm(
+                achievementViewModel,
+                onBackClick = { navController.popBackStack() },
             )
         }
     }

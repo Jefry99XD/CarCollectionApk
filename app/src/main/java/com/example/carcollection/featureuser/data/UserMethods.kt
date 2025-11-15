@@ -81,7 +81,8 @@ class UserMethods {
         username: String,
         photoUrl: String,
         password: String,
-        email: String
+        email: String,
+        bio: String
     )
     : Result<User> {
         val firebaseUser = auth.currentUser
@@ -116,7 +117,9 @@ class UserMethods {
 
             val updates = mutableMapOf<String, Any>(
                 "username" to username,
-                "photoUrl" to photoUrl
+                "photoUrl" to photoUrl,
+                "email" to email,
+                "bio" to bio
             )
 
             userDocRef.update(updates).await()
@@ -199,6 +202,75 @@ class UserMethods {
         }
     }
 
+    suspend fun getUserStats(): Result<Map<String, Int>> {
+        val firebaseUser = auth.currentUser ?: return Result.failure(Exception("No user logged in"))
+        val userId = firebaseUser.uid
 
+        return try {
+            val carsCount = db.collection("users").document(userId)
+                .collection("carsCollection").get().await().size()
+            val tagsCount = db.collection("users").document(userId)
+                .collection("tags").get().await().size()
+            val friendsCount = db.collection("users").document(userId)
+                .collection("friends").get().await().size()
+
+            // Para series diferentes (asumiendo que los autos tienen un campo "series")
+            val cars = db.collection("users").document(userId)
+                .collection("carsCollection").get().await()
+            val seriesSet = cars.documents.mapNotNull { it.getString("series") }.toSet()
+
+            Result.success(
+                mapOf(
+                    "cars" to carsCount,
+                    "tags" to tagsCount,
+                    "friends" to friendsCount,
+                    "series" to seriesSet.size
+                )
+            )
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to fetch user stats: ${e.message}"))
+        }
+    }
+
+    suspend fun deleteUserAccount(): Result<Unit> {
+        val firebaseUser = auth.currentUser ?: return Result.failure(Exception("No user logged in"))
+        val userId = firebaseUser.uid
+
+        return try {
+            // 1. Eliminar datos en Firestore
+            db.collection("users").document(userId).delete().await()
+            // 2. Eliminar usuario de Auth
+            firebaseUser.delete().await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to delete account: ${e.message}"))
+        }
+    }
+
+    suspend fun getUserById(userId: String): Result<User> {
+        return try {
+            val snapshot = db.collection("users").document(userId).get().await()
+            val user = snapshot.toObject(User::class.java)
+            if (user != null) Result.success(user.copy(uid = userId))
+            else Result.failure(Exception("User not found"))
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to fetch user by ID: ${e.message}"))
+        }
+    }
+
+    suspend fun fetchUserComments(userId: String): Result<List<String>> {
+        return try {
+            val commentsSnapshot = db.collection("users")
+                .document(userId)
+                .collection("comments")
+                .get()
+                .await()
+
+            val comments = commentsSnapshot.documents.mapNotNull { it.getString("text") }
+            Result.success(comments)
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to fetch user comments: ${e.message}"))
+        }
+    }
 
 }

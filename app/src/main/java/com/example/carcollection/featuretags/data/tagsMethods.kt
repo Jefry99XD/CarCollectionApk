@@ -14,7 +14,7 @@ class TagsMethods {
         val firebaseUser = auth.currentUser
         if (firebaseUser != null) {
             val tag = Tag(name = name, color = color)
-            db.collection("tags")
+            db.collection("users").document(firebaseUser.uid).collection("tags")
                 .add(tag)
         }
     }
@@ -22,7 +22,7 @@ class TagsMethods {
      fun deleteTag(tagId: String){
         val firebaseUser = auth.currentUser
         if (firebaseUser != null) {
-            db.collection("tags")
+            db.collection("users").document(firebaseUser.uid).collection("tags")
                 .document(tagId)
                 .delete()
         }
@@ -35,7 +35,7 @@ class TagsMethods {
                 "name" to name,
                 "color" to color
             )
-            db.collection("tags")
+            db.collection("users").document(firebaseUser.uid).collection("tags")
                 .document(tagId)
                 .update(tagUpdates)
         }
@@ -45,7 +45,7 @@ class TagsMethods {
         val firebaseUser = auth.currentUser
         val tags = mutableListOf<Tag>()
         if (firebaseUser != null) {
-            val querySnapshot = db.collection("tags")
+            val querySnapshot = db.collection("users").document(firebaseUser.uid).collection("tags")
                 .get()
                 .await()
             for (document in querySnapshot.documents) {
@@ -62,7 +62,7 @@ class TagsMethods {
     suspend fun getTagById(tagId: String): Tag? {
         val firebaseUser = auth.currentUser
         if (firebaseUser != null) {
-            val documentSnapshot = db.collection("tags")
+            val documentSnapshot = db.collection("users").document(firebaseUser.uid).collection("tags")
                 .document(tagId)
                 .get()
                 .await()
@@ -102,4 +102,6 @@ class TagsMethods {
             Result.failure(Exception("No user logged in to update tags in cars."))
         }
     }
+
+
 }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.CarCrash
 import androidx.compose.material.icons.filled.QueryStats
 import androidx.compose.material.icons.filled.Tag
@@ -29,8 +30,7 @@ fun MenuScreen(
     onNavigateToCollection: () -> Unit,
     onNavigateToTags: () -> Unit,
     onNavigateToConsultas: () -> Unit,
-    onNavigateToStatistics: () -> Unit,
-    onNavigateToRegister: () -> Unit,
+    onNavigateToAddAchievement: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -53,6 +53,7 @@ fun MenuScreen(
         item { MenuButton("Colección", Icons.Filled.CarCrash, onNavigateToCollection) }
         item { MenuButton("Tags", Icons.Filled.Tag, onNavigateToTags) }
         item { MenuButton("Consultas", Icons.Default.QueryStats, onNavigateToConsultas) }
+        item { MenuButton("Agregar Logro", Icons.Filled.AddCircle, onNavigateToAddAchievement) }
 
         item { CarOfTheDayScreen() }
 

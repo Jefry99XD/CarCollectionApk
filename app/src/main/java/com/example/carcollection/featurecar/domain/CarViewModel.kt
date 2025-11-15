@@ -2,6 +2,8 @@ package com.example.carcollection.featurecar.domain
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.carcollection.featureAchievements.data.AchievementMethods
+import com.example.carcollection.featureAchievements.domain.AchievementGlobal
 import com.example.carcollection.featurecar.data.CarMethods
 import com.example.carcollection.featuretags.data.TagsMethods
 import com.example.carcollection.featuretags.domain.Tag
@@ -24,6 +26,8 @@ class CarViewModel(
     private val _cars = MutableStateFlow<List<Car>>(emptyList())
     val cars: StateFlow<List<Car>> = _cars
 
+    private val achievementMethods = AchievementMethods()
+
     // 🔹 Estado de filtros
     private val _filterState = MutableStateFlow(CarFilterState())
     val filterState: StateFlow<CarFilterState> = _filterState
@@ -40,14 +44,31 @@ class CarViewModel(
         viewModelScope.launch {
             loadUserCars()
             _allTags.value = tagsMethods.getAllTags()
+            checkAchievements()
         }
     }
 
-    // 🔹 Carga los autos del usuario desde Firebase
+    private fun checkAchievements() {
+        viewModelScope.launch {
+            try {
+                // Obtener la lista actualizada de autos del usuario
+                val userCars = _cars.value
+                // Revisar y actualizar logros
+                achievementMethods.checkAndUpdateAchievements(userCars) { achievement ->
+                    notifyAchievementUnlocked(achievement)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+
     fun loadUserCars() {
         viewModelScope.launch {
             val result = carMethods.getUserCars()
             _cars.value = result.getOrDefault(emptyList())
+            checkAchievements()
         }
     }
 
@@ -89,7 +110,10 @@ class CarViewModel(
     fun addCar(car: Car) {
         viewModelScope.launch {
             val result = carMethods.addCarToCollection(car)
-            if (result.isSuccess) loadUserCars()
+            if (result.isSuccess) {
+                loadUserCars()
+                checkAchievements()
+            }
         }
     }
 
@@ -97,7 +121,11 @@ class CarViewModel(
         viewModelScope.launch {
             currentCar?.id?.let { carId ->
                 val result = carMethods.updateCarInCollection(carId, car)
-                if (result.isSuccess) loadUserCars()
+                if (result.isSuccess) {
+                    loadUserCars()
+                    checkAchievements()
+
+                }
             }
         }
     }
@@ -105,7 +133,10 @@ class CarViewModel(
     fun deleteCar(carId: String) {
         viewModelScope.launch {
             val result = carMethods.deleteCarFromCollection(carId)
-            if (result.isSuccess) loadUserCars()
+            if (result.isSuccess) {
+                loadUserCars()
+                checkAchievements()
+            }
         }
     }
 
@@ -151,7 +182,10 @@ class CarViewModel(
     fun setPage(page: Int) { _savedPage.value = page }
 
 
+    private val _unlockedAchievement = MutableStateFlow<AchievementGlobal?>(null)
+    val unlockedAchievement = _unlockedAchievement.asStateFlow()
 
-
-
+    fun notifyAchievementUnlocked(achievement: AchievementGlobal?) {
+        _unlockedAchievement.value = achievement
+    }
 }

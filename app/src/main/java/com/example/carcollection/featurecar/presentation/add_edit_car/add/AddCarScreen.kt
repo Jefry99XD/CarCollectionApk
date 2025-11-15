@@ -158,6 +158,7 @@ fun AddCarScreen(
                             year = year,
                             type = type,
                             tags = selectedTags,
+                            createdAt = System.currentTimeMillis(),
 
                             photoUrl = finalPhoto,
                         )

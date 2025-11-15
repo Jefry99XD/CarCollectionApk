@@ -22,6 +22,8 @@ object NavRoutes {
     const val EDIT_PROFILE = "edit_profile"
     const val EDIT_TAG = "edit_tag/{tagId}"
     const val DETAIL = "car_detail"
+    const val ACHIEVEMENTS = "achievements"
+    const val ADD_ACHIEVEMENT = "add_achievement"
 
     fun editTag(tagId: String) = "edit_tag/$tagId"
 }

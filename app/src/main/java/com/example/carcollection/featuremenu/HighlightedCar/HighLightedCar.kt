@@ -4,7 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -16,8 +16,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 
@@ -46,63 +49,102 @@ fun CarOfTheDayScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // ─── Título general ───
         Text(
             text = "Carro del Día",
-            style = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.fillMaxWidth(),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            textAlign = TextAlign.Center
         )
-        
-        // ─── Imagen principal con overlay ───
+
+        // ─── Imagen principal con badge y overlay ───
         Card(
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(12.dp),
+            shape = RoundedCornerShape(20.dp),
+            elevation = CardDefaults.cardElevation(10.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Box {
+            Box(modifier = Modifier.fillMaxWidth()) {
+
+                // Imagen del carro
                 AsyncImage(
                     model = car.url,
                     contentDescription = car.name,
                     contentScale = ContentScale.Inside,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp)
+                        .height(220.dp)
+                        .background(Color(0xFFF0F0F0))
                 )
 
-                // Overlay oscuro con info
+                // Badge “HOY”
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(12.dp)
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.secondary
+                                )
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "HOY",
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                    )
+                }
+
+                // Overlay inferior con información
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(60.dp)
+                        .height(70.dp)
                         .align(Alignment.BottomCenter)
-                        .background(Color.Black.copy(alpha = 0.5f))
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))
+                            )
+                        )
                         .padding(horizontal = 12.dp, vertical = 8.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
+                    Column(
+                        verticalArrangement = Arrangement.Bottom,
+                        modifier = Modifier.fillMaxSize()
                     ) {
-                        Column {
-                            Text(car.name, style = MaterialTheme.typography.titleMedium, color = Color.White)
-                            Text("${car.year} • ${car.series}", style = MaterialTheme.typography.bodyMedium, color = Color.White)
-                        }
+                        Text(
+                            car.name,
+                            style = MaterialTheme.typography.titleMedium.copy(color = Color.White),
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            "${car.year} • ${car.series}",
+                            style = MaterialTheme.typography.bodyMedium.copy(color = Color.White)
+                        )
                     }
                 }
             }
         }
 
-        // ─── Descripción en Card ───
+        // ─── Descripción en tarjeta ───
         Card(
             shape = RoundedCornerShape(12.dp),
-            elevation = CardDefaults.cardElevation(6.dp),
+            elevation = CardDefaults.cardElevation(4.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
                 text = car.description,
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(16.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

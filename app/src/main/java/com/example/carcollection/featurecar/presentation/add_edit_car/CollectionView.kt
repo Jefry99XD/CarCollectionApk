@@ -64,6 +64,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.carcollection.featureAchievements.presentation.AchievementUnlockedPopup
 import com.example.carcollection.featurecar.domain.Car
 import com.example.carcollection.featurecar.domain.CarViewModel
 import com.example.carcollection.featuremenu.main.components.CarCard
@@ -216,6 +217,10 @@ fun CollectionViewScreen(
     var carToDelete by remember { mutableStateOf<Car?>(null) }
 
     var expanded by rememberSaveable { mutableStateOf(false) }
+
+
+    val unlockedAchievement by viewModel.unlockedAchievement.collectAsState()
+
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -427,6 +432,13 @@ fun CollectionViewScreen(
                             Text("Cancelar")
                         }
                     }
+                )
+            }
+
+            unlockedAchievement?.let { achievement ->
+                AchievementUnlockedPopup(
+                    achievement = achievement,
+                    onDismiss = { viewModel.notifyAchievementUnlocked(null) }
                 )
             }
         }

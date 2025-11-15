@@ -28,9 +28,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.carcollection.presentation.navigation.NavRoutes
 import com.example.carcollection.featureuser.UserViewModel
+import com.example.carcollection.presentation.navigation.NavRoutes
 import com.example.carcollection.ui.theme.sidebar
+
 
 private const val DefaultDrawerWidthFraction = 0.75f
 
@@ -82,6 +83,13 @@ fun AppNavigationDrawer(
                 ) {
                     onCloseDrawer()
                     navController.navigate(NavRoutes.LIBRARY)
+                }
+                SidebarButton(
+                    text = "Logros",
+                    icon = Icons.Default.CarCrash
+                ) {
+                    onCloseDrawer()
+                    navController.navigate(NavRoutes.ACHIEVEMENTS)
                 }
                 SidebarButton(
                     text = "Configuración",
