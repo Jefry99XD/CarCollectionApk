@@ -52,6 +52,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -114,6 +115,8 @@ fun FilterSection(
     val selectedYear by viewModel.selectedYear.collectAsState()
     val selectedSeries by viewModel.selectedSeries.collectAsState()
     val selectedTag by viewModel.selectedTag.collectAsState()
+
+
 
     Column(modifier = modifier) {
 
@@ -207,6 +210,9 @@ fun CollectionViewScreen(
     var currentPage by rememberSaveable { mutableIntStateOf(viewModel.savedPage.value) }
 
 
+
+
+
     val totalPages = maxOf(1, (carsList.size + itemsPerPage - 1) / itemsPerPage)
     val paginatedCars = carsList.drop(currentPage * itemsPerPage).take(itemsPerPage)
 
@@ -220,6 +226,21 @@ fun CollectionViewScreen(
 
 
     val unlockedAchievement by viewModel.unlockedAchievement.collectAsState()
+
+    val achievement = unlockedAchievement
+    var showPopup by remember { mutableStateOf(false) }
+
+    LaunchedEffect(achievement) {
+        if (achievement != null) {
+            showPopup = true
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.loadUserCars()
+        viewModel.loadTags()
+        viewModel.checkAchievements()
+    }
 
 
     Scaffold(
@@ -264,7 +285,7 @@ fun CollectionViewScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { expanded = !expanded }) {
+                    IconButton(onClick = { }) {
                         Icon(
                             imageVector = if (expanded) Icons.Default.FilterAltOff else Icons.Default.FilterAlt,
                             contentDescription = "Toggle Filters"
@@ -396,7 +417,7 @@ fun CollectionViewScreen(
                                 },
                                 onDelete = { carToDelete = car },
                                 onClick = {
-                                    car.id?.let { id ->
+                                    car.id?.let { _ ->
                                         navController.navigate("${NavRoutes.DETAIL}/${car.id}")
                                     } ?: run {
                                         // Opcional: mostrar snackbar o log
@@ -435,12 +456,24 @@ fun CollectionViewScreen(
                 )
             }
 
-            unlockedAchievement?.let { achievement ->
-                AchievementUnlockedPopup(
-                    achievement = achievement,
-                    onDismiss = { viewModel.notifyAchievementUnlocked(null) }
-                )
+
+
+            AnimatedVisibility(
+                visible = showPopup && achievement != null,
+                enter = fadeIn(tween(200)),
+                exit = fadeOut(tween(200))
+            ) {
+                achievement?.let {
+                    AchievementUnlockedPopup(
+                        achievement = it,
+                        onDismiss = {
+                            showPopup = false
+                            viewModel.notifyAchievementUnlocked(null)
+                        }
+                    )
+                }
             }
+
         }
     }
 }

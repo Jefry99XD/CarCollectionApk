@@ -55,6 +55,7 @@ fun AchievementUnlockedPopup(
 
     // 🎵 Reproducir sonido al aparecer
     LaunchedEffect(Unit) {
+        visible = true
         try {
             val soundPool = android.media.SoundPool.Builder().setMaxStreams(1).build()
             val soundId = soundPool.load(

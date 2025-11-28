@@ -12,7 +12,7 @@ data class AchievementGlobal(
 )
 
 enum class AchievementType {
-    GENERAL, TAG, SERIE, COLOR, BRAND, YEAR, MIXED
+    GENERAL, TAG, SERIE, COLOR, BRAND, YEAR, MIXED, LIST_BY_NAME
 }
 
 data class AchievementCondition(
@@ -20,7 +20,9 @@ data class AchievementCondition(
     val serie: String? = null,
     val color: String? = null,
     val brand: String? = null,
-    val year: String? = null
+    val year: String? = null,
+    val namesList: String? = null
+
 )
 
 

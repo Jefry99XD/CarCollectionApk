@@ -128,7 +128,9 @@ class CarMethods {
                 if (documentSnapshot.exists()) {
                     val car = documentSnapshot.toObject(Car::class.java)
                     if (car != null) {
-                        Result.success(car)
+                        // Set the ID from the document
+                        val carWithId = car.copy(id = documentSnapshot.id)
+                        Result.success(carWithId)
                     } else {
                         Result.failure(Exception("Failed to parse car data from Firestore."))
                     }
@@ -232,6 +234,39 @@ class CarMethods {
         }
     }
 
+    suspend fun carExistsInCollection(car: Car): Result<Boolean> {
+        val firebaseUser = auth.currentUser
+        return if (firebaseUser != null) {
+            val userId = firebaseUser.uid
+            try {
+                val carsCollectionRef = db.collection("users")
+                    .document(userId)
+                    .collection("carsCollection")
 
+                val querySnapshot = carsCollectionRef.get().await()
+
+                // Check if any existing car matches all fields (except id and createdAt)
+                val exists = querySnapshot.documents.any { doc ->
+                    val existingCar = doc.toObject(Car::class.java)
+                    existingCar != null &&
+                        existingCar.brand == car.brand &&
+                        existingCar.name == car.name &&
+                        existingCar.serie == car.serie &&
+                        existingCar.year == car.year &&
+                        existingCar.color == car.color &&
+                        existingCar.type == car.type &&
+                        existingCar.photoUrl == car.photoUrl &&
+                        existingCar.tags == car.tags &&
+                        existingCar.backgroundName == car.backgroundName
+                }
+
+                Result.success(exists)
+            } catch (e: Exception) {
+                Result.failure(Exception("Error checking if car exists: ${e.message}"))
+            }
+        } else {
+            Result.failure(Exception("No user logged in to check car existence."))
+        }
+    }
 
 }

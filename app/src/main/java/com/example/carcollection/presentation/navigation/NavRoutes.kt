@@ -24,8 +24,14 @@ object NavRoutes {
     const val DETAIL = "car_detail"
     const val ACHIEVEMENTS = "achievements"
     const val ADD_ACHIEVEMENT = "add_achievement"
+    const val USER_LIST = "user_list"
+    const val STATS_MAIN = "stats_main"
 
     fun editTag(tagId: String) = "edit_tag/$tagId"
+
+    const val PUBLIC_PROFILE = "public_profile/{uid}"
+    fun publicProfile(uid: String) = "public_profile/$uid"
+
 }
 
 

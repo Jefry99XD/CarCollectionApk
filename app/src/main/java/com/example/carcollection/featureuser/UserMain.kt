@@ -67,6 +67,7 @@ fun UserMain(
     val scrollState = rememberScrollState()
 
     val recentCars by userViewModel.recentCars.collectAsState()
+    val achievementCount by userViewModel.achievementCount.collectAsState()
 
     LaunchedEffect(Unit) {
         userViewModel.fetchUserProfile()
@@ -193,33 +194,11 @@ fun UserMain(
                                     "Series",
                                     user?.totalSeries ?: 0
                                 )
-                                StatItem(Icons.Default.Star, "Logros", 69)
+                                StatItem(Icons.Default.Star, "Logros", achievementCount)
                             }
                         }
                     }
 
-                    // ─── 🏅 Insignias ───
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        elevation = CardDefaults.cardElevation(6.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text("Insignias", style = MaterialTheme.typography.titleMedium)
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly
-                            ) {
-                                BadgeItem(Icons.Default.DirectionsCar, "Coleccionista")
-                                BadgeItem(Icons.Default.LocalOffer, "Etiquetador")
-                                BadgeItem(Icons.Default.BeachAccess, "Leyenda")
-                                BadgeItem(Icons.Default.Star, "Veterano")
-                            }
-                        }
-                    }
 
                     // ─── 🕹️ Actividad reciente ───
                     Card(
@@ -250,21 +229,6 @@ fun UserMain(
                     }
 
 
-                    // ─── 💬 Comentarios recientes ───
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        elevation = CardDefaults.cardElevation(6.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                "Comentarios recientes",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Spacer(Modifier.height(8.dp))
-                            CommentItem("Alex", "¡Increíble colección! El R34 se ve brutal.")
-                        }
-                    }
 
                     // ─── Botones ───
                     Column(
@@ -304,24 +268,6 @@ fun UserMain(
 //  COMPONENTES REUTILIZABLES
 // ──────────────────────────────
 
-@Composable
-fun BadgeItem(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(
-            icon,
-            contentDescription = title,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .size(36.dp)
-                .background(
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                    CircleShape
-                )
-                .padding(8.dp)
-        )
-        Text(title, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-    }
-}
 
 @Composable
 fun RecentCarItem(name: String, year: String, imageUrl: String) {
@@ -350,19 +296,6 @@ fun RecentCarItem(name: String, year: String, imageUrl: String) {
     }
 }
 
-@Composable
-fun CommentItem(username: String, message: String) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(10.dp))
-            .padding(10.dp)
-            .padding(bottom = 4.dp)
-    ) {
-        Text(username, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
-        Text(message, style = MaterialTheme.typography.bodyMedium)
-    }
-}
 
 @Composable
 fun StatItem(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, value: Int) {

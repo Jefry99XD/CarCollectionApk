@@ -1,4 +1,4 @@
-package com.example.carcollection.presentation.config
+package com.example.carcollection.featureconfig.config
 
 data class VersionInfo(
     val version: String,

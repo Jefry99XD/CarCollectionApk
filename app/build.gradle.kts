@@ -44,6 +44,8 @@ android {
 }
 
 dependencies {
+    // charts
+    implementation("com.github.tehras:charts:0.2.4-alpha")
     // Ensure the Firebase BoM is declared FIRST to manage versions consistently
     implementation(platform("com.google.firebase:firebase-bom:32.7.0")) // Keep this at the top of your Firebase dependencies!
 

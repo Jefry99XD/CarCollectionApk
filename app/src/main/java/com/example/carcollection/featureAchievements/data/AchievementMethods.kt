@@ -1,6 +1,5 @@
 package com.example.carcollection.featureAchievements.data
 
-import android.util.Log
 import com.example.carcollection.featureAchievements.domain.AchievementGlobal
 import com.example.carcollection.featureAchievements.domain.AchievementType
 import com.example.carcollection.featureAchievements.domain.UserAchievement
@@ -33,10 +32,6 @@ class AchievementMethods {
             val global = doc.toObject(AchievementGlobal::class.java)!!.copy(id = doc.id)
             val userProgress = userMap[doc.id]?.toObject(UserAchievement::class.java)
 
-            Log.d(
-                "ACH_DEBUG",
-                "📥 Loaded: ${global.title} | progress=${userProgress?.progress} | unlocked=${userProgress?.unlocked}"
-            )
 
             global to userProgress
         }
@@ -48,9 +43,8 @@ class AchievementMethods {
 
         try {
             ref.update("progress", FieldValue.increment(increment.toLong())).await()
-            Log.d("Achievements", "🔥 Incremented $achievementId → +$increment")
         } catch (e: Exception) {
-            Log.e("Achievements", "❌ Error al incrementar progreso $achievementId", e)
+            // Error updating progress
         }
     }
 
@@ -64,9 +58,8 @@ class AchievementMethods {
                     "unlockedAt" to System.currentTimeMillis()
                 )
             ).await()
-            Log.d("Achievements", "🏆 Logro desbloqueado: $achievementId")
         } catch (e: Exception) {
-            Log.e("Achievements", "❌ Error al desbloquear logro $achievementId", e)
+            // Error unlocking achievement
         }
     }
 
@@ -87,13 +80,13 @@ class AchievementMethods {
                 "serie" to achievement.condition.serie,
                 "color" to achievement.condition.color,
                 "brand" to achievement.condition.brand,
-                "year" to achievement.condition.year
+                "year" to achievement.condition.year,
+                "namesList" to achievement.condition.namesList
             ),
             "createdAt" to achievement.createdAt
         )
 
         collection.document(docId).set(data).await()
-        Log.d("Achievements", "🆕 Logro global agregado: ${achievement.title}")
     }
 
     // ─── Crear documentos vacíos de usuario si no existen ───────────────────────
@@ -105,7 +98,6 @@ class AchievementMethods {
             val achievementId = doc.id
             val userDoc = userCollection.document(achievementId).get().await()
             if (!userDoc.exists()) {
-                Log.d("Achievements", "🆕 Creando logro vacío: $achievementId")
                 val emptyUserAchievement = UserAchievement(
                     achievementId = achievementId,
                     progress = 0,
@@ -119,16 +111,8 @@ class AchievementMethods {
 
     // ─── Verificar y actualizar todos los logros ────────────────────────────────
     suspend fun checkAndUpdateAchievements(userCars: List<Car>,onAchievementUnlocked: ((AchievementGlobal) -> Unit)? = null) {
-        Log.d("Achievements", "🚗 checkAndUpdateAchievements → userCars=${userCars.size}")
-        userCars.forEach { car ->
-            Log.d("Achievements", "   • ${car.name} | ${car.brand} | ${car.tags}")
-        }
-
-        Log.d("Achievements", "▶ checkAndUpdateAchievements con ${userCars.size} carros")
-
         ensureUserAchievementsExist()
         val achievements = getAllAchievements()
-        Log.d("Achievements", "🔍 Revisando ${achievements.size} logros...")
 
 
         for ((achievement, userAchievement) in achievements) {
@@ -180,6 +164,25 @@ class AchievementMethods {
                         }
                     }
                 }
+                AchievementType.LIST_BY_NAME -> {
+                    val namesList = achievement.condition.namesList
+                        ?.lowercase()
+                        ?.split(",")
+                        ?.map { it.trim() }
+                        ?.filter { it.isNotEmpty() }
+                        ?.toSet() // Eliminamos duplicados si hay
+
+                    if (!namesList.isNullOrEmpty()) {
+                        // Convertimos los nombres de los carros del usuario en set para evitar duplicados
+                        val userCarNames = userCars
+                            .mapNotNull { it.name?.lowercase()?.trim() }
+                            .toSet()
+
+                        // Progreso = cuántos nombres de la lista aparecen en la colección del usuario
+                        progressCount = namesList.count { it in userCarNames }
+                    }
+                }
+
                 AchievementType.MIXED -> {
                     // Ejemplo: podrías mezclar condiciones
                     progressCount = userCars.count { car ->
@@ -194,26 +197,17 @@ class AchievementMethods {
             val goal = achievement.goal
             val isUnlocked = userAchievement?.unlocked ?: false
 
-            Log.d(
-                "Achievements",
-                "🎯 [${achievement.title}] actual=$currentProgress nuevo=$progressCount meta=$goal unlocked=$isUnlocked"
-            )
-
             if (progressCount > currentProgress) {
                 val increment = progressCount - currentProgress
-                Log.d("Achievements", "⬆️ Incrementando ${achievement.id} en +$increment")
                 incrementProgress(achievement.id, increment)
             }
 
             if (progressCount >= goal && !isUnlocked) {
-                Log.d("Achievements", "🏆 Cumple meta → Desbloqueando ${achievement.id}")
                 unlockAchievement(achievement.id)
                 onAchievementUnlocked?.invoke(achievement)
             }
 
         }
-
-        Log.d("Achievements", "✅ Revisión de logros completada")
     }
 
 }

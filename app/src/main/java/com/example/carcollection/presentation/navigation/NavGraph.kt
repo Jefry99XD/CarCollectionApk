@@ -20,10 +20,16 @@ import com.example.carcollection.featureAchievements.presentation.AchievementVie
 import com.example.carcollection.featureAchievements.presentation.AddAchievementForm
 import com.example.carcollection.featurecar.data.CarMethods
 import com.example.carcollection.featurecar.domain.CarFormViewModel
+import com.example.carcollection.featurecar.domain.CarFormViewModelFactory
 import com.example.carcollection.featurecar.domain.CarViewModel
 import com.example.carcollection.featurecar.presentation.add_edit_car.AddEditCarScreen
 import com.example.carcollection.featurecar.presentation.add_edit_car.CollectionViewScreen
 import com.example.carcollection.featuremenu.menu.MenuScreen
+import com.example.carcollection.featurestats.StatsCategory
+import com.example.carcollection.featurestats.StatsCategoryScreen
+import com.example.carcollection.featurestats.StatsMainScreen
+import com.example.carcollection.featurestats.StatsViewModel
+import com.example.carcollection.featurestats.StatsViewModelFactory
 import com.example.carcollection.featuretags.data.TagsMethods
 import com.example.carcollection.featuretags.presentation.AddTagScreen
 import com.example.carcollection.featuretags.presentation.EditTagScreen
@@ -31,19 +37,22 @@ import com.example.carcollection.featuretags.presentation.TagViewModel
 import com.example.carcollection.featuretags.presentation.TagsEvent
 import com.example.carcollection.featuretags.presentation.ViewTagsScreen
 import com.example.carcollection.featureuser.UserEdit
+import com.example.carcollection.featureuser.UserListScreen
 import com.example.carcollection.featureuser.UserMain
+import com.example.carcollection.featureuser.publicUser.UserPublicProfile
 import com.example.carcollection.featureuser.UserViewModel
 import com.example.carcollection.featureuser.login.LoginForm
+import com.example.carcollection.featureuser.publicUser.PublicUserCarList
 import com.example.carcollection.featureuser.register.RegisterForm
-import com.example.carcollection.presentation.config.About
-import com.example.carcollection.presentation.config.ConfigMenu
+import com.example.carcollection.featureconfig.config.About
+import com.example.carcollection.featureconfig.config.ConfigMenu
 import com.example.carcollection.presentation.consultas.LibraryScreen
 import com.example.carcollection.presentation.consultas.QueryMenuScreen
 import com.example.carcollection.presentation.consultas.STHScreen
 import com.example.carcollection.presentation.consultas.STHViewModel
 import com.example.carcollection.presentation.consultas.THScreen
 import com.example.carcollection.presentation.consultas.THViewModel
-import com.example.carcollection.presentation.statistics.StatisticsMenu
+import com.example.carcollection.presentation.data.DataScreen
 
 
 @SuppressLint("ViewModelConstructorInComposable")
@@ -55,7 +64,7 @@ fun AppNavGraph(
     val carMethods = CarMethods()
     val tagsMethods = TagsMethods()
     val achievementViewModel: AchievementViewModel = viewModel()
-    val CollectionViewModel = remember { CarViewModel( carMethods, tagsMethods) }
+    val collectionViewModel = remember { CarViewModel( carMethods, tagsMethods) }
     NavHost(navController = navController, startDestination = NavRoutes.MENU) {
 
         // Pantalla principal (menú)
@@ -71,7 +80,7 @@ fun AppNavGraph(
         // Pantalla de colección
         composable(NavRoutes.COLLECTION) {
             CollectionViewScreen(
-                viewModel = CollectionViewModel,
+                viewModel = collectionViewModel,
                 navController = navController,
                 onNavigateToAdd = { navController.navigate(NavRoutes.ADD_EDIT_CAR) },
                 onEditCar = { carId -> navController.navigate("add_edit_car?carId=$carId") },
@@ -82,7 +91,9 @@ fun AppNavGraph(
 
         // Pantalla para agregar nuevo auto
         composable(NavRoutes.ADD_EDIT_CAR) {
-            val viewModel = CarFormViewModel(carMethods, tagsMethods )
+            val viewModel = viewModel<CarFormViewModel>(
+                factory = CarFormViewModelFactory(carMethods, tagsMethods)
+            )
             AddEditCarScreen(
                 viewModel = viewModel,
                 onSaveSuccess = { navController.popBackStack() },
@@ -102,10 +113,14 @@ fun AppNavGraph(
             )
         ) { backStackEntry ->
             val carId = backStackEntry.arguments?.getString("carId")
-            val viewModel = CarFormViewModel(carMethods, tagsMethods )
+            val viewModel = viewModel<CarFormViewModel>(
+                factory = CarFormViewModelFactory(carMethods, tagsMethods)
+            )
 
-            if (carId?.isNotEmpty() == true) {
-                viewModel.loadCar(carId.toString())
+            LaunchedEffect(carId) {
+                if (carId?.isNotEmpty() == true) {
+                    viewModel.loadCar(carId)
+                }
             }
 
             AddEditCarScreen(
@@ -114,14 +129,14 @@ fun AppNavGraph(
                 onBackClick = { navController.popBackStack() }
             )
         }
-        // Pantalla de detalle del auto
+
         composable(
             route = "${NavRoutes.DETAIL}/{carId}"
         ) { backStackEntry ->
             val carId = backStackEntry.arguments?.getString("carId")
 
-            val cars = CollectionViewModel.cars.collectAsState(initial = emptyList()).value
-            val allTags = CollectionViewModel.allTags.collectAsState(initial = emptyList()).value
+            val cars = collectionViewModel.cars.collectAsState(initial = emptyList()).value
+            val allTags = collectionViewModel.allTags.collectAsState(initial = emptyList()).value
 
             val car = cars.find { it.id == carId }
 
@@ -189,7 +204,9 @@ fun AppNavGraph(
                 onNavigateToSTH = { navController.navigate(NavRoutes.VIEW_STH) },
                 onNavigateToTH = { navController.navigate(NavRoutes.VIEW_TH) },
                 onBackClick = { navController.popBackStack() },
-                onNavigateToLibrary = { navController.navigate(NavRoutes.LIBRARY) }
+                onNavigateToLibrary = { navController.navigate(NavRoutes.LIBRARY) },
+                onNavigateToUserList = { navController.navigate(NavRoutes.USER_LIST) },
+                onNavigateToStats = { navController.navigate(NavRoutes.STATS_MAIN) }
             )
         }
 
@@ -219,8 +236,29 @@ fun AppNavGraph(
                 onBackClick = { navController.popBackStack() }
             )
         }
-        composable(NavRoutes.STATISTICS) {
-            StatisticsMenu(
+        composable(NavRoutes.STATS_MAIN) {
+            StatsMainScreen(
+                onBackClick = { navController.popBackStack() },
+                onCategoryClick = { category ->
+                    navController.navigate("statsCategory/${category.name}")
+                }
+            )
+        }
+        composable(
+            route = "statsCategory/{category}",
+            arguments = listOf(navArgument("category") { type = NavType.StringType })
+        ) { backStackEntry ->
+
+            val categoryName = backStackEntry.arguments?.getString("category")
+            val category = StatsCategory.valueOf(categoryName!!)
+
+            val statsViewModel = viewModel<StatsViewModel>(
+                factory = StatsViewModelFactory(carMethods)
+            )
+
+            StatsCategoryScreen(
+                selectedCategory = category,
+                viewModel = statsViewModel,
                 onBackClick = { navController.popBackStack() }
             )
         }
@@ -232,8 +270,14 @@ fun AppNavGraph(
                 onNavigateToAbout = { navController.navigate(NavRoutes.ABOUT) },
             )
         }
+
         composable(NavRoutes.ABOUT) {
             About(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+        composable(NavRoutes.DATA) {
+            DataScreen(
                 onBackClick = { navController.popBackStack() }
             )
         }
@@ -264,6 +308,26 @@ fun AppNavGraph(
                 navController = navController
             )
         }
+        composable(
+            route = NavRoutes.PUBLIC_PROFILE,
+            arguments = listOf(
+                navArgument("uid") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val uid = backStackEntry.arguments?.getString("uid") ?: ""
+
+            UserPublicProfile(
+                uid = uid,
+                viewModel = userViewModel,
+                onBackClick = { navController.popBackStack() },
+                onViewCollection = {
+                    navController.navigate("public_car_list/$uid")
+                }
+            )
+
+        }
+
+
         composable(NavRoutes.EDIT_PROFILE) {
             UserEdit(
                 userViewModel = userViewModel,
@@ -283,5 +347,29 @@ fun AppNavGraph(
                 onBackClick = { navController.popBackStack() },
             )
         }
+        composable(NavRoutes.USER_LIST){
+            UserListScreen(
+                userViewModel,
+                onBackClick = { navController.popBackStack() },
+                onViewProfile = { uid ->
+                    navController.navigate(NavRoutes.publicProfile(uid))
+                }
+                ,
+            )
+        }
+        composable(
+            "public_car_list/{uid}",
+            arguments = listOf(navArgument("uid") { type = NavType.StringType })
+        ) { backStackEntry ->
+
+            val uid = backStackEntry.arguments?.getString("uid")!!
+
+            PublicUserCarList(
+                uid = uid,
+                viewModel = userViewModel,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
     }
 }

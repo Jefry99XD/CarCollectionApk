@@ -2,6 +2,7 @@ package com.example.carcollection.featureuser
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.carcollection.featureAchievements.data.AchievementMethods
 import com.example.carcollection.featurecar.data.CarMethods
 import com.example.carcollection.featurecar.domain.Car
 import com.example.carcollection.featuretags.data.TagsMethods
@@ -10,7 +11,9 @@ import com.example.carcollection.featureuser.domain.User
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlin.jvm.optionals.getOrNull
 
 class UserViewModel(
 ) : ViewModel() {
@@ -23,6 +26,9 @@ class UserViewModel(
 
     private val _tagCount = MutableStateFlow(0)
     val tagCount: StateFlow<Int> = _tagCount
+
+    private val _achievementCount = MutableStateFlow(0)
+    val achievementCount: StateFlow<Int> = _achievementCount
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -37,6 +43,7 @@ class UserViewModel(
     private val userMethods = UserMethods()
     private val carMethods = CarMethods()
     private val tagsMethods = TagsMethods()
+    private val achievementMethods = AchievementMethods()
 
     private val auth = FirebaseAuth.getInstance()
 
@@ -53,6 +60,7 @@ class UserViewModel(
                 _user.value = null
                 _carCount.value = 0
                 _tagCount.value = 0
+                _achievementCount.value = 0
                 _recentCars.value = emptyList()
             }
         }
@@ -135,6 +143,7 @@ class UserViewModel(
             _user.value = null
             _carCount.value = 0
             _tagCount.value = 0
+            _achievementCount.value = 0
             _recentCars.value = emptyList() // 🧹 limpiar también los carros recientes
             _errorMessage.value = null
         }
@@ -174,9 +183,28 @@ class UserViewModel(
 
                 // Actualizar el objeto User con sus estadísticas
                 _user.value = _user.value?.updateStats(cars, tags)
+
+                // Fetch achievement count
+                fetchAchievementCount()
             } catch (e: Exception) {
                 _carCount.value = 0
                 _tagCount.value = 0
+                _achievementCount.value = 0
+            }
+        }
+    }
+
+    fun fetchAchievementCount() {
+        viewModelScope.launch {
+            try {
+                val achievements = achievementMethods.getAllAchievements()
+                // Count only unlocked achievements
+                val unlockedCount = achievements.count { (_, userAchievement) ->
+                    userAchievement?.unlocked == true
+                }
+                _achievementCount.value = unlockedCount
+            } catch (e: Exception) {
+                _achievementCount.value = 0
             }
         }
     }
@@ -200,5 +228,75 @@ class UserViewModel(
             }
         }
     }
+
+    private val _publicUser = MutableStateFlow<User?>(null)
+    val publicUser: StateFlow<User?> = _publicUser
+
+    private val _publicStats = MutableStateFlow<Map<String, Int>?>(null)
+    val publicStats: StateFlow<Map<String, Int>?> = _publicStats
+
+    private val _publicRecentCars = MutableStateFlow<List<Car>>(emptyList())
+    val publicRecentCars: StateFlow<List<Car>> = _publicRecentCars
+
+
+    fun fetchPublicUserProfile(uid: String) {
+        viewModelScope.launch {
+            val result = userMethods.getPublicUserProfile(uid)
+            _publicUser.value = result.getOrNull()
+        }
+    }
+
+    fun fetchPublicUserStats(uid: String) {
+        viewModelScope.launch {
+            val result = userMethods.getPublicUserStats(uid)
+            _publicStats.value = result.getOrNull()
+        }
+    }
+
+    fun fetchPublicRecentCars(uid: String) {
+        viewModelScope.launch {
+            val result = userMethods.getPublicRecentCars(uid)
+            _publicRecentCars.value = result.getOrNull() ?: emptyList()
+
+        }
+    }
+
+    private val _publicUsers = MutableStateFlow<List<User>>(emptyList())
+    val publicUsers = _publicUsers.asStateFlow()
+
+    fun fetchPublicUsers() {
+        viewModelScope.launch {
+            val result = userMethods.getAllPublicUsers()
+
+            val mapped = result.getOrNull()?.map { map ->
+                User(
+                    uid = map["id"] as? String ?: "",
+                    username = map["username"] as? String ?: "Sin nombre",
+                    photoUrl = map["photoUrl"] as? String ?: "",
+                    // email, bio no existen aquí así que se dejan default
+                    totalCars = (map["carsCount"] as? Long ?: 0L).toInt(),
+                    totalTags = 0, // No existe en el backend
+                    totalFriends = 0,
+                    totalSeries = 0,
+                    badges = emptyList(),
+                    lastActive = System.currentTimeMillis()
+                )
+            } ?: emptyList()
+
+            _publicUsers.value = mapped
+        }
+    }
+
+    private val _publicUserCars = MutableStateFlow<List<Car>>(emptyList())
+    val publicUserCars = _publicUserCars.asStateFlow()
+
+    fun fetchPublicUserCars(uid: String) {
+        viewModelScope.launch {
+            val result = userMethods.fetchPublicUserCars(uid)
+            _publicUserCars.value = result.getOrNull() ?: emptyList()
+        }
+    }
+
+
 
 }

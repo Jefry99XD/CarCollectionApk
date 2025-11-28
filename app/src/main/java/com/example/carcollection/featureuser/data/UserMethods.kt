@@ -2,6 +2,7 @@ package com.example.carcollection.featureuser.data
 
 import android.net.Uri
 import androidx.core.net.toUri
+import com.example.carcollection.featurecar.domain.Car
 import com.example.carcollection.featureuser.domain.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
@@ -272,5 +273,179 @@ class UserMethods {
             Result.failure(Exception("Failed to fetch user comments: ${e.message}"))
         }
     }
+
+    // ────────────────────────────────────────────────
+//   GET PUBLIC USER PROFILE (solo lectura)
+// ────────────────────────────────────────────────
+    suspend fun getPublicUserProfile(userId: String): Result<User> {
+        return try {
+            val snapshot = db.collection("users").document(userId).get().await()
+            val user = snapshot.toObject(User::class.java)
+
+            if (user != null) {
+                Result.success(user.copy(uid = userId))
+            } else {
+                Result.failure(Exception("Public user profile not found"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to fetch public profile: ${e.message}"))
+        }
+    }
+
+    // ────────────────────────────────────────────────
+//   GET PUBLIC USER STATS (sin permisos especiales)
+// ────────────────────────────────────────────────
+    suspend fun getPublicUserStats(userId: String): Result<Map<String, Int>> {
+        return try {
+            val cars = db.collection("users").document(userId)
+                .collection("carsCollection").get().await()
+
+            val tags = db.collection("users").document(userId)
+                .collection("tags").get().await()
+
+            val achievements = db.collection("users").document(userId)
+                .collection("achievements").get().await()
+
+            val friends = db.collection("users").document(userId)
+                .collection("friends").get().await()
+
+            // Series únicas
+            val seriesSet = cars.documents.mapNotNull { it.getString("series") }.toSet()
+
+            Result.success(
+                mapOf(
+                    "cars" to cars.size(),
+                    "tags" to tags.size(),
+                    "achievements" to achievements.size(),
+                    "friends" to friends.size(),
+                    "series" to seriesSet.size
+                )
+            )
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to fetch public stats: ${e.message}"))
+        }
+    }
+
+    // ────────────────────────────────────────────────
+//   GET PUBLIC RECENT CARS (MAX 10)
+// ────────────────────────────────────────────────
+    suspend fun getPublicRecentCars(userId: String): Result<List<Car>> {
+        return try {
+            val snapshot = db.collection("users").document(userId)
+                .collection("carsCollection")
+                .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .limit(10)
+                .get()
+                .await()
+
+            val cars = snapshot.documents.mapNotNull { doc ->
+                doc.toObject(Car::class.java)?.copy(id = doc.id)
+            }
+
+            Result.success(cars)
+
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to fetch public recent cars: ${e.message}"))
+        }
+    }
+
+
+    // ────────────────────────────────────────────────
+//   GET PUBLIC COMMENTS
+// ────────────────────────────────────────────────
+    suspend fun getPublicComments(userId: String): Result<List<Map<String, Any>>> {
+        return try {
+            val snapshot = db.collection("users")
+                .document(userId)
+                .collection("comments")
+                .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .get()
+                .await()
+
+            val comments = snapshot.documents.mapNotNull { it.data }
+
+            Result.success(comments)
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to fetch comments: ${e.message}"))
+        }
+    }
+
+    // ────────────────────────────────────────────────
+//   ADD COMMENT TO PUBLIC PROFILE
+// ────────────────────────────────────────────────
+    suspend fun addCommentToUser(
+        targetUserId: String,
+        authorId: String,
+        authorName: String,
+        text: String
+    ): Result<Unit> {
+        return try {
+            val commentData = mapOf(
+                "authorId" to authorId,
+                "authorName" to authorName,
+                "text" to text,
+                "timestamp" to System.currentTimeMillis()
+            )
+
+            db.collection("users")
+                .document(targetUserId)
+                .collection("comments")
+                .add(commentData)
+                .await()
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to add comment: ${e.message}"))
+        }
+    }
+
+    suspend fun getAllPublicUsers(): Result<List<Map<String, Any>>> {
+        return try {
+            val snapshot = db.collection("users")
+                .get()
+                .await()
+
+            val users = snapshot.documents.mapNotNull { doc ->
+                val data = doc.data ?: return@mapNotNull null
+
+                mapOf(
+                    "id" to doc.id,
+                    "username" to (data["username"] ?: ""),
+                    "photoUrl" to (data["photoUrl"] ?: ""),
+                    "carsCount" to (data["carsCount"] ?: 0),
+                    "achievementsCount" to (data["achievementsCount"] ?: 0)
+                )
+            }
+
+            Result.success(users)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun fetchPublicUserCars(userId: String): Result<List<Car>> {
+        return try {
+            val snapshot = db.collection("users")
+                .document(userId)
+                .collection("carsCollection")
+                .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .get()
+                .await()
+
+            val cars = snapshot.documents.mapNotNull { doc ->
+                doc.toObject(Car::class.java)?.copy(id = doc.id)
+            }
+
+            Result.success(cars)
+
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to fetch public user cars: ${e.message}"))
+        }
+    }
+
+
+
+
+
 
 }

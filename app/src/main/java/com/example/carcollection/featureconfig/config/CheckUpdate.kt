@@ -1,4 +1,4 @@
-package com.example.carcollection.presentation.config
+package com.example.carcollection.featureconfig.config
 import android.app.DownloadManager
 import android.content.Context
 import android.os.Environment

@@ -1,4 +1,4 @@
-package com.example.carcollection.presentation.config
+package com.example.carcollection.featureconfig.config
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize

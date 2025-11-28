@@ -2,6 +2,7 @@ package com.example.carcollection.featurecar.domain
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.carcollection.featurecar.data.CarMethods
 import com.example.carcollection.featurecar.presentation.add_edit_car.BackgroundCategory
@@ -104,7 +105,7 @@ class CarFormViewModel(
                 color.value = car.color.orEmpty()
                 type.value = car.type.orEmpty()
                 backgroundName.value = car.backgroundName.orEmpty()
-                _selectedTags.value = car.tags ?: emptyList()
+                _selectedTags.value = car.tags
             }
         }
     }
@@ -140,3 +141,18 @@ class CarFormViewModel(
         }
     }
 }
+
+// ViewModelFactory for CarFormViewModel
+class CarFormViewModelFactory(
+    private val carMethods: CarMethods,
+    private val tagsMethods: TagsMethods
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(CarFormViewModel::class.java)) {
+            return CarFormViewModel(carMethods, tagsMethods) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
+

@@ -48,7 +48,7 @@ class CarViewModel(
         }
     }
 
-    private fun checkAchievements() {
+    fun checkAchievements() {
         viewModelScope.launch {
             try {
                 // Obtener la lista actualizada de autos del usuario
@@ -69,6 +69,12 @@ class CarViewModel(
             val result = carMethods.getUserCars()
             _cars.value = result.getOrDefault(emptyList())
             checkAchievements()
+        }
+    }
+
+    fun loadTags() {
+        viewModelScope.launch {
+            _allTags.value = tagsMethods.getAllTags()
         }
     }
 
@@ -113,19 +119,6 @@ class CarViewModel(
             if (result.isSuccess) {
                 loadUserCars()
                 checkAchievements()
-            }
-        }
-    }
-
-    fun updateCar(car: Car) {
-        viewModelScope.launch {
-            currentCar?.id?.let { carId ->
-                val result = carMethods.updateCarInCollection(carId, car)
-                if (result.isSuccess) {
-                    loadUserCars()
-                    checkAchievements()
-
-                }
             }
         }
     }

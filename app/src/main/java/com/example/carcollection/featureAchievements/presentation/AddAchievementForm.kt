@@ -64,6 +64,9 @@ fun AddAchievementForm(
     var errorMessage by remember { mutableStateOf("") }
     var successMessage by remember { mutableStateOf("") }
 
+    var namesList by remember { mutableStateOf("") }
+
+
     val scope = rememberCoroutineScope()
     val isLoading by viewModel.isLoading.collectAsState()
 
@@ -189,6 +192,27 @@ fun AddAchievementForm(
                     )
                 }
 
+                AchievementType.LIST_BY_NAME -> {
+                    OutlinedTextField(
+                        value = namesList,
+                        onValueChange = {
+                            namesList = it
+
+                            // --- Actualizar goal automáticamente ---
+                            val count = it.split(",")
+                                .map { s -> s.trim() }
+                                .filter { s -> s.isNotEmpty() }
+                                .size
+
+                            goal = count.toString()
+                        },
+                        label = { Text("Lista de nombres (separados por coma)") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+
+
                 else -> {}
             }
 
@@ -196,10 +220,24 @@ fun AddAchievementForm(
 
             OutlinedTextField(
                 value = goal,
-                onValueChange = { goal = it },
-                label = { Text("Meta numérica (por ejemplo, 10 autos)") },
-                modifier = Modifier.fillMaxWidth()
+                onValueChange = {
+                    if (selectedType != AchievementType.LIST_BY_NAME) {
+                        goal = it
+                    }
+                },
+                label = {
+                    Text(
+                        if (selectedType == AchievementType.LIST_BY_NAME)
+                            "Meta (generada automáticamente)"
+                        else
+                            "Meta numérica (por ejemplo, 10 autos)"
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = selectedType != AchievementType.LIST_BY_NAME, // ⛔ no editable en LIST_BY_NAME
+                readOnly = selectedType == AchievementType.LIST_BY_NAME // evita edición por teclado
             )
+
 
             Spacer(Modifier.height(20.dp))
 
@@ -237,8 +275,9 @@ fun AddAchievementForm(
                                     serie = serie.ifBlank { null },
                                     color = color.ifBlank { null },
                                     brand = brand.ifBlank { null },
-                                    year = year.ifBlank { null }
-                                ),
+                                    year = year.ifBlank { null },
+                                    namesList = namesList.ifBlank { null }
+                                    ),
                                 createdAt = System.currentTimeMillis()
                             )
 
@@ -254,6 +293,7 @@ fun AddAchievementForm(
                             color = ""
                             brand = ""
                             year = ""
+                            namesList = ""
                         } catch (e: Exception) {
                             errorMessage = e.message ?: "Error desconocido"
                         }

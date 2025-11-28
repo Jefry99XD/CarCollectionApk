@@ -1,13 +1,17 @@
-/*
 package com.example.carcollection.utils
 
 import android.content.Context
 import android.net.Uri
+import android.os.Environment
 import android.widget.Toast
+import com.example.carcollection.featurecar.domain.Car
+import com.example.carcollection.featurecar.data.CarMethods
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.BufferedReader
+import java.io.File
+import java.io.FileWriter
 import java.io.InputStreamReader
 
 private fun detectDelimiter(headerLine: String): String {
@@ -24,13 +28,7 @@ private fun parseCarFromTokens(tokens: List<String>, header: List<String>): Car?
 
 
         val tagsRaw = getValue("tags")
-        if (tagsRaw.isNotBlank()) tagsRaw.split("|") else emptyList()
-
-        val backgroundName = if (header.any { it.equals("backgroundName", ignoreCase = true) }) {
-            getValue("backgroundName").ifBlank { "fondo" }
-        } else {
-            "fondo"
-        }
+        val tags = if (tagsRaw.isNotBlank()) tagsRaw.split("|") else emptyList()
 
 
         return Car(
@@ -41,17 +39,97 @@ private fun parseCarFromTokens(tokens: List<String>, header: List<String>): Car?
             color = getValue("color"),
             type = getValue("type"),
             photoUrl = getValue("photoUrl"),
-            tags = getValue("tags").split("|").map { it.trim() }.filter { it.isNotEmpty() },
-            backgroundName = backgroundName
+            tags = getValue("tags").split("|").map { it.trim() }.filter { it.isNotEmpty() }
         )
 
 
-    } catch (_: Exception) {
+    } catch (e: Exception) {
         return null
     }
 }
 
 
+
+fun exportCarsToCSV(context: Context, cars: List<Car>) {
+    // Obtener la carpeta pública de Downloads
+    val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+
+    // Asegurarse de que exista
+    if (!downloadsDir.exists()) {
+        downloadsDir.mkdirs()
+    }
+
+    val fileName = "car_collection_export.csv"
+    val file = File(downloadsDir, fileName)
+
+    try {
+        FileWriter(file).use { writer ->
+            writer.write("brand,name,serie,year,color,type,photoUrl,tags\n")
+            cars.forEach { car ->
+                val tagsJoined = car.tags.joinToString("|")
+                writer.write(listOf(
+                    car.brand ?: "",
+                    car.name ?: "",
+                    car.serie ?: "",
+                    car.year ?: "",
+                    car.color ?: "",
+                    car.type ?: "",
+                    car.photoUrl ?: "",
+                    tagsJoined
+                ).joinToString(",") { escapeCsvField(it) } + "\n")
+            }
+
+
+        }
+
+        Toast.makeText(context, "Exportado a: ${file.absolutePath}", Toast.LENGTH_LONG).show()
+    } catch (e: Exception) {
+        e.printStackTrace()
+        Toast.makeText(context, "Error al exportar: ${e.message}", Toast.LENGTH_LONG).show()
+    }
+}
+
+fun importCarsFromCSV(context: Context) {
+    val fileName = "car_collection_export.csv"
+    val file = File(context.filesDir, fileName)
+
+    if (!file.exists()) {
+        Toast.makeText(context, "Archivo no encontrado", Toast.LENGTH_SHORT).show()
+        return
+    }
+
+    CoroutineScope(Dispatchers.IO).launch {
+        val allLines = file.readLines()
+        if (allLines.isEmpty()) return@launch
+
+        val delimiter = detectDelimiter(allLines[0])
+        val header = allLines[0].split(delimiter).map { it.trim() }
+        val dataLines = allLines.drop(1)
+
+        val cars = dataLines.mapNotNull { line ->
+            val tokens = line.split(delimiter).map { it.trim() }
+            parseCarFromTokens(tokens, header)
+        }
+
+        val carMethods = CarMethods()
+        var addedCount = 0
+        var skippedCount = 0
+
+        cars.forEach { car ->
+            val existsResult = carMethods.carExistsInCollection(car)
+            if (existsResult.isSuccess && !existsResult.getOrDefault(false)) {
+                carMethods.addCarToCollection(car)
+                addedCount++
+            } else {
+                skippedCount++
+            }
+        }
+
+        CoroutineScope(Dispatchers.Main).launch {
+            Toast.makeText(context, "Importación completa: $addedCount añadidos, $skippedCount duplicados omitidos", Toast.LENGTH_LONG).show()
+        }
+    }
+}
 private fun unescapeCsvField(field: String): String {
     return field.trim().removeSurrounding("\"").replace("\"\"", "\"")
 }
@@ -62,7 +140,7 @@ private fun escapeCsvField(field: String): String {
     return "\"$escapedField\"" // encierra en comillas
 }
 
-fun importCarsFromUri(context: Context, repository: CarRepository, uri: Uri) {
+fun importCarsFromUri(context: Context, uri: Uri) {
     CoroutineScope(Dispatchers.IO).launch {
         try {
             val inputStream = context.contentResolver.openInputStream(uri)
@@ -85,10 +163,22 @@ fun importCarsFromUri(context: Context, repository: CarRepository, uri: Uri) {
                 parseCarFromTokens(tokens, header)
             }
 
-            cars.forEach { repository.insertCar(it) }
+            val carMethods = CarMethods()
+            var addedCount = 0
+            var skippedCount = 0
+
+            cars.forEach { car ->
+                val existsResult = carMethods.carExistsInCollection(car)
+                if (existsResult.isSuccess && !existsResult.getOrDefault(false)) {
+                    carMethods.addCarToCollection(car)
+                    addedCount++
+                } else {
+                    skippedCount++
+                }
+            }
 
             CoroutineScope(Dispatchers.Main).launch {
-                Toast.makeText(context, "Importación completa", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Importación completa: $addedCount añadidos, $skippedCount duplicados omitidos", Toast.LENGTH_LONG).show()
             }
         } catch (e: Exception) {
             CoroutineScope(Dispatchers.Main).launch {
@@ -104,23 +194,19 @@ fun exportCarsToUri(context: Context, cars: List<Car>, uri: Uri) {
         try {
             val outputStream = context.contentResolver.openOutputStream(uri)
             outputStream?.bufferedWriter()?.use { writer ->
-                writer.write("id,brand,name,serie,year,color,type,photoUrl,tags, backgroundName\n")
+                writer.write("brand,name,serie,year,color,type,photoUrl,tags\n")
                 cars.forEach { car ->
                     val tagsJoined = car.tags.joinToString("|")
                     writer.write(listOf(
-                        car.id.toString(),
-                        car.brand,
-                        car.name,
-                        car.serie,
-                        car.year,
-                        car.color,
-                        car.type,
-                        car.photoUrl,
-                        tagsJoined,
-                        car.backgroundName
+                        car.brand ?: "",
+                        car.name ?: "",
+                        car.serie ?: "",
+                        car.year ?: "",
+                        car.color ?: "",
+                        car.type ?: "",
+                        car.photoUrl ?: "",
+                        tagsJoined
                     ).joinToString(",") { escapeCsvField(it) } + "\n")
-
-
                 }
 
 
@@ -137,5 +223,3 @@ fun exportCarsToUri(context: Context, cars: List<Car>, uri: Uri) {
     }
 }
 
-
-*/
