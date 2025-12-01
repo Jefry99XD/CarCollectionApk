@@ -54,6 +54,8 @@ fun LibraryScreen(
     // Estado para el modal de imagen
     val selectedImageUrl = remember { mutableStateOf<String?>(null) }
 
+    println("🎨 LibraryScreen: Recomposing - cars count = ${cars.size}, page = $currentPage")
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -85,6 +87,7 @@ fun LibraryScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.weight(1f)
             ) {
+                 println("📋 LibraryScreen: LazyColumn rendering ${cars.size} items")
                 items(cars) { car ->
                     CarLibraryCard(car) {
                         selectedImageUrl.value = it
@@ -160,6 +163,12 @@ fun CarLibraryCard(
                     text = "Año: ${car.year}",
                     style = MaterialTheme.typography.bodyMedium
                 )
+                if (!car.color.isNullOrBlank()) {
+                    Text(
+                        text = "Color: ${car.color}",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
                 if (!car.series.isNullOrBlank()) {
                     Text(
                         text = "Serie: ${car.series}",

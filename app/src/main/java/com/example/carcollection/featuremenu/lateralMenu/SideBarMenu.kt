@@ -98,15 +98,6 @@ fun AppNavigationDrawer(
                     onCloseDrawer()
                     navController.navigate(NavRoutes.CONFIG)
                 }
-                SidebarButton(
-                    text = "Transferir todo a la nube",
-                    icon = Icons.Default.CarCrash // Puedes cambiar el icono si lo prefieres
-                ) {
-                    onCloseDrawer()
-                    // Lógica para transferir todos los carros locales a Firebase
-                    //userViewModel.transferAllLocalCarsToFirebase()
-                }
-
                 // Mostrar solo el botón correspondiente según el estado de autenticación
                 if (user != null) {
                     SidebarButton(

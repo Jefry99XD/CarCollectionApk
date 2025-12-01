@@ -239,8 +239,16 @@ class UserViewModel(
     val publicRecentCars: StateFlow<List<Car>> = _publicRecentCars
 
 
+    fun clearPublicUserData() {
+        _publicUser.value = null
+        _publicStats.value = null
+        _publicRecentCars.value = emptyList()
+    }
+
     fun fetchPublicUserProfile(uid: String) {
         viewModelScope.launch {
+            // Clear old data first to avoid showing stale information
+            _publicUser.value = null
             val result = userMethods.getPublicUserProfile(uid)
             _publicUser.value = result.getOrNull()
         }
@@ -248,6 +256,8 @@ class UserViewModel(
 
     fun fetchPublicUserStats(uid: String) {
         viewModelScope.launch {
+            // Clear old stats first to avoid showing cached data
+            _publicStats.value = null
             val result = userMethods.getPublicUserStats(uid)
             _publicStats.value = result.getOrNull()
         }
@@ -255,6 +265,8 @@ class UserViewModel(
 
     fun fetchPublicRecentCars(uid: String) {
         viewModelScope.launch {
+            // Clear old cars first
+            _publicRecentCars.value = emptyList()
             val result = userMethods.getPublicRecentCars(uid)
             _publicRecentCars.value = result.getOrNull() ?: emptyList()
 
@@ -269,16 +281,34 @@ class UserViewModel(
             val result = userMethods.getAllPublicUsers()
 
             val mapped = result.getOrNull()?.map { map ->
+                // Get counts from the map, handling different possible type conversions
+                val carsCount = when (val count = map["carsCount"]) {
+                    is Long -> count.toInt()
+                    is Int -> count
+                    is Number -> count.toInt()
+                    else -> 0
+                }
+
+                val achievementsCount = when (val count = map["achievementsCount"]) {
+                    is Long -> count.toInt()
+                    is Int -> count
+                    is Number -> count.toInt()
+                    else -> 0
+                }
+
+                // Create a list of dummy badges based on achievements count for display purposes
+                val badgesList = List(achievementsCount) { "Achievement_$it" }
+
                 User(
                     uid = map["id"] as? String ?: "",
                     username = map["username"] as? String ?: "Sin nombre",
                     photoUrl = map["photoUrl"] as? String ?: "",
                     // email, bio no existen aquí así que se dejan default
-                    totalCars = (map["carsCount"] as? Long ?: 0L).toInt(),
+                    totalCars = carsCount,
                     totalTags = 0, // No existe en el backend
                     totalFriends = 0,
                     totalSeries = 0,
-                    badges = emptyList(),
+                    badges = badgesList, // Use achievements count
                     lastActive = System.currentTimeMillis()
                 )
             } ?: emptyList()

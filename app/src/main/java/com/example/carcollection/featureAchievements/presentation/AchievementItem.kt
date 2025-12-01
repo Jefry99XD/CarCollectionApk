@@ -23,9 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.carcollection.featureAchievements.domain.AchievementGlobal
+import com.example.carcollection.featureAchievements.domain.AchievementType
 import com.example.carcollection.featureAchievements.domain.UserAchievement
 
 
@@ -85,6 +87,18 @@ fun AchievementItem(
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray
                 )
+
+                // Show items list for LIST_BY_NAME type
+                if (achievement.type == AchievementType.LIST_BY_NAME && !achievement.condition.namesList.isNullOrEmpty()) {
+                    Spacer(Modifier.height(4.dp))
+                    val itemsList = achievement.condition.namesList.split(",").map { it.trim() }
+                    Text(
+                        text = "Carros que necesitas: ${itemsList.joinToString(", ")}",
+                        style = MaterialTheme.typography.bodySmall.copy(fontStyle = FontStyle.Italic),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                    )
+                }
+
                 Spacer(Modifier.height(6.dp))
 
                 if (!isUnlocked) {

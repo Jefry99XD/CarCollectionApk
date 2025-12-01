@@ -37,6 +37,26 @@ class AchievementMethods {
         }
     }
 
+    // ─── Obtener logros de un usuario público ────────────────────────────────────
+    suspend fun getPublicUserAchievements(userId: String): List<Pair<AchievementGlobal, UserAchievement?>> {
+        val globalDocs = globalAchievementsCollection().get().await().documents
+        val userDocs = db.collection("users")
+            .document(userId)
+            .collection("achievements")
+            .get()
+            .await()
+            .documents
+
+        val userMap = userDocs.associateBy { it.id }
+
+        return globalDocs.map { doc ->
+            val global = doc.toObject(AchievementGlobal::class.java)!!.copy(id = doc.id)
+            val userProgress = userMap[doc.id]?.toObject(UserAchievement::class.java)
+
+            global to userProgress
+        }
+    }
+
     // ─── Incrementar progreso de logro ───────────────────────────────────────────
     suspend fun incrementProgress(achievementId: String, increment: Int) {
         val ref = userAchievementsCollection().document(achievementId)

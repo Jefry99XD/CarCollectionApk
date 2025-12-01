@@ -8,7 +8,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.BeachAccess
 import androidx.compose.material.icons.filled.DirectionsCar
-import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
@@ -40,7 +39,6 @@ fun UserPublicProfile(
     viewModel: UserViewModel,
     onBackClick: () -> Unit ,
     onViewCollection: () -> Unit,
-    onViewTags: () -> Unit = {},
     onViewAchievements: () -> Unit = {}
 ) {
     // 🔄 Observamos los estados del ViewModel
@@ -50,6 +48,9 @@ fun UserPublicProfile(
 
     // 🔄 Cuando se abre el perfil público, cargar datos
     LaunchedEffect(uid) {
+        // Clear previous user's data first
+        viewModel.clearPublicUserData()
+        // Then fetch new user's data
         viewModel.fetchPublicUserProfile(uid)
         viewModel.fetchPublicUserStats(uid)
         viewModel.fetchPublicRecentCars(uid)
@@ -140,12 +141,33 @@ fun UserPublicProfile(
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         StatItem(Icons.Default.DirectionsCar, "Carros", publicStats?.get("cars") ?: 0)
-                        StatItem(Icons.Default.LocalOffer, "Tags", publicStats?.get("tags") ?: 0)
                         StatItem(Icons.Default.People, "Amigos", publicStats?.get("friends") ?: 0)
                         StatItem(Icons.Default.BeachAccess, "Series", publicStats?.get("series") ?: 0)
                         StatItem(Icons.Default.Star, "Logros", publicStats?.get("achievements") ?: 0)
                     }
 
+                }
+            }
+
+            // ============================================================
+            // BOTONES
+            // ============================================================
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Button(
+                    onClick = onViewCollection,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Ver colección")
+                }
+
+                Button(
+                    onClick = onViewAchievements,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Ver logros")
                 }
             }
 
@@ -183,27 +205,6 @@ fun UserPublicProfile(
                         )
                     }
 
-                }
-            }
-
-
-            // ============================================================
-            // BOTONES
-            // ============================================================
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Button(onClick = onViewCollection, modifier = Modifier.fillMaxWidth()) {
-                    Text("Ver colección")
-                }
-
-                Button(onClick = onViewTags, modifier = Modifier.fillMaxWidth()) {
-                    Text("Ver tags del usuario")
-                }
-
-                Button(onClick = onViewAchievements, modifier = Modifier.fillMaxWidth()) {
-                    Text("Ver logros del usuario")
                 }
             }
         }

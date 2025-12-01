@@ -42,6 +42,7 @@ import com.example.carcollection.featureuser.UserMain
 import com.example.carcollection.featureuser.publicUser.UserPublicProfile
 import com.example.carcollection.featureuser.UserViewModel
 import com.example.carcollection.featureuser.login.LoginForm
+import com.example.carcollection.featureuser.publicUser.PublicUserAchievements
 import com.example.carcollection.featureuser.publicUser.PublicUserCarList
 import com.example.carcollection.featureuser.register.RegisterForm
 import com.example.carcollection.featureconfig.config.About
@@ -322,6 +323,9 @@ fun AppNavGraph(
                 onBackClick = { navController.popBackStack() },
                 onViewCollection = {
                     navController.navigate("public_car_list/$uid")
+                },
+                onViewAchievements = {
+                    navController.navigate("public_achievements/$uid")
                 }
             )
 
@@ -367,6 +371,20 @@ fun AppNavGraph(
             PublicUserCarList(
                 uid = uid,
                 viewModel = userViewModel,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            "public_achievements/{uid}",
+            arguments = listOf(navArgument("uid") { type = NavType.StringType })
+        ) { backStackEntry ->
+
+            val uid = backStackEntry.arguments?.getString("uid")!!
+
+            PublicUserAchievements(
+                uid = uid,
+                achievementViewModel = achievementViewModel,
                 onBackClick = { navController.popBackStack() }
             )
         }

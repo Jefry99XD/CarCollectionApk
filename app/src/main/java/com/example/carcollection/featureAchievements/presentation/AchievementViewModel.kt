@@ -74,4 +74,19 @@ class AchievementViewModel  : ViewModel(){
         }
     }
 
+    fun fetchPublicUserAchievements(userId: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val data = achievementMethods.getPublicUserAchievements(userId)
+                _achievements.value = data
+                _errorMessage.value = null
+            } catch (e: Exception) {
+                _errorMessage.value = e.message
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
 }

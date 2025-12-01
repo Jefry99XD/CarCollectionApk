@@ -303,14 +303,17 @@ class UserMethods {
             val tags = db.collection("users").document(userId)
                 .collection("tags").get().await()
 
+            // Fetch only UNLOCKED achievements
             val achievements = db.collection("users").document(userId)
-                .collection("achievements").get().await()
+                .collection("achievements")
+                .whereEqualTo("unlocked", true)
+                .get().await()
 
             val friends = db.collection("users").document(userId)
                 .collection("friends").get().await()
 
             // Series únicas
-            val seriesSet = cars.documents.mapNotNull { it.getString("series") }.toSet()
+            val seriesSet = cars.documents.mapNotNull { it.getString("serie") }.toSet()
 
             Result.success(
                 mapOf(
@@ -408,12 +411,34 @@ class UserMethods {
             val users = snapshot.documents.mapNotNull { doc ->
                 val data = doc.data ?: return@mapNotNull null
 
+                // Fetch actual counts from subcollections
+                val carsCount = try {
+                    db.collection("users").document(doc.id)
+                        .collection("carsCollection")
+                        .get()
+                        .await()
+                        .size()
+                } catch (e: Exception) {
+                    0
+                }
+
+                val achievementsCount = try {
+                    db.collection("users").document(doc.id)
+                        .collection("achievements")
+                        .whereEqualTo("unlocked", true)
+                        .get()
+                        .await()
+                        .size()
+                } catch (e: Exception) {
+                    0
+                }
+
                 mapOf(
                     "id" to doc.id,
                     "username" to (data["username"] ?: ""),
                     "photoUrl" to (data["photoUrl"] ?: ""),
-                    "carsCount" to (data["carsCount"] ?: 0),
-                    "achievementsCount" to (data["achievementsCount"] ?: 0)
+                    "carsCount" to carsCount,
+                    "achievementsCount" to achievementsCount
                 )
             }
 
@@ -425,18 +450,40 @@ class UserMethods {
 
     suspend fun fetchPublicUserCars(userId: String): Result<List<Car>> {
         return try {
-            val snapshot = db.collection("users")
-                .document(userId)
-                .collection("carsCollection")
-                .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
-                .get()
-                .await()
+            // First try with orderBy, if it fails OR returns 0, fetch without ordering
+            var snapshot = try {
+                db.collection("users")
+                    .document(userId)
+                    .collection("carsCollection")
+                    .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                    .get()
+                    .await()
+            } catch (orderError: Exception) {
+                // If orderBy fails (missing index or field), fetch all without ordering
+                db.collection("users")
+                    .document(userId)
+                    .collection("carsCollection")
+                    .get()
+                    .await()
+            }
+
+            // If orderBy returned 0 but collection might have data, try without orderBy
+            if (snapshot.isEmpty) {
+                snapshot = db.collection("users")
+                    .document(userId)
+                    .collection("carsCollection")
+                    .get()
+                    .await()
+            }
 
             val cars = snapshot.documents.mapNotNull { doc ->
                 doc.toObject(Car::class.java)?.copy(id = doc.id)
             }
 
-            Result.success(cars)
+            // Sort in code if we have createdAt values
+            val sortedCars = cars.sortedByDescending { it.createdAt ?: 0L }
+
+            Result.success(sortedCars)
 
         } catch (e: Exception) {
             Result.failure(Exception("Failed to fetch public user cars: ${e.message}"))

@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -73,7 +73,7 @@ fun StatsCategoryScreen(
                 title = { Text(selectedCategory.displayName) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -152,7 +152,7 @@ fun ChartSelector(selected: ChartType, onSelect: (ChartType) -> Unit) {
         )
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            ChartType.values().forEach { type ->
+            ChartType.entries.forEach { type ->
                 FilterChip(
                     selected = selected == type,
                     onClick = { onSelect(type) },

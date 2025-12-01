@@ -149,12 +149,21 @@ fun PublicUserCarList(
 
         Spacer(Modifier.height(12.dp))
 
+
         // LISTA
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(filteredCars) { car ->
-                PublicCarCard(car = car, onClick = { onCarClick(car) })
+        if (filteredCars.isEmpty()) {
+            Text(
+                text = if (cars.isEmpty()) "No hay autos en esta colección" else "No se encontraron autos con ese filtro",
+                color = Color.White,
+                modifier = Modifier.padding(16.dp)
+            )
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(filteredCars) { car ->
+                    PublicCarCard(car = car, onClick = { onCarClick(car) })
+                }
             }
         }
     }
@@ -184,7 +193,7 @@ fun PublicCarCard(
                 modifier = Modifier
                     .size(80.dp)
                     .clip(RoundedCornerShape(12.dp)),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Fit
             )
 
             Spacer(Modifier.width(12.dp))
