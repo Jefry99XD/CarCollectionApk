@@ -23,15 +23,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import com.example.carcollection.featuremenu.HighlightedCar.CarOfTheDayScreen
+import com.example.carcollection.featureuser.UserViewModel
 
 @Composable
 fun MenuScreen(
+    userViewModel: UserViewModel,
     onNavigateToCollection: () -> Unit,
     onNavigateToTags: () -> Unit,
     onNavigateToConsultas: () -> Unit,
     onNavigateToAddAchievement: () -> Unit
 ) {
+    val currentUser by userViewModel.user.collectAsState()
+    val isAdmin = currentUser?.isAdmin ?: false
     LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
@@ -53,7 +59,11 @@ fun MenuScreen(
         item { MenuButton("Colección", Icons.Filled.CarCrash, onNavigateToCollection) }
         item { MenuButton("Tags", Icons.Filled.Tag, onNavigateToTags) }
         item { MenuButton("Consultas", Icons.Default.QueryStats, onNavigateToConsultas) }
-        item { MenuButton("Agregar Logro", Icons.Filled.AddCircle, onNavigateToAddAchievement) }
+
+        // Solo mostrar el botón de Agregar Logro para administradores
+        if (isAdmin) {
+            item { MenuButton("Agregar Logro", Icons.Filled.AddCircle, onNavigateToAddAchievement) }
+        }
 
         item { CarOfTheDayScreen() }
 

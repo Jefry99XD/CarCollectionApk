@@ -9,6 +9,7 @@ import com.example.carcollection.featurecar.data.CarMethods
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileWriter
@@ -140,34 +141,42 @@ private fun escapeCsvField(field: String): String {
     return "\"$escapedField\"" // encierra en comillas
 }
 
-fun importCarsFromUri(context: Context, uri: Uri) {
-    CoroutineScope(Dispatchers.IO).launch {
-        try {
-            val inputStream = context.contentResolver.openInputStream(uri)
-            val reader = BufferedReader(InputStreamReader(inputStream))
-            val allLines = reader.readLines()
+suspend fun importCarsFromUri(
+    context: Context,
+    uri: Uri,
+    onProgressUpdate: (current: Int, total: Int) -> Unit = { _, _ -> },
+    onComplete: (added: Int, skipped: Int) -> Unit = { _, _ -> }
+) {
+    try {
+        val inputStream = context.contentResolver.openInputStream(uri)
+        val reader = BufferedReader(InputStreamReader(inputStream))
+        val allLines = reader.readLines()
 
-            if (allLines.isEmpty()) {
-                CoroutineScope(Dispatchers.Main).launch {
-                    Toast.makeText(context, "El archivo está vacío", Toast.LENGTH_LONG).show()
-                }
-                return@launch
+        if (allLines.isEmpty()) {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "El archivo está vacío", Toast.LENGTH_LONG).show()
             }
+            return
+        }
 
-            val delimiter = detectDelimiter(allLines[0])
-            val header = allLines[0].split(delimiter).map { it.trim() }
-            val dataLines = allLines.drop(1)
+        val delimiter = detectDelimiter(allLines[0])
+        val header = allLines[0].split(delimiter).map { it.trim() }
+        val dataLines = allLines.drop(1)
+        val totalLines = dataLines.size
 
-            val cars = dataLines.mapNotNull { line ->
-                val tokens = line.split(delimiter).map { it.trim() }
-                parseCarFromTokens(tokens, header)
-            }
+        withContext(Dispatchers.Main) {
+            onProgressUpdate(0, totalLines)
+        }
 
-            val carMethods = CarMethods()
-            var addedCount = 0
-            var skippedCount = 0
+        val carMethods = CarMethods()
+        var addedCount = 0
+        var skippedCount = 0
 
-            cars.forEach { car ->
+        dataLines.forEachIndexed { index, line ->
+            val tokens = line.split(delimiter).map { it.trim() }
+            val car = parseCarFromTokens(tokens, header)
+
+            if (car != null) {
                 val existsResult = carMethods.carExistsInCollection(car)
                 if (existsResult.isSuccess && !existsResult.getOrDefault(false)) {
                     carMethods.addCarToCollection(car)
@@ -177,13 +186,19 @@ fun importCarsFromUri(context: Context, uri: Uri) {
                 }
             }
 
-            CoroutineScope(Dispatchers.Main).launch {
-                Toast.makeText(context, "Importación completa: $addedCount añadidos, $skippedCount duplicados omitidos", Toast.LENGTH_LONG).show()
+            // Update progress on main thread
+            withContext(Dispatchers.Main) {
+                onProgressUpdate(index + 1, totalLines)
             }
-        } catch (e: Exception) {
-            CoroutineScope(Dispatchers.Main).launch {
-                Toast.makeText(context, "Error al importar: ${e.message}", Toast.LENGTH_LONG).show()
-            }
+        }
+
+        withContext(Dispatchers.Main) {
+            onComplete(addedCount, skippedCount)
+            Toast.makeText(context, "Importación completa: $addedCount añadidos, $skippedCount duplicados omitidos", Toast.LENGTH_LONG).show()
+        }
+    } catch (e: Exception) {
+        withContext(Dispatchers.Main) {
+            Toast.makeText(context, "Error al importar: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 }

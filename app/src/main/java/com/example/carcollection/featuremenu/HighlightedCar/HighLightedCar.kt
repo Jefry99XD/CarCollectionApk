@@ -1,5 +1,6 @@
 package com.example.carcollection.featuremenu.HighlightedCar
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,7 +23,21 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
+import com.example.carcollection.featurecar.presentation.add_edit_car.CarLibraryEntry
+import com.example.carcollection.featurecar.presentation.add_edit_car.CarVariation
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import java.util.Calendar
+import java.text.SimpleDateFormat
+import java.util.Locale
+import androidx.compose.material3.CircularProgressIndicator
 
 // Data class para el carro del día
 data class CarOfTheDay(
@@ -30,18 +45,163 @@ data class CarOfTheDay(
     val year: String,
     val series: String,
     val url: String,
-    val description: String = "Este es el carro destacado del día. Más adelante podrás ver su descripción completa desde la base de datos."
+    val color: String = "",
+    val description: String = ""
 )
 
+/**
+ * Función para obtener el carro del día basado en la fecha actual.
+ * Usa la fecha como semilla para generar un índice consistente.
+ * Todos los usuarios verán el mismo carro el mismo día.
+ */
+fun getCarOfTheDay(context: Context): CarOfTheDay? {
+    return try {
+        println("🚗 CarOfTheDay: Loading JSON...")
+
+        // Cargar JSON desde assets
+        val inputStream = context.assets.open("diecast_images.json")
+        val json = inputStream.bufferedReader().use { it.readText() }
+
+        println("🚗 CarOfTheDay: JSON loaded, length = ${json.length}")
+        println("🚗 CarOfTheDay: JSON starts with: ${json.take(100)}")
+
+        // Parsear JSON
+        val gson = Gson()
+        val carLibraryEntries = try {
+            // Intentar parsear como array
+            val typeArray = object : TypeToken<List<CarLibraryEntry>>() {}.type
+            val entries = gson.fromJson<List<CarLibraryEntry>>(json, typeArray)
+            println("✅ CarOfTheDay: Parsed as array successfully")
+            entries
+        } catch (e: Exception) {
+            println("⚠️ CarOfTheDay: Array parsing failed: ${e.message}")
+            println("🔄 CarOfTheDay: Trying single object...")
+            // Si falla, intentar como objeto único
+            try {
+                val typeSingle = object : TypeToken<CarLibraryEntry>() {}.type
+                val singleEntry = gson.fromJson<CarLibraryEntry>(json, typeSingle)
+                println("✅ CarOfTheDay: Parsed as single object")
+                listOf(singleEntry)
+            } catch (e2: Exception) {
+                println("❌ CarOfTheDay: Single object parsing also failed: ${e2.message}")
+                throw e2
+            }
+        }
+
+        println("🚗 CarOfTheDay: Loaded ${carLibraryEntries.size} car entries")
+
+        // Aplanar todas las variaciones
+        val allVariations = mutableListOf<Pair<CarLibraryEntry, CarVariation>>()
+        carLibraryEntries.forEachIndexed { index, entry ->
+            println("🚗 CarOfTheDay: Entry #$index - name=${entry.name}, variations=${entry.variations?.size ?: 0}")
+            entry.variations?.forEach { variation ->
+                // Filtrar variaciones sin URL o con imagen no disponible
+                val hasValidUrl = variation.url != null &&
+                                 variation.url.isNotBlank() &&
+                                 !variation.url.contains("Image_Not_Available", ignoreCase = true)
+
+                if (hasValidUrl) {
+                    allVariations.add(Pair(entry, variation))
+                }
+            }
+        }
+
+        println("🚗 CarOfTheDay: Total valid variations = ${allVariations.size}")
+
+        if (allVariations.isEmpty()) {
+            println("❌ CarOfTheDay: No variations found")
+            return null
+        }
+
+        // Obtener fecha actual en formato YYYY-MM-DD
+        val calendar = Calendar.getInstance()
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val dateString = dateFormat.format(calendar.time)
+        println("📅 CarOfTheDay: Today is $dateString")
+
+        // Usar la fecha como semilla para generar índice consistente
+        // Hashcode de la fecha será el mismo para todos los usuarios
+        val seed = dateString.hashCode()
+        val index = Math.abs(seed % allVariations.size)
+
+        println("🎲 CarOfTheDay: Seed = $seed, Index = $index")
+
+        // Seleccionar el carro del día
+        val (carEntry, variation) = allVariations[index]
+
+        println("🔍 CarOfTheDay: Selected Entry Details:")
+        println("   - Model Name: ${carEntry.name}")
+        println("   - Variation Year: ${variation.year}")
+        println("   - Variation Color: ${variation.color}")
+        println("   - Variation Series: ${variation.series}")
+        println("   - Variation URL: ${variation.url}")
+
+        val carOfTheDay = CarOfTheDay(
+            name = carEntry.name ?: "Modelo desconocido",
+            year = variation.year ?: "N/A",
+            series = variation.series ?: "N/A",
+            url = variation.url ?: "",
+            color = variation.color ?: "",
+            description = carEntry.description ?: "Sin descripción disponible."
+        )
+
+        println("✅ CarOfTheDay: Selected ${carOfTheDay.name} (${carOfTheDay.year}) - ${carOfTheDay.color}")
+        println("   URL: ${carOfTheDay.url}")
+        carOfTheDay
+
+    } catch (e: Exception) {
+        println("❌ CarOfTheDay: Error - ${e.message}")
+        e.printStackTrace()
+        null
+    }
+}
+
 @Composable
-fun CarOfTheDayScreen(
-    car: CarOfTheDay = CarOfTheDay(
-        name = "'70 Toyota Celica",
-        year = "2013",
-        series = "HW City: Street Power",
-        url = "https://static.wikia.nocookie.net/hotwheels/images/9/9b/70_Toyota_Celica_green_2013_HW_City.JPG/revision/latest?cb=20121104002101"
-    )
-) {
+fun CarOfTheDayScreen() {
+    val context = LocalContext.current
+    var carOfTheDay by remember { mutableStateOf<CarOfTheDay?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    // Cargar el carro del día
+    LaunchedEffect(Unit) {
+        carOfTheDay = getCarOfTheDay(context)
+        isLoading = false
+    }
+
+    if (isLoading) {
+        // Indicador de carga
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(400.dp)
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    if (carOfTheDay == null) {
+        // Error: No se pudo cargar el carro
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "No se pudo cargar el carro del día",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+        return
+    }
+
+    val car = carOfTheDay!!
+
+    // UI del carro del día
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -122,8 +282,17 @@ fun CarOfTheDayScreen(
                             style = MaterialTheme.typography.titleMedium.copy(color = Color.White),
                             fontWeight = FontWeight.Bold
                         )
+                        val detailsText = buildString {
+                            append(car.year)
+                            if (car.color.isNotBlank()) {
+                                append(" • ${car.color}")
+                            }
+                            if (car.series.isNotBlank()) {
+                                append(" • ${car.series}")
+                            }
+                        }
                         Text(
-                            "${car.year} • ${car.series}",
+                            detailsText,
                             style = MaterialTheme.typography.bodyMedium.copy(color = Color.White)
                         )
                     }

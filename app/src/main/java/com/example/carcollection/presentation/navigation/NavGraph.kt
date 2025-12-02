@@ -47,6 +47,8 @@ import com.example.carcollection.featureuser.publicUser.PublicUserCarList
 import com.example.carcollection.featureuser.register.RegisterForm
 import com.example.carcollection.featureconfig.config.About
 import com.example.carcollection.featureconfig.config.ConfigMenu
+import com.example.carcollection.presentation.consultas.CarLibraryViewModel
+import com.example.carcollection.presentation.consultas.CarModelLibraryScreen
 import com.example.carcollection.presentation.consultas.LibraryScreen
 import com.example.carcollection.presentation.consultas.QueryMenuScreen
 import com.example.carcollection.presentation.consultas.STHScreen
@@ -71,6 +73,7 @@ fun AppNavGraph(
         // Pantalla principal (menú)
         composable(NavRoutes.MENU) {
             MenuScreen(
+                userViewModel = userViewModel,
                 onNavigateToCollection = { navController.navigate(NavRoutes.COLLECTION) },
                 onNavigateToTags = { navController.navigate(NavRoutes.VIEW_TAGS) },
                 onNavigateToConsultas = { navController.navigate(NavRoutes.CONSULTAS)},
@@ -283,10 +286,41 @@ fun AppNavGraph(
             )
         }
         composable(NavRoutes.LIBRARY) {
+            val carLibraryViewModel: CarLibraryViewModel = viewModel()
+            val selectedCar = carLibraryViewModel.selectedCar.collectAsState()
+
+            // Si hay un carro seleccionado, navegar a la pantalla de modelo
+            LaunchedEffect(selectedCar.value) {
+                if (selectedCar.value != null) {
+                    println("🔀 NavGraph: Navigating to car model library")
+                    navController.navigate(NavRoutes.CAR_MODEL_LIBRARY)
+                }
+            }
+
             LibraryScreen(
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
+                viewModel = carLibraryViewModel
             )
         }
+
+        composable(NavRoutes.CAR_MODEL_LIBRARY) {
+            val parentEntry = remember(it) {
+                navController.getBackStackEntry(NavRoutes.LIBRARY)
+            }
+            val carLibraryViewModel: CarLibraryViewModel = viewModel(parentEntry)
+            val selectedCar = carLibraryViewModel.selectedCar.collectAsState()
+
+            selectedCar.value?.let { car ->
+                CarModelLibraryScreen(
+                    carEntry = car,
+                    onBackClick = {
+                        carLibraryViewModel.clearSelection()
+                        navController.popBackStack()
+                    }
+                )
+            }
+        }
+
         composable(NavRoutes.REGISTER) {
             RegisterForm(
                 userViewModel = userViewModel,

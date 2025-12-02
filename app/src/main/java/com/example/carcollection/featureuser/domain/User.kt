@@ -28,13 +28,16 @@ data class User(
     val totalFriends: Int = 0,
     val totalSeries: Int = 0,
 
-// ─── Insignias ───
+    // ─── Insignias ───
     val badges: List<String> = emptyList(), // Ejemplo: ["Coleccionista", "Veterano"]
+
+    // ─── Derechos de administrador ───
+    val adminRights: Boolean = false, // Solo puede ser modificado en Firebase
 
     // ─── Última actividad ───
     val lastActive: Long = System.currentTimeMillis(),
 ) {
-    constructor() : this("", null, null, null, null, 0L, 0, 0, 0, 0, emptyList(), 0L)
+    constructor() : this("", null, null, null, null, 0L, 0, 0, 0, 0, emptyList(), false, 0L)
 
     // Propiedad computada: días desde que se unió
     @get:Exclude
@@ -48,4 +51,9 @@ data class User(
             totalTags = tags
         }
     }
+
+    // Método para verificar si el usuario es admin
+    @get:Exclude
+    val isAdmin: Boolean
+        get() = adminRights
 }

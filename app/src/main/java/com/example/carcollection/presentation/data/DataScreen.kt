@@ -16,14 +16,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -57,6 +60,11 @@ fun DataScreen(
     val isExportingCars = remember { mutableStateOf(false) }
     val isExportingTags = remember { mutableStateOf(false) }
 
+    // Import progress states
+    val importProgress = remember { mutableStateOf(0) }
+    val importTotal = remember { mutableStateOf(0) }
+    val showImportDialog = remember { mutableStateOf(false) }
+
     // Car Export/Import
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/csv"),
@@ -75,9 +83,23 @@ fun DataScreen(
         onResult = { uri: Uri? ->
             uri?.let {
                 isImportingCars.value = true
+                showImportDialog.value = true
+                importProgress.value = 0
+                importTotal.value = 0
+
                 coroutineScope.launch {
-                    importCarsFromUri(context, it)
-                    isImportingCars.value = false
+                    importCarsFromUri(
+                        context = context,
+                        uri = it,
+                        onProgressUpdate = { current, total ->
+                            importProgress.value = current
+                            importTotal.value = total
+                        },
+                        onComplete = { _, _ ->
+                            isImportingCars.value = false
+                            showImportDialog.value = false
+                        }
+                    )
                 }
             }
         }
@@ -110,6 +132,32 @@ fun DataScreen(
             }
         }
     )
+
+    // Dialog de progreso de importación
+    if (showImportDialog.value) {
+        AlertDialog(
+            onDismissRequest = { }, // No permitir cerrar durante la importación
+            title = { Text("Importando colección") },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Procesando: ${importProgress.value} de ${importTotal.value} coches",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    LinearProgressIndicator(
+                        progress = if (importTotal.value > 0) {
+                            importProgress.value.toFloat() / importTotal.value.toFloat()
+                        } else 0f,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = { }
+        )
+    }
 
     Scaffold(
         topBar = {

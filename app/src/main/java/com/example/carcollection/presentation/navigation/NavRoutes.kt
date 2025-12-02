@@ -16,6 +16,7 @@ object NavRoutes {
     const val CONFIG = "config"
     const val ABOUT = "about"
     const val LIBRARY = "library"
+    const val CAR_MODEL_LIBRARY = "car_model_library"
     const val LOGIN = "login"
     const val REGISTER = "register"
     const val PROFILE = "profile"

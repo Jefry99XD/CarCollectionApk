@@ -51,7 +51,8 @@ class UserMethods {
                 username = username,
                 email = email,
                 photoUrl = photoUrl,
-                createdAt = System.currentTimeMillis() // Set the timestamp
+                createdAt = System.currentTimeMillis(), // Set the timestamp
+                adminRights = false // Explicitly set to false, can only be changed in Firebase Console
             )
 
             db.collection("users")

@@ -1,6 +1,5 @@
 package com.example.carcollection.presentation.consultas
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,14 +30,17 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.rememberAsyncImagePainter
-import com.example.carcollection.featurecar.presentation.add_edit_car.CarImageEntry
+import com.example.carcollection.featurecar.presentation.add_edit_car.CarLibraryEntry
 import androidx.compose.runtime.getValue
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import coil.compose.AsyncImage
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,11 +52,9 @@ fun LibraryScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val cars by viewModel.paginatedCars.collectAsState()
     val currentPage by viewModel.currentPage.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
-    // Estado para el modal de imagen
-    val selectedImageUrl = remember { mutableStateOf<String?>(null) }
-
-    println("🎨 LibraryScreen: Recomposing - cars count = ${cars.size}, page = $currentPage")
+    println("🎨 LibraryScreen: Recomposing - cars count = ${cars.size}, page = $currentPage, loading = $isLoading")
 
     Scaffold(
         topBar = {
@@ -83,99 +83,107 @@ fun LibraryScreen(
                 singleLine = true
             )
 
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.weight(1f)
-            ) {
-                 println("📋 LibraryScreen: LazyColumn rendering ${cars.size} items")
-                items(cars) { car ->
-                    CarLibraryCard(car) {
-                        selectedImageUrl.value = it
+            if (isLoading) {
+                // Loading indicator
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.padding(8.dp))
+                    Text("Cargando biblioteca...")
+                }
+            } else {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    println("📋 LibraryScreen: LazyColumn rendering ${cars.size} items")
+                    items(cars) { car ->
+                        CarLibraryMainCard(
+                            car = car,
+                            onCarClick = { viewModel.selectCar(car) }
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(
+                        onClick = { viewModel.prevPage() },
+                        enabled = currentPage > 0
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.NavigateBefore, contentDescription = null)
+                        Text("Anterior")
+                    }
+                    Text("Pág ${currentPage + 1} / ${viewModel.getTotalPages()}")
+                    TextButton(
+                        onClick = { viewModel.nextPage() },
+                        enabled = (currentPage + 1) < viewModel.getTotalPages()
+                    ) {
+                        Text("Siguiente")
+                        Icon(Icons.AutoMirrored.Filled.NavigateNext, contentDescription = null)
                     }
                 }
             }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                TextButton(onClick = { viewModel.prevPage() }) {
-                    Icon(Icons.AutoMirrored.Filled.NavigateBefore, contentDescription = null)
-                    Text("Anterior")
-                }
-                Text("Pág ${currentPage + 1}")
-                TextButton(onClick = { viewModel.nextPage() }) {
-                    Text("Siguiente")
-                    Icon(Icons.AutoMirrored.Filled.NavigateNext, contentDescription = null)
-                }
-            }
-        }
-
-        // Modal con la imagen ampliada
-        selectedImageUrl.value?.let { imageUrl ->
-            androidx.compose.material3.AlertDialog(
-                onDismissRequest = { selectedImageUrl.value = null },
-                confirmButton = {
-                    TextButton(onClick = { selectedImageUrl.value = null }) {
-                        Text("Cerrar")
-                    }
-                },
-                text = {
-                    AsyncImage(
-                        model = imageUrl,
-                        contentDescription = "Imagen ampliada",
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            )
         }
     }
 }
 
 @Composable
-fun CarLibraryCard(
-    car: CarImageEntry,
-    onImageClick: (String) -> Unit
+fun CarLibraryMainCard(
+    car: CarLibraryEntry,
+    onCarClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCarClick() },
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp)
+                .padding(16.dp)
         ) {
-            Image(
-                painter = rememberAsyncImagePainter(car.url),
-                contentDescription = car.name,
-                modifier = Modifier
-                    .size(80.dp)
-                    .clickable { onImageClick(car.url.toString()) } // Clic en imagen
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Text(
-                    text = car.name.toString(),
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = "Año: ${car.year}",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                if (!car.color.isNullOrBlank()) {
-                    Text(
-                        text = "Color: ${car.color}",
-                        style = MaterialTheme.typography.bodyMedium
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Show first variation image as thumbnail
+                car.variations?.firstOrNull()?.url?.let { imageUrl ->
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = car.name,
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
                     )
                 }
-                if (!car.series.isNullOrBlank()) {
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Serie: ${car.series}",
-                        style = MaterialTheme.typography.bodyMedium
+                        text = car.name ?: "Sin nombre",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.padding(4.dp))
+                    Text(
+                        text = "${car.variations?.size ?: 0} variaciones",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.secondary
                     )
                 }
             }
         }
     }
 }
+
+
