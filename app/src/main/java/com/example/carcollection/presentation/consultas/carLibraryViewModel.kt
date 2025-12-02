@@ -50,7 +50,6 @@ class CarLibraryViewModel(application: Application) : AndroidViewModel(applicati
 
 
     init {
-        println("🎬 CarLibrary: ViewModel initialized")
         loadCarsFromWeb()
     }
 
@@ -60,43 +59,25 @@ class CarLibraryViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch {
             try {
                 _isLoading.value = true
-                println("🌐 CarLibrary: Starting to load cars from web...")
                 val url =
                     "https://raw.githubusercontent.com/Jefry99XD/CarCollectionApk/refs/heads/main/app/src/main/assets/diecast_images.json"
 
-                println("🌐 CarLibrary: Fetching from URL: $url")
                 val response = client.get(url)
                 val json: String = response.body()
 
-                println("📄 CarLibrary: JSON received, length = ${json.length}")
-                println("📄 CarLibrary: JSON preview (first 200 chars): ${json.take(200)}")
-
                 val gson = Gson()
                 val carLibraryEntries = try {
-                    println("🔍 CarLibrary: Attempting to parse as array...")
                     val typeArray = object : TypeToken<List<CarLibraryEntry>>() {}.type
-                    val entries = gson.fromJson<List<CarLibraryEntry>>(json, typeArray)
-                    println("✅ CarLibrary: Successfully parsed as array, size = ${entries.size}")
-                    entries
+                    gson.fromJson<List<CarLibraryEntry>>(json, typeArray)
                 } catch (e: Exception) {
-                    println("⚠️ CarLibrary: Array parsing failed: ${e.message}")
-                    println("🔍 CarLibrary: Attempting to parse as single object...")
                     val typeSingle = object : TypeToken<CarLibraryEntry>() {}.type
                     val singleEntry = gson.fromJson<CarLibraryEntry>(json, typeSingle)
-                    println("✅ CarLibrary: Successfully parsed as single object")
-                    println("📝 CarLibrary: Car name = ${singleEntry.name}")
-                    println("📝 CarLibrary: Variations count = ${singleEntry.variations?.size ?: 0}")
                     listOf(singleEntry)
                 }
 
-                println("🚗 CarLibrary: Total car entries = ${carLibraryEntries.size}")
-
                 _allCars.value = carLibraryEntries
-                println("✅ CarLibrary: _allCars.value updated with ${carLibraryEntries.size} entries")
                 updatePagination()
-                println("✅ CarLibrary: Pagination updated")
             } catch (e: Exception) {
-                println("❌ CarLibrary: ERROR - ${e.message}")
                 e.printStackTrace()
             } finally {
                 _isLoading.value = false
@@ -105,7 +86,6 @@ class CarLibraryViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun selectCar(car: CarLibraryEntry) {
-        println("🎯 CarLibrary: Selected car: ${car.name} with ${car.variations?.size} variations")
         _selectedCar.value = car
     }
 
@@ -149,7 +129,6 @@ class CarLibraryViewModel(application: Application) : AndroidViewModel(applicati
         val start = _currentPage.value * itemsPerPage
         val end = minOf(start + itemsPerPage, filtered.size)
         _paginatedCars.value = if (filtered.isEmpty()) emptyList() else filtered.subList(start, end)
-        println("📄 CarLibrary: Pagination - filtered: ${filtered.size}, page: ${_currentPage.value}, showing: ${_paginatedCars.value.size} items")
     }
 
     fun getTotalPages(): Int {
