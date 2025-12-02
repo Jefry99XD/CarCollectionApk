@@ -50,6 +50,7 @@ import com.example.carcollection.featureconfig.config.ConfigMenu
 import com.example.carcollection.presentation.consultas.CarLibraryViewModel
 import com.example.carcollection.presentation.consultas.CarModelLibraryScreen
 import com.example.carcollection.presentation.consultas.LibraryScreen
+import com.example.carcollection.featureWishlist.presentation.WishListScreen
 import com.example.carcollection.presentation.consultas.QueryMenuScreen
 import com.example.carcollection.presentation.consultas.STHScreen
 import com.example.carcollection.presentation.consultas.STHViewModel
@@ -300,6 +301,12 @@ fun AppNavGraph(
             LibraryScreen(
                 onBackClick = { navController.popBackStack() },
                 viewModel = carLibraryViewModel
+            )
+        }
+
+        composable(NavRoutes.WISHLIST) {
+            WishListScreen(
+                onBackClick = { navController.popBackStack() }
             )
         }
 

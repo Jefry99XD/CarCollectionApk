@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,6 +24,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,9 +33,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,17 +51,32 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.carcollection.featurecar.domain.Car
 import com.example.carcollection.featurecar.presentation.add_edit_car.CarLibraryEntry
 import com.example.carcollection.featurecar.presentation.add_edit_car.CarVariation
+import com.example.carcollection.featureWishlist.domain.WishListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CarModelLibraryScreen(
     carEntry: CarLibraryEntry,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    wishListViewModel: WishListViewModel = viewModel()
 ) {
     println("🚗 CarModelLibrary: Showing ${carEntry.name} with ${carEntry.variations?.size} variations")
+
+    val message by wishListViewModel.message.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Mostrar mensajes
+    LaunchedEffect(message) {
+        message?.let {
+            snackbarHostState.showSnackbar(it)
+            wishListViewModel.clearMessage()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -78,7 +100,8 @@ fun CarModelLibraryScreen(
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
@@ -98,7 +121,11 @@ fun CarModelLibraryScreen(
 
             // Grid de variaciones
             items(carEntry.variations ?: emptyList()) { variation ->
-                VariationDetailCard(variation)
+                VariationDetailCard(
+                    carName = carEntry.name,
+                    variation = variation,
+                    wishListViewModel = wishListViewModel
+                )
             }
         }
     }
@@ -164,7 +191,11 @@ fun ExpandableDescriptionCard(description: String) {
 }
 
 @Composable
-fun VariationDetailCard(variation: CarVariation) {
+fun VariationDetailCard(
+    carName: String?,
+    variation: CarVariation,
+    wishListViewModel: WishListViewModel
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(4.dp)
@@ -175,6 +206,36 @@ fun VariationDetailCard(variation: CarVariation) {
                 .padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Heart button at top right corner
+            Box(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                IconButton(
+                    onClick = {
+                        // Create Car object from variation data and car name
+                        val carToAdd = Car(
+                            id = "", // Will be auto-generated
+                            name = carName ?: "Unknown",
+                            brand = "Hot Wheels", // Default brand from library
+                            year = variation.year,
+                            serie = variation.series,
+                            color = variation.color,
+                            photoUrl = variation.url,
+                            type = null,
+                            tags = emptyList()
+                        )
+                        wishListViewModel.addToWishlist(carToAdd)
+                    },
+                    modifier = Modifier.align(Alignment.TopEnd)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.FavoriteBorder,
+                        contentDescription = "Agregar a lista de deseados",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
             // Imagen de la variación
             variation.url?.let { imageUrl ->
                 AsyncImage(

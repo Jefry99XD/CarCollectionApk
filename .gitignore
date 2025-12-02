@@ -51,3 +51,4 @@ navigation.json
 
 sonar-project.properties
 
+firestore.rules

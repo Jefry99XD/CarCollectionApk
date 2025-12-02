@@ -14,6 +14,7 @@ import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.CarCrash
 import androidx.compose.material.icons.filled.Collections
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -83,6 +84,13 @@ fun AppNavigationDrawer(
                 ) {
                     onCloseDrawer()
                     navController.navigate(NavRoutes.LIBRARY)
+                }
+                SidebarButton(
+                    text = "Lista de Deseados",
+                    icon = Icons.Default.Favorite
+                ) {
+                    onCloseDrawer()
+                    navController.navigate(NavRoutes.WISHLIST)
                 }
                 SidebarButton(
                     text = "Logros",
