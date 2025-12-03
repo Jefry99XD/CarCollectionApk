@@ -38,6 +38,7 @@ import java.util.Calendar
 import java.text.SimpleDateFormat
 import java.util.Locale
 import androidx.compose.material3.CircularProgressIndicator
+import kotlin.math.abs
 
 // Data class para el carro del día
 data class CarOfTheDay(
@@ -56,14 +57,10 @@ data class CarOfTheDay(
  */
 fun getCarOfTheDay(context: Context): CarOfTheDay? {
     return try {
-        println("🚗 CarOfTheDay: Loading JSON...")
-
         // Cargar JSON desde assets
         val inputStream = context.assets.open("diecast_images.json")
         val json = inputStream.bufferedReader().use { it.readText() }
 
-        println("🚗 CarOfTheDay: JSON loaded, length = ${json.length}")
-        println("🚗 CarOfTheDay: JSON starts with: ${json.take(100)}")
 
         // Parsear JSON
         val gson = Gson()
@@ -71,31 +68,23 @@ fun getCarOfTheDay(context: Context): CarOfTheDay? {
             // Intentar parsear como array
             val typeArray = object : TypeToken<List<CarLibraryEntry>>() {}.type
             val entries = gson.fromJson<List<CarLibraryEntry>>(json, typeArray)
-            println("✅ CarOfTheDay: Parsed as array successfully")
             entries
-        } catch (e: Exception) {
-            println("⚠️ CarOfTheDay: Array parsing failed: ${e.message}")
-            println("🔄 CarOfTheDay: Trying single object...")
+        } catch (_: Exception) {
             // Si falla, intentar como objeto único
             try {
                 val typeSingle = object : TypeToken<CarLibraryEntry>() {}.type
                 val singleEntry = gson.fromJson<CarLibraryEntry>(json, typeSingle)
-                println("✅ CarOfTheDay: Parsed as single object")
                 listOf(singleEntry)
             } catch (e2: Exception) {
-                println("❌ CarOfTheDay: Single object parsing also failed: ${e2.message}")
                 throw e2
             }
         }
 
-        println("🚗 CarOfTheDay: Loaded ${carLibraryEntries.size} car entries")
 
         // Aplanar todas las variaciones
         val allVariations = mutableListOf<Pair<CarLibraryEntry, CarVariation>>()
-        carLibraryEntries.forEachIndexed { index, entry ->
-            println("🚗 CarOfTheDay: Entry #$index - name=${entry.name}, variations=${entry.variations?.size ?: 0}")
+        carLibraryEntries.forEach { entry ->
             entry.variations?.forEach { variation ->
-                // Filtrar variaciones sin URL o con imagen no disponible
                 val hasValidUrl = variation.url != null &&
                                  variation.url.isNotBlank() &&
                                  !variation.url.contains("Image_Not_Available", ignoreCase = true)
@@ -106,10 +95,7 @@ fun getCarOfTheDay(context: Context): CarOfTheDay? {
             }
         }
 
-        println("🚗 CarOfTheDay: Total valid variations = ${allVariations.size}")
-
         if (allVariations.isEmpty()) {
-            println("❌ CarOfTheDay: No variations found")
             return null
         }
 
@@ -117,24 +103,14 @@ fun getCarOfTheDay(context: Context): CarOfTheDay? {
         val calendar = Calendar.getInstance()
         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
         val dateString = dateFormat.format(calendar.time)
-        println("📅 CarOfTheDay: Today is $dateString")
 
         // Usar la fecha como semilla para generar índice consistente
         // Hashcode de la fecha será el mismo para todos los usuarios
         val seed = dateString.hashCode()
-        val index = Math.abs(seed % allVariations.size)
-
-        println("🎲 CarOfTheDay: Seed = $seed, Index = $index")
+        val index = abs(seed % allVariations.size)
 
         // Seleccionar el carro del día
         val (carEntry, variation) = allVariations[index]
-
-        println("🔍 CarOfTheDay: Selected Entry Details:")
-        println("   - Model Name: ${carEntry.name}")
-        println("   - Variation Year: ${variation.year}")
-        println("   - Variation Color: ${variation.color}")
-        println("   - Variation Series: ${variation.series}")
-        println("   - Variation URL: ${variation.url}")
 
         val carOfTheDay = CarOfTheDay(
             name = carEntry.name ?: "Modelo desconocido",
@@ -145,12 +121,9 @@ fun getCarOfTheDay(context: Context): CarOfTheDay? {
             description = carEntry.description ?: "Sin descripción disponible."
         )
 
-        println("✅ CarOfTheDay: Selected ${carOfTheDay.name} (${carOfTheDay.year}) - ${carOfTheDay.color}")
-        println("   URL: ${carOfTheDay.url}")
         carOfTheDay
 
     } catch (e: Exception) {
-        println("❌ CarOfTheDay: Error - ${e.message}")
         e.printStackTrace()
         null
     }

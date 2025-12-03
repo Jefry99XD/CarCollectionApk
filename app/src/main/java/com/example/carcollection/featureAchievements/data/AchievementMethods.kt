@@ -63,7 +63,7 @@ class AchievementMethods {
 
         try {
             ref.update("progress", FieldValue.increment(increment.toLong())).await()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // Error updating progress
         }
     }
@@ -78,8 +78,8 @@ class AchievementMethods {
                     "unlockedAt" to System.currentTimeMillis()
                 )
             ).await()
-        } catch (e: Exception) {
-            // Error unlocking achievement
+        } catch (_: Exception) {
+
         }
     }
 

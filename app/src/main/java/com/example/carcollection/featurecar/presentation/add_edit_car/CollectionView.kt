@@ -285,7 +285,7 @@ fun CollectionViewScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { }) {
+                    IconButton(onClick = { expanded = !expanded }) {
                         Icon(
                             imageVector = if (expanded) Icons.Default.FilterAltOff else Icons.Default.FilterAlt,
                             contentDescription = "Toggle Filters"

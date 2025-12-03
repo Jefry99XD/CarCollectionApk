@@ -87,7 +87,7 @@ fun UserListScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { isGrid = !isGrid }) {
+                    IconButton(onClick = { }) {
                         Icon(
                             imageVector = if (isGrid) Icons.AutoMirrored.Filled.ViewList else Icons.Default.GridView,
                             contentDescription = null
@@ -151,8 +151,7 @@ fun UserListScreen(
                     items(filteredUsers, key = { it.uid }) { user ->
                         UserCard(
                             user = user,
-                            onViewProfile = { onViewProfile(user.uid) },
-                            modifier = Modifier.animateItemPlacement()
+                            onViewProfile = { onViewProfile(user.uid) }
                         )
                     }
                 }
@@ -182,7 +181,7 @@ fun SortMenu(
         }
 
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            SortOption.values().forEach { option ->
+            SortOption.entries.forEach { option ->
                 DropdownMenuItem(
                     text = { Text(option.display) },
                     onClick = {
@@ -195,15 +194,10 @@ fun SortMenu(
     }
 }
 
-// -------------------------------------------------------------------------
-// USER CARD
-// -------------------------------------------------------------------------
-
 @Composable
 fun UserCard(
     user: User,
-    onViewProfile: () -> Unit,
-    modifier: Modifier
+    onViewProfile: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -221,8 +215,6 @@ fun UserCard(
             UserProfileImage(user.photoUrl)
 
             Spacer(modifier = Modifier.width(12.dp))
-            var textScale by remember { mutableStateOf(1f) }
-
 
             Column(
                 modifier = Modifier.weight(1f)

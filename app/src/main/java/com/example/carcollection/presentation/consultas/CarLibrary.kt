@@ -101,7 +101,6 @@ fun LibraryScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.weight(1f)
                 ) {
-                    println("📋 LibraryScreen: LazyColumn rendering ${cars.size} items")
                     items(cars) { car ->
                         CarLibraryMainCard(
                             car = car,

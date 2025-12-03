@@ -1,13 +1,9 @@
 package com.example.carcollection.presentation.consultas
 
 import android.app.Application
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.carcollection.featurecar.presentation.add_edit_car.CarImageEntry
 import com.example.carcollection.featurecar.presentation.add_edit_car.CarLibraryEntry
-import com.example.carcollection.featurecar.presentation.add_edit_car.CarVariation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -20,7 +16,6 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.gson.*
 import io.ktor.client.call.*
 
-@RequiresApi(Build.VERSION_CODES.O)
 class CarLibraryViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _allCars = MutableStateFlow<List<CarLibraryEntry>>(emptyList())
@@ -53,8 +48,6 @@ class CarLibraryViewModel(application: Application) : AndroidViewModel(applicati
         loadCarsFromWeb()
     }
 
-
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun loadCarsFromWeb() {
         viewModelScope.launch {
             try {
@@ -68,8 +61,8 @@ class CarLibraryViewModel(application: Application) : AndroidViewModel(applicati
                 val gson = Gson()
                 val carLibraryEntries = try {
                     val typeArray = object : TypeToken<List<CarLibraryEntry>>() {}.type
-                    gson.fromJson<List<CarLibraryEntry>>(json, typeArray)
-                } catch (e: Exception) {
+                    gson.fromJson(json, typeArray)
+                } catch (_: Exception) {
                     val typeSingle = object : TypeToken<CarLibraryEntry>() {}.type
                     val singleEntry = gson.fromJson<CarLibraryEntry>(json, typeSingle)
                     listOf(singleEntry)

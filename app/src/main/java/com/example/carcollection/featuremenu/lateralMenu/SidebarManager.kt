@@ -1,10 +1,8 @@
 package com.example.carcollection.featuremenu.lateralMenu
 
-import android.content.Context
 import androidx.drawerlayout.widget.DrawerLayout
 
 class SidebarManager(
-    private val context: Context,
     private val drawerLayout: DrawerLayout,
 ) {
     init {
