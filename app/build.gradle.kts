@@ -68,7 +68,7 @@ dependencies {
 
     implementation(libs.androidx.drawerlayout)
     implementation(libs.androidx.fragment.ktx)
-    // implementation(libs.firebase.firestore.ktx) // REMOVED: Redundant
+
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0") // Keep your serialization version
     val roomVersion = "2.7.1" // Use the latest stable version
     implementation("androidx.room:room-runtime:$roomVersion")
