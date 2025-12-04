@@ -103,7 +103,7 @@ fun AchievementItem(
 
                 if (!isUnlocked) {
                     LinearProgressIndicator(
-                        progress = progressPercent,
+                        progress = { progressPercent },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(6.dp)

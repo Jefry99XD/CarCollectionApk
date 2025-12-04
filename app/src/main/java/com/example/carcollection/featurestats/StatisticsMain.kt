@@ -1,12 +1,11 @@
 package com.example.carcollection.featurestats
 
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -30,7 +29,7 @@ fun StatsMainScreen(
                 title = { Text("Estadísticas") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 }
             )
@@ -53,8 +52,8 @@ fun StatsMainScreen(
             }
 
             // Lista de categorías
-            items(StatsCategory.values().size) { index ->
-                val category = StatsCategory.values()[index]
+            items(StatsCategory.entries.size) { index ->
+                val category = StatsCategory.entries[index]
                 CategoryCard(
                     category = category,
                     onClick = { onCategoryClick(category) }
@@ -99,7 +98,7 @@ fun CategoryCard(category: StatsCategory, onClick: () -> Unit) {
             }
 
             Icon(
-                Icons.Default.ArrowBack,
+                Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = null,
                 modifier = Modifier
                     .size(28.dp),

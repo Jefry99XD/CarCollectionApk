@@ -16,6 +16,11 @@ import java.io.OutputStreamWriter
 @Serializable
 private data class TagDTO(val name: String, val color: String?)
 
+private val jsonFormat = Json {
+    prettyPrint = true
+    ignoreUnknownKeys = true
+}
+
 /*---------------------------------------*
  *  EXPORTAR  TAGS  →  JSON  en un Uri    *
  *---------------------------------------*/
@@ -26,7 +31,7 @@ suspend fun exportTagsToUri(
     val tagsMethods = TagsMethods()
     val tags: List<Tag> = tagsMethods.getAllTags()
     val dtoList = tags.map { TagDTO(it.name, it.color) }
-    val json = Json { prettyPrint = true }.encodeToString(dtoList)
+    val json = jsonFormat.encodeToString(dtoList)
 
     context.contentResolver.openOutputStream(targetUri)?.use { output ->
         OutputStreamWriter(output).use { writer ->
@@ -50,8 +55,7 @@ suspend fun importTagsFromUri(
     }
     if (json.isBlank()) return@withContext Pair(0, 0)
 
-    val jsonParser = Json { ignoreUnknownKeys = true }
-    val dtoList: List<TagDTO> = jsonParser.decodeFromString(json)
+    val dtoList: List<TagDTO> = jsonFormat.decodeFromString(json)
     val tagsMethods = TagsMethods()
     val existing = tagsMethods.getAllTags()
 

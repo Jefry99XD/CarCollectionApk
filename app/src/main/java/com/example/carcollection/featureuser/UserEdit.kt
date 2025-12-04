@@ -23,7 +23,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -115,7 +115,7 @@ fun UserEdit(
 
             // ─── Sección Información personal ───
             Text("Información personal", style = MaterialTheme.typography.titleMedium)
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
             OutlinedTextField(
                 value = photoUrl,
@@ -152,7 +152,7 @@ fun UserEdit(
 
             // ─── Sección Seguridad ───
             Text("Seguridad", style = MaterialTheme.typography.titleMedium)
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
             var passwordVisible by remember { mutableStateOf(false) }
 
