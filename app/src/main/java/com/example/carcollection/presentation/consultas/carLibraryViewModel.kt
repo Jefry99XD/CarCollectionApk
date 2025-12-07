@@ -7,6 +7,8 @@ import com.example.carcollection.featurecar.presentation.add_edit_car.CarLibrary
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import io.ktor.client.*
@@ -15,6 +17,11 @@ import io.ktor.client.request.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.gson.*
 import io.ktor.client.call.*
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.util.zip.GZIPInputStream
+import java.util.zip.GZIPOutputStream
 
 class CarLibraryViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -43,23 +50,108 @@ class CarLibraryViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    private val cacheFile = File(application.filesDir, "car_library_cache.json.gz")
+    private val versionFile = File(application.filesDir, "car_library_version.txt")
+    private val currentVersion = "1.0" // Incrementa esto cuando quieras forzar actualización
 
     init {
-        loadCarsFromWeb()
+        loadCarsWithCache()
     }
 
-    private fun loadCarsFromWeb() {
+    private fun loadCarsWithCache() {
         viewModelScope.launch {
             try {
                 _isLoading.value = true
-                val url =
-                    "https://raw.githubusercontent.com/Jefry99XD/CarCollectionApk/refs/heads/main/app/src/main/assets/diecast_images.json"
 
-                val response = client.get(url)
-                val json: String = response.body()
+                // Intentar cargar desde caché primero
+                val cachedData = loadFromCache()
+                if (cachedData != null) {
+                    println("📦 Cargando desde caché (${cachedData.size} items)")
+                    _allCars.value = cachedData
+                    updatePagination()
+                    _isLoading.value = false
 
-                val gson = Gson()
-                val carLibraryEntries = try {
+                    // Actualizar en segundo plano si es necesario
+                    checkAndUpdateCache()
+                } else {
+                    // No hay caché, descargar
+                    println("🌐 Descargando desde web...")
+                    downloadAndCache()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _isLoading.value = false
+            }
+        }
+    }
+
+    private suspend fun loadFromCache(): List<CarLibraryEntry>? = withContext(Dispatchers.IO) {
+        try {
+            if (!cacheFile.exists()) return@withContext null
+
+            val cachedVersion = if (versionFile.exists()) {
+                versionFile.readText()
+            } else {
+                ""
+            }
+
+            // Si la versión no coincide, invalidar caché
+            if (cachedVersion != currentVersion) {
+                println("🔄 Versión de caché obsoleta")
+                return@withContext null
+            }
+
+            // Leer y descomprimir
+            FileInputStream(cacheFile).use { fis ->
+                GZIPInputStream(fis).use { gzis ->
+                    val json = gzis.bufferedReader().readText()
+                    val gson = Gson()
+                    val type = object : TypeToken<List<CarLibraryEntry>>() {}.type
+                    gson.fromJson<List<CarLibraryEntry>>(json, type)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    private suspend fun saveToCache(data: List<CarLibraryEntry>) = withContext(Dispatchers.IO) {
+        try {
+            val gson = Gson()
+            val json = gson.toJson(data)
+
+            // Comprimir y guardar
+            FileOutputStream(cacheFile).use { fos ->
+                GZIPOutputStream(fos).use { gzos ->
+                    gzos.bufferedWriter().use { writer ->
+                        writer.write(json)
+                    }
+                }
+            }
+
+            // Guardar versión
+            versionFile.writeText(currentVersion)
+
+            val originalSize = json.length / 1024 / 1024
+            val compressedSize = cacheFile.length() / 1024 / 1024
+            println("💾 Caché guardado: ${originalSize}MB → ${compressedSize}MB (compresión: ${100 - (compressedSize * 100 / originalSize)}%)")
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private suspend fun downloadAndCache() {
+        try {
+            _isLoading.value = true
+            val url = "https://raw.githubusercontent.com/Jefry99XD/CarCollectionApk/refs/heads/main/app/src/main/assets/diecast_images.json"
+
+            val response = client.get(url)
+            val json: String = response.body()
+
+            val gson = Gson()
+            val carLibraryEntries = withContext(Dispatchers.Default) {
+                try {
                     val typeArray = object : TypeToken<List<CarLibraryEntry>>() {}.type
                     gson.fromJson(json, typeArray)
                 } catch (_: Exception) {
@@ -67,13 +159,52 @@ class CarLibraryViewModel(application: Application) : AndroidViewModel(applicati
                     val singleEntry = gson.fromJson<CarLibraryEntry>(json, typeSingle)
                     listOf(singleEntry)
                 }
+            }
 
-                _allCars.value = carLibraryEntries
-                updatePagination()
+            _allCars.value = carLibraryEntries
+            updatePagination()
+
+            // Guardar en caché
+            saveToCache(carLibraryEntries)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            _isLoading.value = false
+        }
+    }
+
+    private suspend fun checkAndUpdateCache() {
+        // Verificar si el caché tiene más de 24 horas
+        val cacheAge = System.currentTimeMillis() - cacheFile.lastModified()
+        val oneDayInMillis = 24 * 60 * 60 * 1000
+
+        if (cacheAge > oneDayInMillis) {
+            println("🔄 Caché antiguo, actualizando en segundo plano...")
+            withContext(Dispatchers.IO) {
+                try {
+                    downloadAndCache()
+                } catch (e: Exception) {
+                    println("⚠️ Error al actualizar caché: ${e.message}")
+                }
+            }
+        }
+    }
+
+    fun forceRefresh() {
+        viewModelScope.launch {
+            println("🔄 Forzando actualización...")
+            downloadAndCache()
+        }
+    }
+
+    fun clearCache() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                cacheFile.delete()
+                versionFile.delete()
+                println("🗑️ Caché eliminado")
             } catch (e: Exception) {
                 e.printStackTrace()
-            } finally {
-                _isLoading.value = false
             }
         }
     }

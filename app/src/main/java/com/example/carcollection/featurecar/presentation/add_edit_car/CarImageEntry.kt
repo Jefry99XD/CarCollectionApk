@@ -16,19 +16,20 @@ data class CarVariation(
     val year: String? = null,
     val series: String? = null,
     val color: String? = null,
-    val sticker: String? = null,
-    @SerializedName("chassis color type")
+    val tampo: String? = null,
+    @SerializedName("base_color_type")
     val chassisColorType: String? = null,
-    @SerializedName("window color")
+    @SerializedName("window_color")
     val windowColor: String? = null,
-    @SerializedName("interior color")
+    @SerializedName("interior_color")
     val interiorColor: String? = null,
-    @SerializedName("wheel type")
+    @SerializedName("wheel_type")
     val wheelType: String? = null,
-    @SerializedName("toy #")
+    @SerializedName("toy_number")
     val toyNumber: String? = null,
     val country: String? = null,
     val notes: String? = null,
+    @SerializedName("photo_url")
     val url: String? = null
 )
 

@@ -93,7 +93,7 @@ fun CarModelLibraryScreen(
                     variation.windowColor?.lowercase()?.contains(query) == true ||
                     variation.toyNumber?.lowercase()?.contains(query) == true ||
                     variation.country?.lowercase()?.contains(query) == true ||
-                    variation.sticker?.lowercase()?.contains(query) == true ||
+                    variation.tampo?.lowercase()?.contains(query) == true ||
                     variation.notes?.lowercase()?.contains(query) == true
                 }
             } ?: emptyList()
@@ -419,8 +419,8 @@ fun VariationDetailCard(
                     InfoRow(label = "País", value = it)
                 }
 
-                variation.sticker?.takeIf { it.isNotBlank() }?.let {
-                    InfoRow(label = "Sticker", value = it)
+                variation.tampo?.takeIf { it.isNotBlank() }?.let {
+                    InfoRow(label = "Tampo", value = it)
                 }
 
                 variation.notes?.takeIf { it.isNotBlank() }?.let {
