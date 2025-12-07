@@ -11,15 +11,31 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = Cyan80,              // Cyan claro para tema oscuro
+    secondary = CyanGrey80,        // Cyan grisáceo para secundario
+    tertiary = Teal80,             // Teal para terciario
+    background = SurfaceDark,      // Fondo oscuro
+    surface = DarkGrey,            // Superficie oscura
+    error = Error,                 // Rojo para errores
+    onPrimary = DarkGrey,          // Texto sobre primary
+    onSecondary = DarkGrey,        // Texto sobre secondary
+    onTertiary = DarkGrey,         // Texto sobre tertiary
+    onBackground = Cyan80,         // Texto sobre background
+    onSurface = Cyan80             // Texto sobre surface
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = Cyan40,              // Cyan medio para tema claro
+    secondary = CyanGrey40,        // Cyan grisáceo oscuro para secundario
+    tertiary = Teal40,             // Teal oscuro para terciario
+    background = SurfaceLight,     // Fondo claro
+    surface = LightGrey,           // Superficie clara
+    error = Error,                 // Rojo para errores
+    onPrimary = SurfaceLight,      // Texto blanco sobre primary
+    onSecondary = SurfaceLight,    // Texto blanco sobre secondary
+    onTertiary = SurfaceLight,     // Texto blanco sobre tertiary
+    onBackground = DarkGrey,       // Texto oscuro sobre background
+    onSurface = DarkGrey           // Texto oscuro sobre surface
 )
 
 @Composable

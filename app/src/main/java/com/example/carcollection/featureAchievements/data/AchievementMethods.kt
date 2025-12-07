@@ -68,6 +68,17 @@ class AchievementMethods {
         }
     }
 
+    // ─── Establecer progreso de logro directamente ──────────────────────────────
+    suspend fun setProgress(achievementId: String, progress: Int) {
+        val ref = userAchievementsCollection().document(achievementId)
+
+        try {
+            ref.update("progress", progress.toLong()).await()
+        } catch (_: Exception) {
+            // Error setting progress
+        }
+    }
+
     // ─── Desbloquear logro ──────────────────────────────────────────────────────
     suspend fun unlockAchievement(achievementId: String) {
         val ref = userAchievementsCollection().document(achievementId)
@@ -101,6 +112,7 @@ class AchievementMethods {
                 "color" to achievement.condition.color,
                 "brand" to achievement.condition.brand,
                 "year" to achievement.condition.year,
+                "name" to achievement.condition.name,
                 "namesList" to achievement.condition.namesList
             ),
             "createdAt" to achievement.createdAt
@@ -184,22 +196,67 @@ class AchievementMethods {
                         }
                     }
                 }
+                AchievementType.NAME -> {
+                    val name = achievement.condition.name?.lowercase()?.trim()
+                    if (!name.isNullOrEmpty()) {
+                        progressCount = userCars.count { car ->
+                            car.name?.lowercase()?.trim()?.contains(name) == true
+                        }
+                    }
+                }
+                AchievementType.QUALITY -> {
+                    val quality = achievement.condition.quality?.trim()
+                    if (!quality.isNullOrEmpty()) {
+                        progressCount = userCars.count { car ->
+                            car.quality?.trim() == quality
+                        }
+                    }
+                }
+                AchievementType.TYPE -> {
+                    val type = achievement.condition.type?.lowercase()?.trim()
+                    if (!type.isNullOrEmpty()) {
+                        progressCount = userCars.count { car ->
+                            car.type?.lowercase()?.trim() == type
+                        }
+                    }
+                }
                 AchievementType.LIST_BY_NAME -> {
                     val namesList = achievement.condition.namesList
                         ?.lowercase()
                         ?.split(",")
-                        ?.map { it.trim() }
+                        ?.map { it.trim().replace("\\s+".toRegex(), " ") } // Normalizar espacios múltiples
                         ?.filter { it.isNotEmpty() }
                         ?.toSet() // Eliminamos duplicados si hay
 
+                    println("🎯 [LIST_BY_NAME] Logro: ${achievement.title}")
+                    println("📋 Lista requerida del logro: $namesList")
+
                     if (!namesList.isNullOrEmpty()) {
-                        // Convertimos los nombres de los carros del usuario en set para evitar duplicados
+                        // Convertimos los nombres de los carros del usuario en set, normalizando espacios
                         val userCarNames = userCars
-                            .mapNotNull { it.name?.lowercase()?.trim() }
+                            .mapNotNull { car ->
+                                car.name
+                                    ?.lowercase()
+                                    ?.trim()
+                                    ?.replace("\\s+".toRegex(), " ") // Normalizar espacios múltiples
+                            }
                             .toSet()
 
-                        // Progreso = cuántos nombres de la lista aparecen en la colección del usuario
-                        progressCount = namesList.count { it in userCarNames }
+                        println("🚗 Nombres del usuario (${userCarNames.size}): $userCarNames")
+
+                        // Progreso = cuántos nombres de la lista aparecen EXACTAMENTE en la colección del usuario
+                        // Usamos coincidencia exacta, no parcial
+                        progressCount = namesList.count { requiredName ->
+                            val found = userCarNames.any { userName -> userName == requiredName }
+                            if (found) {
+                                println("✅ Coincidencia encontrada: '$requiredName'")
+                            } else {
+                                println("❌ NO encontrado: '$requiredName'")
+                            }
+                            found
+                        }
+
+                        println("📊 Progreso: $progressCount de ${namesList.size}")
                     }
                 }
 
@@ -217,15 +274,22 @@ class AchievementMethods {
             val goal = achievement.goal
             val isUnlocked = userAchievement?.unlocked ?: false
 
-            if (progressCount > currentProgress) {
-                val increment = progressCount - currentProgress
-                incrementProgress(achievement.id, increment)
+            println("🔍 [${achievement.type}] ${achievement.title}")
+            println("   📊 Progreso calculado: $progressCount | Progreso actual: $currentProgress | Meta: $goal | Desbloqueado: $isUnlocked")
+
+            // Solo actualizar si el progreso calculado es diferente al actual
+            if (progressCount != currentProgress) {
+                println("   ⬆️ Actualizando progreso de $currentProgress a $progressCount")
+                setProgress(achievement.id, progressCount)
             }
 
             if (progressCount >= goal && !isUnlocked) {
+                println("   🎉 ¡LOGRO DESBLOQUEADO! ${achievement.title}")
                 unlockAchievement(achievement.id)
                 onAchievementUnlocked?.invoke(achievement)
             }
+
+            println("   ───────────────────────────────────")
 
         }
     }

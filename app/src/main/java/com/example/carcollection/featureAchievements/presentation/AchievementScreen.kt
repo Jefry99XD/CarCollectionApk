@@ -13,21 +13,46 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import com.example.carcollection.featurecar.domain.CarViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AchievementScreen(
     achievementViewModel: AchievementViewModel,
+    carViewModel: CarViewModel,
     onBackClick: () -> Unit
 ) {
     val achievements by achievementViewModel.achievements.collectAsState()
     val isLoading by achievementViewModel.isLoading.collectAsState()
     val errorMessage by achievementViewModel.errorMessage.collectAsState()
+    val userCars by carViewModel.cars.collectAsState()
 
+    // Normalizar nombres de carros del usuario (igual que en AchievementMethods)
+    val userCarNames = remember(userCars) {
+        userCars
+            .mapNotNull { car ->
+                car.name
+                    ?.lowercase()
+                    ?.trim()
+                    ?.replace("\\s+".toRegex(), " ")
+            }
+            .toSet()
+    }
+
+    // Cargar carros y logros al inicio (asegura datos frescos)
     LaunchedEffect(Unit) {
-        achievementViewModel.fetchAchievements()
+        carViewModel.loadUserCars() // Recargar carros primero
+        achievementViewModel.fetchAchievements() // Luego cargar logros
+    }
+
+    // Recargar logros cuando cambia la colección de carros
+    LaunchedEffect(userCars.size) {
+        if (userCars.isNotEmpty()) {
+            achievementViewModel.fetchAchievements()
+        }
     }
 
     Scaffold(
@@ -47,7 +72,8 @@ fun AchievementScreen(
             isLoading = isLoading,
             errorMessage = errorMessage,
             onRetry = { achievementViewModel.fetchAchievements() },
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
+            userCarNames = userCarNames
         )
     }
 }

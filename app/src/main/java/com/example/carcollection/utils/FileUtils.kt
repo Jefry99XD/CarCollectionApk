@@ -209,7 +209,7 @@ fun exportCarsToUri(context: Context, cars: List<Car>, uri: Uri) {
         try {
             val outputStream = context.contentResolver.openOutputStream(uri)
             outputStream?.bufferedWriter()?.use { writer ->
-                writer.write("brand,name,serie,year,color,type,photoUrl,tags\n")
+                writer.write("brand,name,serie,year,color,type,quality,photoUrl,tags\n")
                 cars.forEach { car ->
                     val tagsJoined = car.tags.joinToString("|")
                     writer.write(listOf(
@@ -219,6 +219,7 @@ fun exportCarsToUri(context: Context, cars: List<Car>, uri: Uri) {
                         car.year ?: "",
                         car.color ?: "",
                         car.type ?: "",
+                        car.quality ?: "Basico",
                         car.photoUrl ?: "",
                         tagsJoined
                     ).joinToString(",") { escapeCsvField(it) } + "\n")

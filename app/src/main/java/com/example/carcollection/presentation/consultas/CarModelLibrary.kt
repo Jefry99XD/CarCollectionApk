@@ -22,16 +22,19 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -47,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -68,7 +72,33 @@ fun CarModelLibraryScreen(
     println("🚗 CarModelLibrary: Showing ${carEntry.name} with ${carEntry.variations?.size} variations")
 
     val message by wishListViewModel.message.collectAsState()
+    val wishlist by wishListViewModel.wishlist.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var searchQuery by remember { mutableStateOf("") }
+
+    // Filtrar variaciones basándose en el texto de búsqueda
+    val filteredVariations = remember(searchQuery, carEntry.variations) {
+        if (searchQuery.isBlank()) {
+            carEntry.variations ?: emptyList()
+        } else {
+            carEntry.variations?.filter { variation ->
+                searchQuery.split(" ").all { term ->
+                    val query = term.trim().lowercase()
+                    variation.year?.lowercase()?.contains(query) == true ||
+                    variation.color?.lowercase()?.contains(query) == true ||
+                    variation.series?.lowercase()?.contains(query) == true ||
+                    variation.wheelType?.lowercase()?.contains(query) == true ||
+                    variation.interiorColor?.lowercase()?.contains(query) == true ||
+                    variation.chassisColorType?.lowercase()?.contains(query) == true ||
+                    variation.windowColor?.lowercase()?.contains(query) == true ||
+                    variation.toyNumber?.lowercase()?.contains(query) == true ||
+                    variation.country?.lowercase()?.contains(query) == true ||
+                    variation.sticker?.lowercase()?.contains(query) == true ||
+                    variation.notes?.lowercase()?.contains(query) == true
+                }
+            } ?: emptyList()
+        }
+    }
 
     // Mostrar mensajes
     LaunchedEffect(message) {
@@ -88,7 +118,11 @@ fun CarModelLibraryScreen(
                             style = MaterialTheme.typography.titleLarge
                         )
                         Text(
-                            text = "${carEntry.variations?.size ?: 0} variaciones",
+                            text = if (searchQuery.isBlank()) {
+                                "${carEntry.variations?.size ?: 0} variaciones"
+                            } else {
+                                "${filteredVariations.size} de ${carEntry.variations?.size ?: 0} variaciones"
+                            },
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.secondary
                         )
@@ -112,6 +146,35 @@ fun CarModelLibraryScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
+            // Campo de búsqueda (ocupa todo el ancho)
+            item(span = { GridItemSpan(2) }) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    placeholder = { Text("Buscar por año, color, serie, ruedas...") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Buscar"
+                        )
+                    },
+                    trailingIcon = {
+                        if (searchQuery.isNotBlank()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = "Limpiar búsqueda"
+                                )
+                            }
+                        }
+                    },
+                    singleLine = true
+                )
+            }
+
             // Descripción expandible como header (ocupa todo el ancho)
             carEntry.description?.let { description ->
                 item(span = { GridItemSpan(2) }) {
@@ -119,13 +182,33 @@ fun CarModelLibraryScreen(
                 }
             }
 
-            // Grid de variaciones
-            items(carEntry.variations ?: emptyList()) { variation ->
+            // Grid de variaciones filtradas
+            items(filteredVariations) { variation ->
                 VariationDetailCard(
                     carName = carEntry.name,
                     variation = variation,
-                    wishListViewModel = wishListViewModel
+                    wishListViewModel = wishListViewModel,
+                    wishlist = wishlist
                 )
+            }
+
+            // Mensaje cuando no hay resultados
+            if (filteredVariations.isEmpty() && searchQuery.isNotBlank()) {
+                item(span = { GridItemSpan(2) }) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No se encontraron variaciones que coincidan con \"$searchQuery\"",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
             }
         }
     }
@@ -194,8 +277,29 @@ fun ExpandableDescriptionCard(description: String) {
 fun VariationDetailCard(
     carName: String?,
     variation: CarVariation,
-    wishListViewModel: WishListViewModel
+    wishListViewModel: WishListViewModel,
+    wishlist: List<Car>
 ) {
+    // Verificar si esta variación ya está en la wishlist
+    val isInWishlist = remember(wishlist, carName, variation) {
+        wishlist.any { car ->
+            car.name == carName &&
+            car.year == variation.year &&
+            car.color == variation.color &&
+            car.serie == variation.series
+        }
+    }
+
+    // Encontrar el ID del item en wishlist si existe
+    val wishlistItemId = remember(wishlist, carName, variation) {
+        wishlist.find { car ->
+            car.name == carName &&
+            car.year == variation.year &&
+            car.color == variation.color &&
+            car.serie == variation.series
+        }?.id
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(4.dp)
@@ -212,26 +316,31 @@ fun VariationDetailCard(
             ) {
                 IconButton(
                     onClick = {
-                        // Create Car object from variation data and car name
-                        val carToAdd = Car(
-                            id = "", // Will be auto-generated
-                            name = carName ?: "Unknown",
-                            brand = "Hot Wheels", // Default brand from library
-                            year = variation.year,
-                            serie = variation.series,
-                            color = variation.color,
-                            photoUrl = variation.url,
-                            type = null,
-                            tags = emptyList()
-                        )
-                        wishListViewModel.addToWishlist(carToAdd)
+                        if (isInWishlist && wishlistItemId != null) {
+                            // Si ya está en wishlist, eliminarlo
+                            wishListViewModel.removeFromWishlist(wishlistItemId)
+                        } else {
+                            // Si no está, agregarlo
+                            val carToAdd = Car(
+                                id = "", // Will be auto-generated
+                                name = carName ?: "Unknown",
+                                brand = "Hot Wheels", // Default brand from library
+                                year = variation.year,
+                                serie = variation.series,
+                                color = variation.color,
+                                photoUrl = variation.url,
+                                type = null,
+                                tags = emptyList()
+                            )
+                            wishListViewModel.addToWishlist(carToAdd)
+                        }
                     },
                     modifier = Modifier.align(Alignment.TopEnd)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.FavoriteBorder,
-                        contentDescription = "Agregar a lista de deseados",
-                        tint = MaterialTheme.colorScheme.primary
+                        imageVector = if (isInWishlist) Icons.Filled.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = if (isInWishlist) "Eliminar de lista de deseados" else "Agregar a lista de deseados",
+                        tint = if (isInWishlist) Color.Red else MaterialTheme.colorScheme.primary
                     )
                 }
             }

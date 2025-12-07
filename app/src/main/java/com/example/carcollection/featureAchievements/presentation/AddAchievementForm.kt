@@ -60,6 +60,9 @@ fun AddAchievementForm(
     var color by remember { mutableStateOf("") }
     var brand by remember { mutableStateOf("") }
     var year by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
+    var quality by remember { mutableStateOf("") }
+    var type by remember { mutableStateOf("") }
 
     var errorMessage by remember { mutableStateOf("") }
     var successMessage by remember { mutableStateOf("") }
@@ -192,6 +195,57 @@ fun AddAchievementForm(
                     )
                 }
 
+                AchievementType.NAME -> {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text("Nombre objetivo (ej: AE86, Supra, GT-R)") },
+                        placeholder = { Text("AE86") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                AchievementType.QUALITY -> {
+                    var qualityExpanded by remember { mutableStateOf(false) }
+                    val qualityOptions = listOf("Basico", "TH", "STH", "Premium", "Silver Series", "RLC", "Chase")
+
+                    Text("Calidad objetivo", style = MaterialTheme.typography.bodyMedium)
+                    Spacer(Modifier.height(6.dp))
+
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedButton(
+                            onClick = { qualityExpanded = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(quality.ifBlank { "Selecciona calidad" })
+                        }
+                        DropdownMenu(
+                            expanded = qualityExpanded,
+                            onDismissRequest = { qualityExpanded = false }
+                        ) {
+                            qualityOptions.forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(option) },
+                                    onClick = {
+                                        quality = option
+                                        qualityExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                AchievementType.TYPE -> {
+                    OutlinedTextField(
+                        value = type,
+                        onValueChange = { type = it },
+                        label = { Text("Tipo de vehículo objetivo (ej: Sedan, SUV, Coupe)") },
+                        placeholder = { Text("Sedan") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
                 AchievementType.LIST_BY_NAME -> {
                     OutlinedTextField(
                         value = namesList,
@@ -276,6 +330,9 @@ fun AddAchievementForm(
                                     color = color.ifBlank { null },
                                     brand = brand.ifBlank { null },
                                     year = year.ifBlank { null },
+                                    name = name.ifBlank { null },
+                                    quality = quality.ifBlank { null },
+                                    type = type.ifBlank { null },
                                     namesList = namesList.ifBlank { null }
                                     ),
                                 createdAt = System.currentTimeMillis()
@@ -293,6 +350,9 @@ fun AddAchievementForm(
                             color = ""
                             brand = ""
                             year = ""
+                            name = ""
+                            quality = ""
+                            type = ""
                             namesList = ""
                         } catch (e: Exception) {
                             errorMessage = e.message ?: "Error desconocido"

@@ -11,9 +11,11 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,10 +24,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -36,21 +39,28 @@ import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.FilterAltOff
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -62,6 +72,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -116,72 +128,137 @@ fun FilterSection(
     val selectedSeries by viewModel.selectedSeries.collectAsState()
     val selectedTag by viewModel.selectedTag.collectAsState()
 
-
+    val activeFiltersCount = listOfNotNull(selectedBrand, selectedYear, selectedSeries, selectedTag).size
 
     Column(modifier = modifier) {
-
         AnimatedVisibility(
             visible = expanded,
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically()
         ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                shape = RoundedCornerShape(16.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text("Filtros", style = MaterialTheme.typography.titleSmall)
-
-                    if (selectedBrand != null || selectedYear != null || selectedSeries != null || selectedTag != null) {
-                        TextButton(onClick = { viewModel.clearFilters() }) {
-                            Text("Limpiar")
-                        }
-                    }
-                }
-                Row(
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        .padding(16.dp)
                 ) {
-                    DropdownMenuBox(
-                        selectedOption = selectedBrand ?: "Marcas",
-                        options = listOf("Marcas") + allBrands,
-                        onOptionSelected = {
-                            viewModel.onBrandSelected(if (it == "Marcas") null else it)
-                        }
-                    )
-
-                    DropdownMenuBox(
-                        selectedOption = selectedYear ?: "Años",
-                        options = listOf("Años") + allYears,
-                        onOptionSelected = {
-                            viewModel.onYearSelected(if (it == "Años") null else it)
-                        }
-                    )
-                    DropdownMenuBox(
-                        selectedOption = selectedSeries ?: "Serie",
-                        options = listOf("Serie") + allSeries,
-                        onOptionSelected = {
-                            viewModel.onSeriesSelected(if (it == "Serie") null else it)
-                        }
-                    )
-
-                    if (allTags.isNotEmpty()) {
-                        val tagNames = allTags.map { it.name }
-                        DropdownMenuBox(
-                            selectedOption = selectedTag ?: "Tag",
-                            options = listOf("Tag") + tagNames,
-                            onOptionSelected = {
-                                viewModel.onTagSelected(if (it == "Tag") null else it)
+                    // Header de filtros
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.FilterAlt,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                "Filtros Activos",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                            if (activeFiltersCount > 0) {
+                                Badge(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
+                                ) {
+                                    Text(
+                                        text = activeFiltersCount.toString(),
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                }
                             }
-                        )
+                        }
+
+                        if (activeFiltersCount > 0) {
+                            TextButton(
+                                onClick = { viewModel.clearFilters() },
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Limpiar", style = MaterialTheme.typography.labelMedium)
+                            }
+                        }
+                    }
+
+                    // Grid de filtros
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Box(modifier = Modifier.weight(1f)) {
+                                DropdownMenuBox(
+                                    selectedOption = selectedBrand ?: "Marcas",
+                                    options = listOf("Marcas") + allBrands,
+                                    onOptionSelected = {
+                                        viewModel.onBrandSelected(if (it == "Marcas") null else it)
+                                    }
+                                )
+                            }
+                            Box(modifier = Modifier.weight(1f)) {
+                                DropdownMenuBox(
+                                    selectedOption = selectedYear ?: "Años",
+                                    options = listOf("Años") + allYears,
+                                    onOptionSelected = {
+                                        viewModel.onYearSelected(if (it == "Años") null else it)
+                                    }
+                                )
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Box(modifier = Modifier.weight(1f)) {
+                                DropdownMenuBox(
+                                    selectedOption = selectedSeries ?: "Serie",
+                                    options = listOf("Serie") + allSeries,
+                                    onOptionSelected = {
+                                        viewModel.onSeriesSelected(if (it == "Serie") null else it)
+                                    }
+                                )
+                            }
+                            if (allTags.isNotEmpty()) {
+                                Box(modifier = Modifier.weight(1f)) {
+                                    val tagNames = allTags.map { it.name }
+                                    DropdownMenuBox(
+                                        selectedOption = selectedTag ?: "Tag",
+                                        options = listOf("Tag") + tagNames,
+                                        onOptionSelected = {
+                                            viewModel.onTagSelected(if (it == "Tag") null else it)
+                                        }
+                                    )
+                                }
+                            } else {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
                     }
                 }
-
             }
 
         }
@@ -250,33 +327,42 @@ fun CollectionViewScreen(
                 title = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
                             "Mi Colección",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
                             maxLines = 1,
-                            softWrap = false,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
                         )
 
-                        Icon(
-                            imageVector = Icons.Default.DirectionsCar,
-                            contentDescription = "Total",
-                            modifier = Modifier
-                                .size(24.dp)
-                                .padding(start = 8.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        Text(
-                            "(${carsList.size})",
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(start = 4.dp)
-                        )
-
+                        // Badge con contador de autos
+                        Surface(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.DirectionsCar,
+                                    contentDescription = "Total",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    "${carsList.size}",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
                     }
                 },
                 navigationIcon = {
@@ -285,21 +371,53 @@ fun CollectionViewScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { expanded = !expanded }) {
-                        Icon(
-                            imageVector = if (expanded) Icons.Default.FilterAltOff else Icons.Default.FilterAlt,
-                            contentDescription = "Toggle Filters"
-                        )
+                    val selectedBrand by viewModel.selectedBrand.collectAsState()
+                    val selectedYear by viewModel.selectedYear.collectAsState()
+                    val selectedSeries by viewModel.selectedSeries.collectAsState()
+                    val selectedTag by viewModel.selectedTag.collectAsState()
+                    val activeFiltersCount = listOfNotNull(selectedBrand, selectedYear, selectedSeries, selectedTag).size
+
+                    BadgedBox(
+                        badge = {
+                            if (activeFiltersCount > 0) {
+                                Badge(
+                                    containerColor = MaterialTheme.colorScheme.error,
+                                    contentColor = MaterialTheme.colorScheme.onError
+                                ) {
+                                    Text(
+                                        text = activeFiltersCount.toString(),
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                }
+                            }
+                        }
+                    ) {
+                        IconButton(onClick = { expanded = !expanded }) {
+                            Icon(
+                                imageVector = if (expanded) Icons.Default.FilterAltOff else Icons.Default.FilterAlt,
+                                contentDescription = "Toggle Filters"
+                            )
+                        }
                     }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+                )
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                viewModel.savedPage.value = currentPage
-                onNavigateToAdd()
-            }) {
-                Icon(Icons.Default.Add, contentDescription = "Add car")
+            FloatingActionButton(
+                onClick = {
+                    viewModel.savedPage.value = currentPage
+                    onNavigateToAdd()
+                },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Agregar auto")
             }
         }
     ) { padding ->
@@ -343,52 +461,141 @@ fun CollectionViewScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Row(
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                ),
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Items ")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    DropdownMenuBox(
-                        selectedOption = itemsPerPage.toString(),
-                        options = itemsPerPageOptions.map { it.toString() },
-                        onOptionSelected = {
-                            itemsPerPage = it.toInt()
-                            viewModel.setItemsPerPage(itemsPerPage)
-                            currentPage = 0
-                        }
-                    )
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Pag ${currentPage + 1} / $totalPages")
-                    IconButton(
-                        onClick = { if (currentPage > 0) currentPage-- },
-                        enabled = currentPage > 0
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Selector de items por página
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous")
+                        Text(
+                            "Mostrar:",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        DropdownMenuBox(
+                            selectedOption = itemsPerPage.toString(),
+                            options = itemsPerPageOptions.map { it.toString() },
+                            onOptionSelected = {
+                                itemsPerPage = it.toInt()
+                                viewModel.setItemsPerPage(itemsPerPage)
+                                currentPage = 0
+                            }
+                        )
                     }
-                    IconButton(
-                        onClick = { if (currentPage < totalPages - 1) currentPage++ },
-                        enabled = currentPage < totalPages - 1
+
+                    // Controles de paginación
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next")
+                        IconButton(
+                            onClick = { if (currentPage > 0) currentPage-- },
+                            enabled = currentPage > 0,
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = if (currentPage > 0)
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                else
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = if (currentPage > 0)
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                            ),
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Página anterior",
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        Surface(
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = "${currentPage + 1} / $totalPages",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
+                        }
+
+                        IconButton(
+                            onClick = { if (currentPage < totalPages - 1) currentPage++ },
+                            enabled = currentPage < totalPages - 1,
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = if (currentPage < totalPages - 1)
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                else
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = if (currentPage < totalPages - 1)
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                            ),
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = "Página siguiente",
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
             if (paginatedCars.isEmpty()){
-                Box(
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .wrapContentSize(Alignment.Center)
+                        .padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = null,
+                            modifier = Modifier.size(40.dp),
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
                     Text(
-                        "No se encontraron autos con los filtros aplicados.",
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = "No se encontraron autos",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Intenta ajustar los filtros o la búsqueda",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
                 }
             }

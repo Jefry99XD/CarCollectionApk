@@ -12,16 +12,28 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.LocalOffer
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -34,6 +46,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -96,13 +109,24 @@ fun AddEditCarScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Agregar/Editar Carro") },
-                navigationIcon = { ConfirmBackButton(onConfirmBack = onBackClick) }
+                title = {
+                    Text(
+                        "Agregar/Editar Carro",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                },
+                navigationIcon = { ConfirmBackButton(onConfirmBack = onBackClick) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             )
         },
         bottomBar = {
             Surface(
-                tonalElevation = 4.dp,
+                tonalElevation = 8.dp,
+                shadowElevation = 8.dp,
+                color = MaterialTheme.colorScheme.surface,
                 modifier = Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
@@ -117,7 +141,17 @@ fun AddEditCarScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp)
-                ) { Text("Guardar") }
+                        .height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text(
+                        "Guardar Carro",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
             }
         }
     ) { padding ->
@@ -127,13 +161,83 @@ fun AddEditCarScreen(
                 .padding(padding)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 24.dp),
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Main Info Section
+            SectionCard(
+                title = "Información del Carro",
+                icon = Icons.Default.Info
+            ) {
+                CarFormFields(viewModel)
+            }
+
+            // Image Section
+            SectionCard(
+                title = "Imagen",
+                icon = Icons.Default.Image
+            ) {
+                CarImagePickerSection(viewModel)
+            }
+
+            // Tags Section
+            SectionCard(
+                title = "Etiquetas",
+                icon = Icons.Default.LocalOffer
+            ) {
+                CarTagsSection(viewModel)
+            }
+
+            // Background Section
+            SectionCard(
+                title = "Fondo",
+                icon = Icons.Default.Palette
+            ) {
+                CarBackgroundSection(viewModel, categories)
+            }
+
+            // Extra spacing at the bottom
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+fun SectionCard(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    content: @Composable () -> Unit
+) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.elevatedCardElevation(
+            defaultElevation = 4.dp
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            CarFormFields(viewModel)
-            CarImagePickerSection(viewModel)
-            CarTagsSection(viewModel)
-            CarBackgroundSection(viewModel, categories)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            content()
         }
     }
 }
@@ -152,20 +256,41 @@ fun CarImagePickerSection(viewModel: CarFormViewModel) {
 
     if (viewModel.photoUrl.value.isNotBlank()) {
         Spacer(modifier = Modifier.height(8.dp))
-        AsyncImage(
-            model = viewModel.photoUrl.value,
-            contentDescription = "Vista previa de imagen",
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(180.dp)
-                .padding(4.dp),
-        )
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            AsyncImage(
+                model = viewModel.photoUrl.value,
+                contentDescription = "Vista previa de imagen",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .padding(8.dp),
+            )
+        }
     }
 
     Button(
         onClick = { showImagePicker = true },
-        modifier = Modifier.fillMaxWidth()
-    ) { Text("Elegir imagen desde la galería") }
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+        )
+    ) {
+        Icon(
+            imageVector = Icons.Default.Image,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text("Elegir imagen desde la galería")
+    }
 
     if (showImagePicker) {
         CarImagePickerDialog(
@@ -184,12 +309,14 @@ fun CarFormFields(viewModel: CarFormViewModel) {
     var expandedYear by remember { mutableStateOf(false) }
     var expandedType by remember { mutableStateOf(false) }
     var expandedColor by remember { mutableStateOf(false) }
+    var expandedQuality by remember { mutableStateOf(false) }
 
     val brandSuggestions = viewModel.brandSuggestions.collectAsState().value
     val serieSuggestions = viewModel.serieSuggestions.collectAsState().value
     val yearSuggestions = viewModel.yearSuggestions.collectAsState().value
     val typeSuggestions = viewModel.typeSuggestions.collectAsState().value
     val colorSuggestions = viewModel.colorSuggestions.collectAsState().value
+    val qualityOptions = listOf("Basico", "TH", "STH", "Premium", "Silver Series", "RLC", "Chase")
 
     // Dropdown helper
     @Composable
@@ -212,15 +339,18 @@ fun CarFormFields(viewModel: CarFormViewModel) {
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }
             )
             ExposedDropdownMenu(expanded = expanded, onDismissRequest = { onExpandedChange(false) }) {
-                suggestions.filter { it.contains(value, ignoreCase = true) }.forEach { suggestion ->
-                    DropdownMenuItem(
-                        text = { Text(suggestion) },
-                        onClick = {
-                            onValueChange(suggestion)
-                            onExpandedChange(false)
-                        }
-                    )
-                }
+                suggestions
+                    .filter { it.contains(value, ignoreCase = true) }
+                    .sortedBy { it.lowercase() }
+                    .forEach { suggestion ->
+                        DropdownMenuItem(
+                            text = { Text(suggestion) },
+                            onClick = {
+                                onValueChange(suggestion)
+                                onExpandedChange(false)
+                            }
+                        )
+                    }
             }
         }
     }
@@ -277,6 +407,15 @@ fun CarFormFields(viewModel: CarFormViewModel) {
         expanded = expandedColor,
         onExpandedChange = { expandedColor = it }
     )
+
+    ExposedDropdownField(
+        value = viewModel.quality.value,
+        onValueChange = { viewModel.onQualityChange(it) },
+        label = "Calidad",
+        suggestions = qualityOptions,
+        expanded = expandedQuality,
+        onExpandedChange = { expandedQuality = it }
+    )
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -285,7 +424,6 @@ fun CarTagsSection(viewModel: CarFormViewModel) {
     val availableTags by viewModel.availableTags.collectAsState()
     val selectedTags by viewModel.selectedTags.collectAsState()
 
-    Text("Tags", style = MaterialTheme.typography.titleMedium)
 
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -334,7 +472,6 @@ fun CarBackgroundSection(
     viewModel: CarFormViewModel,
     availableCategories: List<BackgroundCategory>
 ) {
-    Text("Selecciona un fondo", style = MaterialTheme.typography.titleMedium)
 
     BackgroundSelector(
         availableCategories = availableCategories,

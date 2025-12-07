@@ -12,6 +12,7 @@ data class Car(
     val photoUrl: String? = null,
     val color: String? = null,
     val type: String? = null,
+    val quality: String? = null, // Calidad del carro (Basico, TH, STH, etc.)
     val tags: List<String> = emptyList(), // Lista de tags
     val backgroundName: String? = null,
 
@@ -27,7 +28,8 @@ data class Car(
         photoUrl = null,
         color = null,
         type = null,
-        tags = emptyList(),
+        quality = null,
+        tags = emptyList<String>(),
         backgroundName = null,
         createdAt = null
     )

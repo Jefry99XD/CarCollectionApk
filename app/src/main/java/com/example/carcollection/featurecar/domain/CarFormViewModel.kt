@@ -34,6 +34,8 @@ class CarFormViewModel(
         private set
     var type = mutableStateOf("")
         private set
+    var quality = mutableStateOf("")
+        private set
     var backgroundName = mutableStateOf("fondo")
         private set
 
@@ -90,6 +92,7 @@ class CarFormViewModel(
     fun onPhotoUrlChange(value: String) { photoUrl.value = value }
     fun onColorChange(value: String) { color.value = value }
     fun onTypeChange(value: String) { type.value = value }
+    fun onQualityChange(value: String) { quality.value = value }
     fun onBackgroundNameChange(value: String) { backgroundName.value = value }
 
     // Load car data for editing
@@ -104,6 +107,7 @@ class CarFormViewModel(
                 photoUrl.value = car.photoUrl.orEmpty()
                 color.value = car.color.orEmpty()
                 type.value = car.type.orEmpty()
+                quality.value = car.quality.orEmpty()
                 backgroundName.value = car.backgroundName.orEmpty()
                 _selectedTags.value = car.tags
             }
@@ -122,6 +126,7 @@ class CarFormViewModel(
                 photoUrl = photoUrl.value,
                 color = color.value,
                 type = type.value,
+                quality = quality.value,
                 backgroundName = backgroundName.value,
                 tags = selectedTags.value
             )

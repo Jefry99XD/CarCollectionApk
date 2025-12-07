@@ -271,7 +271,6 @@ fun AppNavGraph(
             ConfigMenu(
                 onBackClick = { navController.popBackStack() },
                 onNavigateToData = { navController.navigate(NavRoutes.DATA) },
-                onNavigateToStatistics = { navController.navigate(NavRoutes.STATISTICS) },
                 onNavigateToAbout = { navController.navigate(NavRoutes.ABOUT) },
             )
         }
@@ -381,7 +380,8 @@ fun AppNavGraph(
         }
         composable(NavRoutes.ACHIEVEMENTS) {
             AchievementScreen(
-                achievementViewModel,
+                achievementViewModel = achievementViewModel,
+                carViewModel = collectionViewModel,
                 onBackClick = { navController.popBackStack() }
             )
         }

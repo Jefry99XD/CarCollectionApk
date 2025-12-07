@@ -8,7 +8,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Cloud
-import androidx.compose.material.icons.filled.Dataset
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -27,7 +26,6 @@ import com.example.carcollection.featuremenu.menu.MenuButton
 fun ConfigMenu(
     onBackClick: () -> Unit,
     onNavigateToData: () -> Unit,
-    onNavigateToStatistics: () -> Unit,
     onNavigateToAbout: () -> Unit,
 
 ) {
@@ -53,14 +51,32 @@ fun ConfigMenu(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ){
-            item {MenuButton("Respaldos", Icons.Default.Cloud, onNavigateToData)}
-            item {MenuButton("Temas", Icons.Default.Dataset, onNavigateToStatistics)}
             item {
-                MenuButton("Actualizar", Icons.Default.SystemUpdate) {
-                    checkForUpdateAndDownload(context, versionName.toString())
-                }
+                MenuButton(
+                    text = "Respaldos",
+                    icon = Icons.Default.Cloud,
+                    description = "Gestionar copias de seguridad",
+                    onClick = onNavigateToData
+                )
             }
-            item {MenuButton("Acerca de...", Icons.Default.Android,  onNavigateToAbout)}
+            item {
+                MenuButton(
+                    text = "Actualizar",
+                    icon = Icons.Default.SystemUpdate,
+                    description = "Buscar actualizaciones",
+                    onClick = {
+                        checkForUpdateAndDownload(context, versionName.toString())
+                    }
+                )
+            }
+            item {
+                MenuButton(
+                    text = "Acerca de...",
+                    icon = Icons.Default.Android,
+                    description = "Información de la app",
+                    onClick = onNavigateToAbout
+                )
+            }
         }
     }
 

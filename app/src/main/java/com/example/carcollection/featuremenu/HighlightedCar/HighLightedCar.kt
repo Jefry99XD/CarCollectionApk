@@ -118,7 +118,7 @@ fun getCarOfTheDay(context: Context): CarOfTheDay? {
             series = variation.series ?: "N/A",
             url = variation.url ?: "",
             color = variation.color ?: "",
-            description = carEntry.description?.takeIf { it.isNotBlank() }?.trim() ?: "Sin descripción disponible."
+            description = carEntry.description?.takeIf { it.isNotBlank() }?.trim() ?: "Un clásico por descubrir."
         )
 
         carOfTheDay

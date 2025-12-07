@@ -47,6 +47,7 @@ class StatsViewModel(
             StatsCategory.YEAR -> generateYearStats(carsList)
             StatsCategory.COLOR -> generateColorStats(carsList)
             StatsCategory.TYPE -> generateTypeStats(carsList)
+            StatsCategory.QUALITY -> generateQualityStats(carsList)
             StatsCategory.TAGS -> generateTagStats(carsList)
             StatsCategory.CREATED_AT -> generateCreatedAtStats(carsList)
         }
@@ -118,6 +119,24 @@ class StatsViewModel(
         return typeCounts.map { (type, count) ->
             StatItem(
                 label = type,
+                value = count,
+                color = randomColor()
+            )
+        }
+    }
+
+    private fun generateQualityStats(cars: List<Car>): List<StatItem> {
+        val qualityCounts = cars
+            .mapNotNull { it.quality }
+            .filter { it.isNotBlank() }
+            .groupingBy { it }
+            .eachCount()
+            .entries
+            .sortedByDescending { it.value }
+
+        return qualityCounts.map { (quality, count) ->
+            StatItem(
+                label = quality,
                 value = count,
                 color = randomColor()
             )

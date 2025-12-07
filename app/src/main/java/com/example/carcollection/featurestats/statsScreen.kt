@@ -38,6 +38,7 @@ enum class StatsCategory(val displayName: String) {
     YEAR("Carros por año"),
     COLOR("Carros por color"),
     TYPE("Carros por tipo"),
+    QUALITY("Carros por calidad"),
     TAGS("Carros por tag"),
     CREATED_AT("Carros creados por mes")
 }
