@@ -84,13 +84,30 @@ class CarViewModel(
     }
 
     // 🔹 Funciones para actualizar filtros
-    fun onSearchQueryChange(query: String) {    _searchQuery.value = query
-        _filterState.value = _filterState.value.copy(query = query) }
-    fun onBrandSelected(brand: String?) { _filterState.value = _filterState.value.copy(brand = brand) }
-    fun onYearSelected(year: String?) { _filterState.value = _filterState.value.copy(year = year) }
-    fun onSeriesSelected(series: String?) { _filterState.value = _filterState.value.copy(series = series) }
-    fun onTagSelected(tag: String?) { _filterState.value = _filterState.value.copy(tag = tag) }
-    fun clearFilters() { _filterState.value = CarFilterState() }
+    fun onSearchQueryChange(query: String) {
+        _searchQuery.value = query
+        _filterState.value = _filterState.value.copy(query = query)
+    }
+
+    fun onBrandSelected(brand: String?) {
+        _filterState.value = _filterState.value.copy(brand = brand)
+    }
+
+    fun onYearSelected(year: String?) {
+        _filterState.value = _filterState.value.copy(year = year)
+    }
+
+    fun onSeriesSelected(series: String?) {
+        _filterState.value = _filterState.value.copy(series = series)
+    }
+
+    fun onTagSelected(tag: String?) {
+        _filterState.value = _filterState.value.copy(tag = tag)
+    }
+
+    fun clearFilters() {
+        _filterState.value = CarFilterState()
+    }
 
     // 🔹 Lista filtrada de autos (combinando todos los filtros)
     val filteredCars: StateFlow<List<Car>> = combine(_cars, _filterState) { cars, filters ->
@@ -108,7 +125,8 @@ class CarViewModel(
                     (filters.brand?.equals(car.brand, ignoreCase = true) ?: true) &&
                     (filters.year?.equals(car.year, ignoreCase = true) ?: true) &&
                     (filters.series?.equals(car.serie, ignoreCase = true) ?: true) &&
-                    (filters.tag?.let { tag -> car.tags.any { it.equals(tag, ignoreCase = true) } } ?: true)
+                    (filters.tag?.let { tag -> car.tags.any { it.equals(tag, ignoreCase = true) } }
+                        ?: true)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -170,9 +188,13 @@ class CarViewModel(
     private val _savedPage = MutableStateFlow(1)
     val savedPage = MutableStateFlow(0)
 
-    fun setItemsPerPage(items: Int) { _savedItemsPerPage.value = items }
+    fun setItemsPerPage(items: Int) {
+        _savedItemsPerPage.value = items
+    }
 
-    fun setPage(page: Int) { _savedPage.value = page }
+    fun setPage(page: Int) {
+        _savedPage.value = page
+    }
 
 
     private val _unlockedAchievement = MutableStateFlow<AchievementGlobal?>(null)

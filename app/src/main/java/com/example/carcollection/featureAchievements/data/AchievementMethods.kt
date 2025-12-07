@@ -228,8 +228,6 @@ class AchievementMethods {
                         ?.filter { it.isNotEmpty() }
                         ?.toSet() // Eliminamos duplicados si hay
 
-                    println("🎯 [LIST_BY_NAME] Logro: ${achievement.title}")
-                    println("📋 Lista requerida del logro: $namesList")
 
                     if (!namesList.isNullOrEmpty()) {
                         // Convertimos los nombres de los carros del usuario en set, normalizando espacios
@@ -242,21 +240,13 @@ class AchievementMethods {
                             }
                             .toSet()
 
-                        println("🚗 Nombres del usuario (${userCarNames.size}): $userCarNames")
-
                         // Progreso = cuántos nombres de la lista aparecen EXACTAMENTE en la colección del usuario
                         // Usamos coincidencia exacta, no parcial
                         progressCount = namesList.count { requiredName ->
                             val found = userCarNames.any { userName -> userName == requiredName }
-                            if (found) {
-                                println("✅ Coincidencia encontrada: '$requiredName'")
-                            } else {
-                                println("❌ NO encontrado: '$requiredName'")
-                            }
+
                             found
                         }
-
-                        println("📊 Progreso: $progressCount de ${namesList.size}")
                     }
                 }
 
@@ -274,22 +264,15 @@ class AchievementMethods {
             val goal = achievement.goal
             val isUnlocked = userAchievement?.unlocked ?: false
 
-            println("🔍 [${achievement.type}] ${achievement.title}")
-            println("   📊 Progreso calculado: $progressCount | Progreso actual: $currentProgress | Meta: $goal | Desbloqueado: $isUnlocked")
-
             // Solo actualizar si el progreso calculado es diferente al actual
             if (progressCount != currentProgress) {
-                println("   ⬆️ Actualizando progreso de $currentProgress a $progressCount")
                 setProgress(achievement.id, progressCount)
             }
 
             if (progressCount >= goal && !isUnlocked) {
-                println("   🎉 ¡LOGRO DESBLOQUEADO! ${achievement.title}")
                 unlockAchievement(achievement.id)
                 onAchievementUnlocked?.invoke(achievement)
             }
-
-            println("   ───────────────────────────────────")
 
         }
     }

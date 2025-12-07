@@ -2,6 +2,7 @@ package com.example.carcollection.featuremenu.main
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,7 +22,11 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Surface
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,6 +48,10 @@ fun TubaCollectionApp(
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+
+    // Estado para el easter egg - requiere 5 clicks rápidos
+    var clickCount by remember { mutableStateOf(0) }
+    var lastClickTime by remember { mutableStateOf(0L) }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -83,7 +92,22 @@ fun TubaCollectionApp(
                     Image(
                         painter = painterResource(id = R.drawable.logo),
                         contentDescription = "Logo de Tuba Collection",
-                        modifier = Modifier.height(120.dp)
+                        modifier = Modifier
+                            .height(120.dp)
+                            .clickable {
+                                // 🥚 Easter egg secreto - requiere 5 clicks rápidos
+                                val currentTime = System.currentTimeMillis()
+                                if (currentTime - lastClickTime < 2000) { // Clicks dentro de 2 segundos
+                                    clickCount++
+                                    if (clickCount >= 5) {
+                                        navController.navigate("easter_egg_secret")
+                                        clickCount = 0 // Reset después de activar
+                                    }
+                                } else {
+                                    clickCount = 1 // Reiniciar contador si pasó mucho tiempo
+                                }
+                                lastClickTime = currentTime
+                            }
                     )
 
                     Spacer(modifier = Modifier.width(48.dp))

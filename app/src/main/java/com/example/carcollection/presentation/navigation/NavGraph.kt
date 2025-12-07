@@ -24,6 +24,7 @@ import com.example.carcollection.featurecar.domain.CarFormViewModelFactory
 import com.example.carcollection.featurecar.domain.CarViewModel
 import com.example.carcollection.featurecar.presentation.add_edit_car.AddEditCarScreen
 import com.example.carcollection.featurecar.presentation.add_edit_car.CollectionViewScreen
+import com.example.carcollection.featuremenu.main.EasterEggScreen
 import com.example.carcollection.featuremenu.menu.MenuScreen
 import com.example.carcollection.featurestats.StatsCategory
 import com.example.carcollection.featurestats.StatsCategoryScreen
@@ -426,6 +427,13 @@ fun AppNavGraph(
             PublicUserAchievements(
                 uid = uid,
                 achievementViewModel = achievementViewModel,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        // 🥚 Easter Egg secreto
+        composable(NavRoutes.EASTER_EGG) {
+            EasterEggScreen(
                 onBackClick = { navController.popBackStack() }
             )
         }
