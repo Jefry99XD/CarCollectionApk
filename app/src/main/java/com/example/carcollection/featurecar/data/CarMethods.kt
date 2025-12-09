@@ -23,8 +23,15 @@ class CarMethods {
                         .document(userId)
                         .collection("carsCollection") // Make sure this matches your subcollection name!
 
+                // Set the createdAt timestamp if not already set
+                val carWithTimestamp = if (car.createdAt == null) {
+                    car.copy(createdAt = System.currentTimeMillis())
+                } else {
+                    car
+                }
+
                 // Add the Car object directly. Firestore will auto-generate a document ID.
-                val documentReference = carsCollectionRef.add(car).await()
+                val documentReference = carsCollectionRef.add(carWithTimestamp).await()
 
                 println("Car '${car.name}' added to user $userId with ID: ${documentReference.id}")
                 Result.success(documentReference.id) // Return the ID of the newly added car

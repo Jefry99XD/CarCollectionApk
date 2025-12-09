@@ -113,6 +113,8 @@ class AchievementMethods {
                 "brand" to achievement.condition.brand,
                 "year" to achievement.condition.year,
                 "name" to achievement.condition.name,
+                "quality" to achievement.condition.quality,
+                "type" to achievement.condition.type,
                 "namesList" to achievement.condition.namesList
             ),
             "createdAt" to achievement.createdAt

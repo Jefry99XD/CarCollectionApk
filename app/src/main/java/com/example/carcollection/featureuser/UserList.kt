@@ -5,17 +5,12 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DirectionsCar
-import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
@@ -48,7 +43,6 @@ fun UserListScreen(
  {
     var searchQuery by remember { mutableStateOf("") }
     var sortOption by remember { mutableStateOf<SortOption?>(null) }
-    var isGrid by remember { mutableStateOf(false) }
 
 
      val users by viewModel.publicUsers.collectAsState()
@@ -84,14 +78,6 @@ fun UserListScreen(
 
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { }) {
-                        Icon(
-                            imageVector = if (isGrid) Icons.AutoMirrored.Filled.ViewList else Icons.Default.GridView,
-                            contentDescription = null
-                        )
                     }
                 }
 
@@ -132,28 +118,12 @@ fun UserListScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             // 🔥 User list
-            if (isGrid) {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(filteredUsers, key = { it.uid }) { user ->
-                        UserCardVertical(
-                            user = user,
-                            onViewProfile = { onViewProfile(user.uid) }
-                        )
-                    }
-                }
-            } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(filteredUsers, key = { it.uid }) { user ->
-                        UserCard(
-                            user = user,
-                            onViewProfile = { onViewProfile(user.uid) }
-                        )
-                    }
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(filteredUsers, key = { it.uid }) { user ->
+                    UserCard(
+                        user = user,
+                        onViewProfile = { onViewProfile(user.uid) }
+                    )
                 }
             }
 
@@ -272,47 +242,3 @@ fun UserProfileImage(url: String?) {
     }
 }
 
-@Composable
-fun UserCardVertical(
-    user: User,
-    onViewProfile: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            UserProfileImage(user.photoUrl)
-
-            Spacer(Modifier.height(8.dp))
-
-            Text(
-                user.username ?: "Sin nombre",
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
-
-            Spacer(Modifier.height(6.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.DirectionsCar, contentDescription = null, modifier = Modifier.size(16.dp))
-                Text(" ${user.totalCars}")
-            }
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(16.dp))
-                Text(" ${user.badges.size}")
-            }
-
-            Spacer(Modifier.height(10.dp))
-
-            Button(onClick = onViewProfile, modifier = Modifier.fillMaxWidth()) {
-                Text("Ver perfil")
-            }
-        }
-    }
-}
