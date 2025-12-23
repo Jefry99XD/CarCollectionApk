@@ -67,7 +67,11 @@ fun UserMain(
     val scrollState = rememberScrollState()
 
     val recentCars by userViewModel.recentCars.collectAsState()
+    val carCount by userViewModel.carCount.collectAsState()
+    val tagCount by userViewModel.tagCount.collectAsState()
     val achievementCount by userViewModel.achievementCount.collectAsState()
+    val seriesCount by userViewModel.seriesCount.collectAsState()
+    val friendsCount by userViewModel.friendsCount.collectAsState()
 
     LaunchedEffect(Unit) {
         userViewModel.fetchUserProfile()
@@ -185,14 +189,14 @@ fun UserMain(
                                 StatItem(
                                     Icons.Default.DirectionsCar,
                                     "Carros",
-                                    user?.totalCars ?: 0
+                                    carCount
                                 )
-                                StatItem(Icons.Default.LocalOffer, "Tags", user?.totalTags ?: 0)
-                                StatItem(Icons.Default.People, "Amigos", user?.totalFriends ?: 0)
+                                StatItem(Icons.Default.LocalOffer, "Tags", tagCount)
+                                StatItem(Icons.Default.People, "Amigos", friendsCount)
                                 StatItem(
                                     Icons.Default.BeachAccess,
                                     "Series",
-                                    user?.totalSeries ?: 0
+                                    seriesCount
                                 )
                                 StatItem(Icons.Default.Star, "Logros", achievementCount)
                             }
@@ -215,7 +219,8 @@ fun UserMain(
                                     RecentCarItem(
                                         name = car.name ?: "Sin nombre",
                                         year = car.year?.toString() ?: "Año desconocido",
-                                        imageUrl = car.photoUrl ?: ""
+                                        imageUrl = car.photoUrl ?: "",
+                                        serie = car.serie ?: ""
                                     )
                                 }
                             } else {
@@ -270,7 +275,7 @@ fun UserMain(
 
 
 @Composable
-fun RecentCarItem(name: String, year: String, imageUrl: String) {
+fun RecentCarItem(name: String, year: String, imageUrl: String, serie: String = "") {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -291,7 +296,11 @@ fun RecentCarItem(name: String, year: String, imageUrl: String) {
         Spacer(Modifier.width(12.dp))
         Column {
             Text("$year - $name", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-            Text("Serie JDM", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            if (serie.isNotBlank()) {
+                Text(serie, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            } else {
+                Text("Sin serie", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            }
         }
     }
 }

@@ -10,6 +10,28 @@ class WishlistMethods {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
 
+    // Sistema de caché en memoria para wishlist
+    private var wishlistCache: List<Car>? = null
+    private var cacheTimestamp: Long = 0
+    private val CACHE_DURATION = 5 * 60 * 1000L // 5 minutos
+
+    /**
+     * Invalida la caché de wishlist
+     * Debe llamarse después de agregar o eliminar items
+     */
+    fun invalidateCache() {
+        wishlistCache = null
+        cacheTimestamp = 0
+    }
+
+    /**
+     * Verifica si la caché es válida
+     */
+    private fun isCacheValid(): Boolean {
+        return wishlistCache != null &&
+               (System.currentTimeMillis() - cacheTimestamp) < CACHE_DURATION
+    }
+
     // Adds a Car to the user's wishlist. Returns the Firestore document ID of the new wishlist item.
     suspend fun addToWishlist(car: Car): Result<String> {
         val firebaseUser = auth.currentUser
@@ -20,18 +42,45 @@ class WishlistMethods {
                     .document(userId)
                     .collection("wishlist")
 
-                // Check for duplicates: retrieve existing items and compare all relevant fields (except id)
-                val snapshot = wishlistRef.get().await()
-                val existing = snapshot.documents.mapNotNull { doc ->
-                    doc.toObject(Car::class.java)?.copy(id = doc.id)
+                // ✅ Optimización: Verificar en caché primero si está disponible
+                if (isCacheValid()) {
+                    val duplicate = wishlistCache?.firstOrNull { existingCar ->
+                        areSameCar(existingCar, car)
+                    }
+                    if (duplicate != null) {
+                        return Result.failure(Exception("Item already in wishlist"))
+                    }
+                } else {
+                    // ✅ Optimización: Query específico usando índices en lugar de leer todos los documentos
+                    val querySnapshot = wishlistRef
+                        .whereEqualTo("brand", car.brand)
+                        .whereEqualTo("name", car.name)
+                        .whereEqualTo("year", car.year)
+                        .limit(5)
+                        .get()
+                        .await()
+
+                    val duplicate = querySnapshot.documents.firstOrNull { doc ->
+                        val existingCar = doc.toObject(Car::class.java)
+                        existingCar != null && areSameCar(existingCar, car)
+                    }
+
+                    if (duplicate != null) {
+                        return Result.failure(Exception("Item already in wishlist"))
+                    }
                 }
 
-                val duplicate = existing.firstOrNull { existingCar -> areSameCar(existingCar, car) }
-                if (duplicate != null) {
-                    return Result.failure(Exception("Item already in wishlist"))
+                val carWithTimestamp = if (car.createdAt == null) {
+                    car.copy(createdAt = System.currentTimeMillis())
+                } else {
+                    car
                 }
 
-                val docRef = wishlistRef.add(car).await()
+                val docRef = wishlistRef.add(carWithTimestamp).await()
+
+                // ✅ Invalidar caché después de agregar
+                invalidateCache()
+
                 Result.success(docRef.id)
             } catch (e: Exception) {
                 Result.failure(Exception("Failed to add to wishlist: ${e.message}"))
@@ -53,8 +102,8 @@ class WishlistMethods {
         if (!eq(a.photoUrl, b.photoUrl)) return false
         if (!eq(a.type, b.type)) return false
 
-        val tagsA = a.tags ?: emptyList()
-        val tagsB = b.tags ?: emptyList()
+        val tagsA = a.tags
+        val tagsB = b.tags
         val normA = tagsA.map { it.trim().lowercase() }.toSet()
         val normB = tagsB.map { it.trim().lowercase() }.toSet()
         if (normA != normB) return false
@@ -73,6 +122,10 @@ class WishlistMethods {
                     .collection("wishlist")
                     .document(wishlistItemId)
                 docRef.delete().await()
+
+                // ✅ Invalidar caché después de eliminar
+                invalidateCache()
+
                 Result.success(Unit)
             } catch (e: Exception) {
                 Result.failure(Exception("Failed to remove from wishlist: ${e.message}"))
@@ -83,9 +136,14 @@ class WishlistMethods {
     }
 
     // Retrieves the user's wishlist as a list of Car objects (each Car's id is set to the wishlist doc id).
-    suspend fun retrieveWishlist(): Result<List<Car>> {
+    suspend fun retrieveWishlist(forceRefresh: Boolean = false): Result<List<Car>> {
         val firebaseUser = auth.currentUser
         return if (firebaseUser != null) {
+            // ✅ Verificar caché primero (si no se fuerza refresh)
+            if (!forceRefresh && isCacheValid()) {
+                return Result.success(wishlistCache!!)
+            }
+
             val userId = firebaseUser.uid
             try {
                 val snapshot = db.collection("users")
@@ -97,6 +155,10 @@ class WishlistMethods {
                 val list = snapshot.documents.mapNotNull { doc ->
                     doc.toObject(Car::class.java)?.copy(id = doc.id)
                 }
+
+                // ✅ Actualizar caché
+                wishlistCache = list
+                cacheTimestamp = System.currentTimeMillis()
 
                 Result.success(list)
             } catch (e: Exception) {

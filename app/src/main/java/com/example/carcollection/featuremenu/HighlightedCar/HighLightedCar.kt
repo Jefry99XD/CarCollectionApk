@@ -2,6 +2,7 @@ package com.example.carcollection.featuremenu.HighlightedCar
 
 import android.content.Context
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,6 +39,9 @@ import java.util.Calendar
 import java.text.SimpleDateFormat
 import java.util.Locale
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Surface
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import kotlin.math.abs
 
 // Data class para el carro del día
@@ -134,6 +138,7 @@ fun CarOfTheDayScreen() {
     val context = LocalContext.current
     var carOfTheDay by remember { mutableStateOf<CarOfTheDay?>(null) }
     var isLoading by remember { mutableStateOf(true) }
+    var showImageDialog by remember { mutableStateOf(false) }
 
     // Cargar el carro del día
     LaunchedEffect(Unit) {
@@ -208,6 +213,7 @@ fun CarOfTheDayScreen() {
                         .fillMaxWidth()
                         .height(220.dp)
                         .background(Color(0xFFF0F0F0))
+                        .clickable { showImageDialog = true }
                 )
 
                 // Badge “HOY”
@@ -288,6 +294,111 @@ fun CarOfTheDayScreen() {
                 modifier = Modifier.padding(16.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+
+    // ─── Diálogo de imagen ampliada ───
+    if (showImageDialog) {
+        Dialog(
+            onDismissRequest = { showImageDialog = false },
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false
+            )
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable { showImageDialog = false },
+                color = Color.Black.copy(alpha = 0.9f)
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        // Título
+                        Text(
+                            text = car.name,
+                            style = MaterialTheme.typography.headlineSmall.copy(
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            textAlign = TextAlign.Center
+                        )
+
+                        // Imagen ampliada
+                        Card(
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp)
+                        ) {
+                            AsyncImage(
+                                model = car.url,
+                                contentDescription = car.name,
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color.White)
+                            )
+                        }
+
+                        // Información del carro
+                        Card(
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            ),
+                            elevation = CardDefaults.cardElevation(4.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "Año: ${car.year}",
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        fontWeight = FontWeight.Medium
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                if (car.color.isNotBlank()) {
+                                    Text(
+                                        text = "Color: ${car.color}",
+                                        style = MaterialTheme.typography.bodyLarge.copy(
+                                            fontWeight = FontWeight.Medium
+                                        ),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                if (car.series.isNotBlank()) {
+                                    Text(
+                                        text = "Serie: ${car.series}",
+                                        style = MaterialTheme.typography.bodyLarge.copy(
+                                            fontWeight = FontWeight.Medium
+                                        ),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+
+                        // Instrucción para cerrar
+                        Text(
+                            text = "Toca en cualquier lugar para cerrar",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = Color.White.copy(alpha = 0.7f)
+                            ),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
         }
     }
 }

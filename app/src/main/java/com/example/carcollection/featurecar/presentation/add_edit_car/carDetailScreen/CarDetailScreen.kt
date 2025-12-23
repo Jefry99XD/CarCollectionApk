@@ -53,6 +53,17 @@ import com.example.carcollection.featurecar.domain.Car
 import com.example.carcollection.featurecar.presentation.add_edit_car.carDetailScreen.AutoSizeText
 import com.example.carcollection.featuretags.domain.Tag
 
+// Función helper para calcular si un color es claro u oscuro
+private fun Color.isLightColor(): Boolean {
+    val red = this.red * 255
+    val green = this.green * 255
+    val blue = this.blue * 255
+
+    // Calcular luminancia usando la fórmula estándar
+    val luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255
+    return luminance > 0.5
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun CarDetailScreen(
@@ -236,6 +247,13 @@ fun CarDetailScreen(
                                                     Color.Gray
                                                 }
 
+                                                // Calcular color de texto con buen contraste
+                                                val textColor = if (chipColor.isLightColor()) {
+                                                    Color.Black
+                                                } else {
+                                                    Color.White
+                                                }
+
                                                 Box(
                                                     modifier = Modifier
                                                         .background(
@@ -246,7 +264,7 @@ fun CarDetailScreen(
                                                 ) {
                                                     Text(
                                                         text = tagName,
-                                                        color = Color.White,
+                                                        color = textColor,
                                                         style = MaterialTheme.typography.bodySmall
                                                     )
                                                 }

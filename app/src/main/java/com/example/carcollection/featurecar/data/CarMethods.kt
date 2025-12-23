@@ -13,6 +13,28 @@ class CarMethods {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
 
+    // Sistema de caché en memoria para getUserCars
+    private var carsCache: List<Car>? = null
+    private var cacheTimestamp: Long = 0
+    private val CACHE_DURATION = 5 * 60 * 1000L // 5 minutos
+
+    /**
+     * Invalida la caché de carros
+     * Debe llamarse después de agregar, editar o eliminar carros
+     */
+    fun invalidateCache() {
+        carsCache = null
+        cacheTimestamp = 0
+    }
+
+    /**
+     * Verifica si la caché es válida
+     */
+    private fun isCacheValid(): Boolean {
+        return carsCache != null &&
+               (System.currentTimeMillis() - cacheTimestamp) < CACHE_DURATION
+    }
+
     suspend fun addCarToCollection(car:Car): Result<String> { // Returns the Firestore document ID of the new car
         val firebaseUser = auth.currentUser
         return if (firebaseUser != null) {
@@ -33,6 +55,9 @@ class CarMethods {
                 // Add the Car object directly. Firestore will auto-generate a document ID.
                 val documentReference = carsCollectionRef.add(carWithTimestamp).await()
 
+                // Invalidar caché después de agregar
+                invalidateCache()
+
                 println("Car '${car.name}' added to user $userId with ID: ${documentReference.id}")
                 Result.success(documentReference.id) // Return the ID of the newly added car
 
@@ -46,17 +71,52 @@ class CarMethods {
     }
 
     suspend fun syncLocalCarsToFirebase(localCars: List<Car>): Result<Pair<Int, Int>> {
-        var successCount = 0
-        var errorCount = 0
-        for (car in localCars) {
-            val result = addCarToCollection(car)
-            if (result.isSuccess) {
-                successCount++
-            } else {
-                errorCount++
+        val firebaseUser = auth.currentUser
+        return if (firebaseUser != null) {
+            val userId = firebaseUser.uid
+            try {
+                val carsCollectionRef = db.collection("users")
+                    .document(userId)
+                    .collection("carsCollection")
+
+                // Firebase permite máximo 500 operaciones por batch
+                // Dividir en chunks de 500 para manejar colecciones grandes
+                val batches = localCars.chunked(500)
+                var successCount = 0
+
+                for (batchChunk in batches) {
+                    val writeBatch = db.batch()
+
+                    for (car in batchChunk) {
+                        // Set the createdAt timestamp if not already set
+                        val carWithTimestamp = if (car.createdAt == null) {
+                            car.copy(createdAt = System.currentTimeMillis())
+                        } else {
+                            car
+                        }
+
+                        // Create new document reference
+                        val docRef = carsCollectionRef.document()
+                        writeBatch.set(docRef, carWithTimestamp)
+                    }
+
+                    // Commit the batch (1 write operation for all documents in chunk)
+                    writeBatch.commit().await()
+                    successCount += batchChunk.size
+
+                    println("Batch sync: ${batchChunk.size} cars added to user $userId")
+                }
+
+                // Invalidar caché después de sincronizar
+                invalidateCache()
+
+                Result.success(Pair(successCount, 0))
+            } catch (e: Exception) {
+                Result.failure(Exception("Failed to sync cars: ${e.message}"))
             }
+        } else {
+            Result.failure(Exception("No user logged in to sync cars."))
         }
-        return Result.success(Pair(successCount, errorCount))
     }
 
     suspend fun deleteCarFromCollection(carId: String): Result<Unit> {
@@ -69,6 +129,10 @@ class CarMethods {
                     .collection("carsCollection")
                     .document(carId)
                 carDocRef.delete().await()
+
+                // Invalidar caché después de eliminar
+                invalidateCache()
+
                 Result.success(Unit)
             } catch (e: Exception) {
                 Result.failure(Exception("Failed to delete car: ${e.message}"))
@@ -88,6 +152,10 @@ class CarMethods {
                     .collection("carsCollection")
                     .document(carId)
                 carDocRef.set(updatedCar).await()
+
+                // Invalidar caché después de actualizar
+                invalidateCache()
+
                 Result.success(Unit)
             } catch (e: Exception) {
                 Result.failure(Exception("Failed to update car: ${e.message}"))
@@ -98,9 +166,14 @@ class CarMethods {
     }
 
 
-    suspend fun getUserCars(): Result<List<Car>> {
+    suspend fun getUserCars(forceRefresh: Boolean = false): Result<List<Car>> {
         val firebaseUser = auth.currentUser
         return if (firebaseUser != null) {
+            // Verificar caché primero (si no se fuerza refresh)
+            if (!forceRefresh && isCacheValid()) {
+                return Result.success(carsCache!!)
+            }
+
             val userId = firebaseUser.uid
             try {
                 val carsCollectionRef = db.collection("users")
@@ -112,6 +185,10 @@ class CarMethods {
                 val cars = querySnapshot.documents.mapNotNull { doc ->
                     doc.toObject(Car::class.java)?.copy(id = doc.id)
                 }
+
+                // Actualizar caché
+                carsCache = cars
+                cacheTimestamp = System.currentTimeMillis()
 
                 Result.success(cars)
             } catch (e: Exception) {
@@ -176,6 +253,10 @@ class CarMethods {
                 }
 
                 batch.commit().await()
+
+                // Invalidar caché después de actualizar tags
+                invalidateCache()
+
                 Result.success(Unit)
             } catch (e: Exception) {
                 Result.failure(Exception("Failed to update tag names in cars: ${e.message}"))
@@ -250,18 +331,26 @@ class CarMethods {
                     .document(userId)
                     .collection("carsCollection")
 
-                val querySnapshot = carsCollectionRef.get().await()
+                // Optimización: Query específico usando índices en lugar de leer todos los documentos
+                // Firestore permite hasta 10 whereEqualTo en una query
+                // Usamos los campos más discriminatorios primero
+                val querySnapshot = carsCollectionRef
+                    .whereEqualTo("brand", car.brand)
+                    .whereEqualTo("name", car.name)
+                    .whereEqualTo("year", car.year)
+                    .limit(5) // Límite pequeño, probablemente solo habrá 0-1 resultados
+                    .get()
+                    .await()
 
-                // Check if any existing car matches all fields (except id and createdAt)
+                // Si encontramos documentos, verificar campos adicionales en memoria
+                // (photoUrl, tags, backgroundName pueden variar más)
                 val exists = querySnapshot.documents.any { doc ->
                     val existingCar = doc.toObject(Car::class.java)
                     existingCar != null &&
-                        existingCar.brand == car.brand &&
-                        existingCar.name == car.name &&
                         existingCar.serie == car.serie &&
-                        existingCar.year == car.year &&
                         existingCar.color == car.color &&
                         existingCar.type == car.type &&
+                        existingCar.quality == car.quality &&
                         existingCar.photoUrl == car.photoUrl &&
                         existingCar.tags == car.tags &&
                         existingCar.backgroundName == car.backgroundName

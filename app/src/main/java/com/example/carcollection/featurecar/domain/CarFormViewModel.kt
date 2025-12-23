@@ -145,6 +145,14 @@ class CarFormViewModel(
             }
         }
     }
+
+    // Reset only name and photoUrl for adding another car quickly
+    fun resetForNewCar() {
+        currentCarId = null
+        name.value = ""
+        photoUrl.value = ""
+        // Todos los demás campos se mantienen (brand, serie, year, color, type, quality, backgroundName, tags)
+    }
 }
 
 // ViewModelFactory for CarFormViewModel

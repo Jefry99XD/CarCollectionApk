@@ -216,10 +216,10 @@ class UserMethods {
             val friendsCount = db.collection("users").document(userId)
                 .collection("friends").get().await().size()
 
-            // Para series diferentes (asumiendo que los autos tienen un campo "series")
+            // Para series diferentes (asumiendo que los autos tienen un campo "serie")
             val cars = db.collection("users").document(userId)
                 .collection("carsCollection").get().await()
-            val seriesSet = cars.documents.mapNotNull { it.getString("series") }.toSet()
+            val seriesSet = cars.documents.mapNotNull { it.getString("serie") }.toSet()
 
             Result.success(
                 mapOf(

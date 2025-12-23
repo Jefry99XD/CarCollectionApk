@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalOffer
@@ -28,6 +29,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -62,9 +64,68 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import coil.compose.AsyncImage
 import com.example.carcollection.featurecar.domain.CarFormViewModel
+import com.example.carcollection.featurecar.presentation.add_edit_car.carDetailScreen.LogoSelectorDialog
 import com.example.carcollection.presentation.common.ConfirmBackButton
 import kotlinx.coroutines.launch
 
+// ✅ Constantes movidas fuera del composable
+private val QUALITY_OPTIONS = listOf("Basico", "TH", "STH", "Premium", "Silver Series", "RLC", "Chase")
+
+// ✅ ExposedDropdownField extraído como función top-level con optimizaciones
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ExposedDropdownField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    suggestions: List<String>,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    sortDescending: Boolean = false
+) {
+    // ✅ Memoizar el sorting para evitar recalcular en cada recomposición
+    val sortedSuggestions = remember(suggestions, value, sortDescending) {
+        suggestions
+            .filter { it.contains(value, ignoreCase = true) }
+            .let { filtered ->
+                if (sortDescending) {
+                    filtered.sortedByDescending { it.lowercase() }
+                } else {
+                    filtered.sortedBy { it.lowercase() }
+                }
+            }
+    }
+
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = onExpandedChange) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { Text(label) },
+            modifier = Modifier
+                .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
+                .fillMaxWidth(),
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }
+        )
+
+        // ✅ Solo mostrar menu si está expandido
+        if (expanded) {
+            ExposedDropdownMenu(
+                expanded = true,
+                onDismissRequest = { onExpandedChange(false) }
+            ) {
+                sortedSuggestions.forEach { suggestion ->
+                    DropdownMenuItem(
+                        text = { Text(suggestion) },
+                        onClick = {
+                            onValueChange(suggestion)
+                            onExpandedChange(false)
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -77,6 +138,7 @@ fun AddEditCarScreen(
     val coroutineScope = rememberCoroutineScope()
     val categories by viewModel.backgroundCategories.collectAsState()
     var showBackConfirmation by remember { mutableStateOf(false) }
+    var addAnotherCar by remember { mutableStateOf(false) }
 
     // Handle physical back button
     BackHandler {
@@ -131,26 +193,57 @@ fun AddEditCarScreen(
                     .fillMaxWidth()
                     .navigationBarsPadding()
             ) {
-                Button(
-                    onClick = {
-                        viewModel.saveCar(onComplete = onSaveSuccess)
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar("¡Carro guardado con éxito!")
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
-                        "Guardar Carro",
-                        style = MaterialTheme.typography.titleMedium
-                    )
+                    // Checkbox para agregar otro carro
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Checkbox(
+                            checked = addAnotherCar,
+                            onCheckedChange = { addAnotherCar = it }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Agregar otro carro después de guardar",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    // Botón de guardar
+                    Button(
+                        onClick = {
+                            viewModel.saveCar(onComplete = {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("¡Carro guardado con éxito!")
+                                }
+
+                                if (addAnotherCar) {
+                                    // Resetear solo name y photoUrl para agregar otro carro
+                                    viewModel.resetForNewCar()
+                                } else {
+                                    // Salir de la pantalla
+                                    onSaveSuccess()
+                                }
+                            })
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Text(
+                            text = if (addAnotherCar) "Guardar y Agregar Otro" else "Guardar Carro",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
                 }
             }
         }
@@ -245,6 +338,7 @@ fun SectionCard(
 @Composable
 fun CarImagePickerSection(viewModel: CarFormViewModel) {
     var showImagePicker by remember { mutableStateOf(false) }
+    var showLogoSelector by remember { mutableStateOf(false) }
 
     OutlinedTextField(
         value = viewModel.photoUrl.value,
@@ -274,28 +368,58 @@ fun CarImagePickerSection(viewModel: CarFormViewModel) {
         }
     }
 
-    Button(
-        onClick = { showImagePicker = true },
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-        )
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Icon(
-            imageVector = Icons.Default.Image,
-            contentDescription = null,
-            modifier = Modifier.size(20.dp)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text("Elegir imagen desde la galería")
+        Button(
+            onClick = { showImagePicker = true },
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        ) {
+            Icon(
+                imageVector = Icons.Default.Image,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Galería")
+        }
+
+        Button(
+            onClick = { showLogoSelector = true },
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+        ) {
+            Icon(
+                imageVector = Icons.Default.EmojiEvents,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Logo")
+        }
     }
 
     if (showImagePicker) {
         CarImagePickerDialog(
             onDismiss = { showImagePicker = false },
             onImageSelected = { url -> viewModel.onPhotoUrlChange(url) }
+        )
+    }
+
+    if (showLogoSelector) {
+        LogoSelectorDialog(
+            onDismiss = { showLogoSelector = false },
+            onLogoSelected = { url -> viewModel.onPhotoUrlChange(url) }
         )
     }
 }
@@ -311,49 +435,15 @@ fun CarFormFields(viewModel: CarFormViewModel) {
     var expandedColor by remember { mutableStateOf(false) }
     var expandedQuality by remember { mutableStateOf(false) }
 
-    val brandSuggestions = viewModel.brandSuggestions.collectAsState().value
-    val serieSuggestions = viewModel.serieSuggestions.collectAsState().value
-    val yearSuggestions = viewModel.yearSuggestions.collectAsState().value
-    val typeSuggestions = viewModel.typeSuggestions.collectAsState().value
-    val colorSuggestions = viewModel.colorSuggestions.collectAsState().value
-    val qualityOptions = listOf("Basico", "TH", "STH", "Premium", "Silver Series", "RLC", "Chase")
+    // ✅ Usar by collectAsState() en lugar de .collectAsState().value
+    val brandSuggestions by viewModel.brandSuggestions.collectAsState()
+    val serieSuggestions by viewModel.serieSuggestions.collectAsState()
+    val yearSuggestions by viewModel.yearSuggestions.collectAsState()
+    val typeSuggestions by viewModel.typeSuggestions.collectAsState()
+    val colorSuggestions by viewModel.colorSuggestions.collectAsState()
+    // ✅ Usar constante QUALITY_OPTIONS (no recrear)
 
-    // Dropdown helper
-    @Composable
-    fun ExposedDropdownField(
-        value: String,
-        onValueChange: (String) -> Unit,
-        label: String,
-        suggestions: List<String>,
-        expanded: Boolean,
-        onExpandedChange: (Boolean) -> Unit
-    ) {
-        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = onExpandedChange) {
-            OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
-                label = { Text(label) },
-                modifier = Modifier
-                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
-                    .fillMaxWidth(),
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }
-            )
-            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { onExpandedChange(false) }) {
-                suggestions
-                    .filter { it.contains(value, ignoreCase = true) }
-                    .sortedBy { it.lowercase() }
-                    .forEach { suggestion ->
-                        DropdownMenuItem(
-                            text = { Text(suggestion) },
-                            onClick = {
-                                onValueChange(suggestion)
-                                onExpandedChange(false)
-                            }
-                        )
-                    }
-            }
-        }
-    }
+    // ✅ Función ExposedDropdownField ahora es top-level (eliminada de aquí)
 
     ExposedDropdownField(
         value = viewModel.brand.value,
@@ -387,7 +477,8 @@ fun CarFormFields(viewModel: CarFormViewModel) {
         label = "Año",
         suggestions = yearSuggestions,
         expanded = expandedYear,
-        onExpandedChange = { expandedYear = it }
+        onExpandedChange = { expandedYear = it },
+        sortDescending = true
     )
 
     ExposedDropdownField(
@@ -412,10 +503,21 @@ fun CarFormFields(viewModel: CarFormViewModel) {
         value = viewModel.quality.value,
         onValueChange = { viewModel.onQualityChange(it) },
         label = "Calidad",
-        suggestions = qualityOptions,
+        suggestions = QUALITY_OPTIONS,  // ✅ Usar constante
         expanded = expandedQuality,
         onExpandedChange = { expandedQuality = it }
     )
+}
+
+// Función helper para calcular si un color es claro u oscuro
+private fun Color.isLightColor(): Boolean {
+    val red = this.red * 255
+    val green = this.green * 255
+    val blue = this.blue * 255
+
+    // Calcular luminancia usando la fórmula estándar
+    val luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255
+    return luminance > 0.5
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -424,15 +526,32 @@ fun CarTagsSection(viewModel: CarFormViewModel) {
     val availableTags by viewModel.availableTags.collectAsState()
     val selectedTags by viewModel.selectedTags.collectAsState()
 
+    // ✅ Crear map de índices una sola vez para evitar indexOf() repetido (O(1) en lugar de O(n))
+    val selectedTagsIndexMap = remember(selectedTags) {
+        selectedTags.withIndex().associate { it.value to it.index + 1 }
+    }
 
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         availableTags.forEach { tag ->
+            // ✅ Memoizar cálculos de color por tag para evitar recalcular en cada recomposición
+            val backgroundColor = remember(tag.color) {
+                Color(tag.color?.toColorInt() ?: 0)
+            }
+
+            // ✅ Memoizar textColor basado en backgroundColor
+            val textColor = remember(backgroundColor) {
+                if (backgroundColor.isLightColor()) {
+                    Color.Black
+                } else {
+                    Color.White
+                }
+            }
+
             val isSelected = tag.name in selectedTags
-            val orderNumber = if (isSelected) selectedTags.indexOf(tag.name) + 1 else null
-            val backgroundColor = Color(tag.color?.toColorInt() ?: 0)
+            val orderNumber = selectedTagsIndexMap[tag.name]  // ✅ O(1) lookup en lugar de indexOf()
 
             FilterChip(
                 selected = isSelected,
@@ -440,27 +559,36 @@ fun CarTagsSection(viewModel: CarFormViewModel) {
                 label = {
                     if (orderNumber != null) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(tag.name)
+                            Text(
+                                text = tag.name,
+                                color = textColor
+                            )
                             Spacer(Modifier.width(4.dp))
                             Text(
                                 text = orderNumber.toString(),
                                 style = MaterialTheme.typography.labelSmall,
+                                color = textColor,
                                 modifier = Modifier
                                     .padding(start = 2.dp, end = 2.dp)
                                     .background(
-                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                        color = textColor.copy(alpha = 0.2f),
                                         shape = CircleShape
                                     )
                                     .padding(horizontal = 4.dp, vertical = 1.dp)
                             )
                         }
                     } else {
-                        Text(tag.name)
+                        Text(
+                            text = tag.name,
+                            color = textColor
+                        )
                     }
                 },
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = backgroundColor,
-                    selectedContainerColor = backgroundColor
+                    selectedContainerColor = backgroundColor,
+                    labelColor = textColor,
+                    selectedLabelColor = textColor
                 )
             )
         }

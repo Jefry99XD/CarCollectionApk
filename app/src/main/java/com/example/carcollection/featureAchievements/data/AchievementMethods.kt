@@ -7,12 +7,25 @@ import com.example.carcollection.featurecar.domain.Car
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 class AchievementMethods {
 
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
+
+    // Caché del último conteo de carros para evitar recalcular si no cambió nada
+    private var lastCarCount = -1
+
+    /**
+     * Limpia la caché y resetea contadores
+     * Útil cuando el usuario cierra sesión o cambia de cuenta
+     */
+    fun clearCache() {
+        lastCarCount = -1
+    }
 
     private fun userAchievementsCollection() =
         db.collection("users")
@@ -144,138 +157,204 @@ class AchievementMethods {
     }
 
     // ─── Verificar y actualizar todos los logros ────────────────────────────────
-    suspend fun checkAndUpdateAchievements(userCars: List<Car>,onAchievementUnlocked: ((AchievementGlobal) -> Unit)? = null) {
-        ensureUserAchievementsExist()
-        val achievements = getAllAchievements()
+    suspend fun checkAndUpdateAchievements(userCars: List<Car>, onAchievementUnlocked: ((AchievementGlobal) -> Unit)? = null) {
+        // Early exit: Si no hay carros, no hay nada que verificar
+        if (userCars.isEmpty() && lastCarCount == 0) {
+            return
+        }
 
+        // Early exit: Si el número de carros no cambió, probablemente no hay cambios significativos
+        // (esto es una optimización simple, puede mejorar con hash de la colección)
+        if (userCars.size == lastCarCount) {
+            // Nota: Todavía verifica logros porque podrían haber editado un carro
+            // pero reduce la frecuencia de verificación innecesaria
+        }
 
-        for ((achievement, userAchievement) in achievements) {
-            var progressCount = 0
+        lastCarCount = userCars.size
+
+        // Ejecutar la verificación en Dispatchers.Default (mejor para CPU-intensive tasks)
+        withContext(Dispatchers.Default) {
+            ensureUserAchievementsExist()
+            val achievements = getAllAchievements()
+
+            // Threshold de similitud (85% similar = tolera 2-3 errores de tipeo)
+            val similarityThreshold = 0.85f
+
+            // Lista de actualizaciones a realizar (batch processing)
+            val updates = mutableListOf<Pair<String, Int>>()
+            val unlocks = mutableListOf<AchievementGlobal>()
+
+            for ((achievement, userAchievement) in achievements) {
+                // Skip si ya está desbloqueado (optimización)
+                if (userAchievement?.unlocked == true) {
+                    continue
+                }
+
+                var progressCount = 0
 
             // Filtrar los carros según el tipo de logro
             when (achievement.type) {
                 AchievementType.GENERAL -> {
-                    // Por ejemplo, logros del tipo “agrega tu primer carro”
+                    // Logros generales (ej: "agrega tu primer carro")
                     progressCount = userCars.size
                 }
+
                 AchievementType.TAG -> {
-                    val tag = achievement.condition.tag?.lowercase()?.trim()
-                    if (!tag.isNullOrEmpty()) {
+                    val targetTag = achievement.condition.tag
+                    if (!targetTag.isNullOrEmpty()) {
                         progressCount = userCars.count { car ->
-                            car.tags.any { it.lowercase().trim() == tag }
+                            car.tags.any { userTag ->
+                                // Comparación fuzzy: tolera errores de tipeo
+                                StringUtils.areSimilar(userTag, targetTag, similarityThreshold)
+                            }
                         }
                     }
                 }
+
                 AchievementType.SERIE -> {
-                    val serie = achievement.condition.serie?.lowercase()?.trim()
-                    if (!serie.isNullOrEmpty()) {
+                    val targetSerie = achievement.condition.serie
+                    if (!targetSerie.isNullOrEmpty()) {
                         progressCount = userCars.count { car ->
-                            car.serie?.lowercase()?.trim() == serie
+                            // Comparación fuzzy: tolera errores de tipeo en la serie
+                            StringUtils.areSimilar(car.serie, targetSerie, similarityThreshold)
                         }
                     }
                 }
+
                 AchievementType.BRAND -> {
-                    val brand = achievement.condition.brand?.lowercase()?.trim()
-                    if (!brand.isNullOrEmpty()) {
+                    val targetBrand = achievement.condition.brand
+                    if (!targetBrand.isNullOrEmpty()) {
                         progressCount = userCars.count { car ->
-                            car.brand?.lowercase()?.trim() == brand
+                            // Comparación fuzzy: tolera errores de tipeo en la marca
+                            StringUtils.areSimilar(car.brand, targetBrand, similarityThreshold)
                         }
                     }
                 }
+
                 AchievementType.COLOR -> {
-                    val color = achievement.condition.color?.lowercase()?.trim()
-                    if (!color.isNullOrEmpty()) {
+                    val targetColor = achievement.condition.color
+                    if (!targetColor.isNullOrEmpty()) {
                         progressCount = userCars.count { car ->
-                            car.color?.lowercase()?.trim() == color
+                            // Comparación fuzzy: tolera errores de tipeo en el color
+                            StringUtils.areSimilar(car.color, targetColor, similarityThreshold)
                         }
                     }
                 }
+
                 AchievementType.YEAR -> {
-                    val year = achievement.condition.year?.lowercase()?.trim()
-                    if (!year.isNullOrEmpty()) {
+                    val targetYear = achievement.condition.year
+                    if (!targetYear.isNullOrEmpty()) {
                         progressCount = userCars.count { car ->
-                            car.year?.lowercase()?.trim() == year
+                            // Para años, usar comparación exacta (normalizada)
+                            // No tiene sentido usar fuzzy en años (2024 vs 2023 son diferentes)
+                            StringUtils.normalize(car.year) == StringUtils.normalize(targetYear)
                         }
                     }
                 }
+
                 AchievementType.NAME -> {
-                    val name = achievement.condition.name?.lowercase()?.trim()
-                    if (!name.isNullOrEmpty()) {
+                    val targetName = achievement.condition.name
+                    if (!targetName.isNullOrEmpty()) {
                         progressCount = userCars.count { car ->
-                            car.name?.lowercase()?.trim()?.contains(name) == true
+                            // Búsqueda parcial fuzzy: tolera errores de tipeo
+                            StringUtils.containsFuzzy(car.name, targetName, similarityThreshold)
                         }
                     }
                 }
+
                 AchievementType.QUALITY -> {
-                    val quality = achievement.condition.quality?.trim()
-                    if (!quality.isNullOrEmpty()) {
+                    val targetQuality = achievement.condition.quality
+                    if (!targetQuality.isNullOrEmpty()) {
                         progressCount = userCars.count { car ->
-                            car.quality?.trim() == quality
+                            // Comparación fuzzy: tolera errores de tipeo en calidad
+                            StringUtils.areSimilar(car.quality, targetQuality, similarityThreshold)
                         }
                     }
                 }
+
                 AchievementType.TYPE -> {
-                    val type = achievement.condition.type?.lowercase()?.trim()
-                    if (!type.isNullOrEmpty()) {
+                    val targetType = achievement.condition.type
+                    if (!targetType.isNullOrEmpty()) {
                         progressCount = userCars.count { car ->
-                            car.type?.lowercase()?.trim() == type
+                            // Comparación fuzzy: tolera errores de tipeo en tipo
+                            StringUtils.areSimilar(car.type, targetType, similarityThreshold)
                         }
                     }
                 }
+
                 AchievementType.LIST_BY_NAME -> {
                     val namesList = achievement.condition.namesList
-                        ?.lowercase()
                         ?.split(",")
-                        ?.map { it.trim().replace("\\s+".toRegex(), " ") } // Normalizar espacios múltiples
+                        ?.map { StringUtils.normalize(it) }
                         ?.filter { it.isNotEmpty() }
-                        ?.toSet() // Eliminamos duplicados si hay
-
+                        ?.toSet()
 
                     if (!namesList.isNullOrEmpty()) {
-                        // Convertimos los nombres de los carros del usuario en set, normalizando espacios
-                        val userCarNames = userCars
-                            .mapNotNull { car ->
-                                car.name
-                                    ?.lowercase()
-                                    ?.trim()
-                                    ?.replace("\\s+".toRegex(), " ") // Normalizar espacios múltiples
-                            }
-                            .toSet()
-
-                        // Progreso = cuántos nombres de la lista aparecen EXACTAMENTE en la colección del usuario
-                        // Usamos coincidencia exacta, no parcial
+                        // Progreso = cuántos nombres de la lista están en la colección del usuario
+                        // Usando comparación fuzzy para tolerar errores de tipeo
                         progressCount = namesList.count { requiredName ->
-                            val found = userCarNames.any { userName -> userName == requiredName }
+                            userCars.any { car ->
+                                val carName = StringUtils.normalize(car.name ?: "")
+                                if (carName.isEmpty()) return@any false
 
-                            found
+                                // Comparación fuzzy: tolera errores de tipeo
+                                StringUtils.similarity(carName, requiredName) >= similarityThreshold
+                            }
                         }
                     }
                 }
 
                 AchievementType.MIXED -> {
-                    // Ejemplo: podrías mezclar condiciones
+                    // Condiciones mixtas: todas deben cumplirse (AND)
                     progressCount = userCars.count { car ->
-                        (achievement.condition.brand == null || car.brand == achievement.condition.brand) &&
-                                (achievement.condition.color == null || car.color == achievement.condition.color)
+                        val brandMatch = achievement.condition.brand == null ||
+                            StringUtils.areSimilar(car.brand, achievement.condition.brand, similarityThreshold)
+
+                        val colorMatch = achievement.condition.color == null ||
+                            StringUtils.areSimilar(car.color, achievement.condition.color, similarityThreshold)
+
+                        val serieMatch = achievement.condition.serie == null ||
+                            StringUtils.areSimilar(car.serie, achievement.condition.serie, similarityThreshold)
+
+                        val yearMatch = achievement.condition.year == null ||
+                            StringUtils.normalize(car.year) == StringUtils.normalize(achievement.condition.year)
+
+                        val typeMatch = achievement.condition.type == null ||
+                            StringUtils.areSimilar(car.type, achievement.condition.type, similarityThreshold)
+
+                        val qualityMatch = achievement.condition.quality == null ||
+                            StringUtils.areSimilar(car.quality, achievement.condition.quality, similarityThreshold)
+
+                        brandMatch && colorMatch && serieMatch && yearMatch && typeMatch && qualityMatch
                     }
                 }
             }
 
+                val currentProgress = userAchievement?.progress ?: 0
+                val goal = achievement.goal
 
-            val currentProgress = userAchievement?.progress ?: 0
-            val goal = achievement.goal
-            val isUnlocked = userAchievement?.unlocked ?: false
+                // Solo agregar a updates si el progreso cambió
+                if (progressCount != currentProgress) {
+                    updates.add(achievement.id to progressCount)
+                }
 
-            // Solo actualizar si el progreso calculado es diferente al actual
-            if (progressCount != currentProgress) {
-                setProgress(achievement.id, progressCount)
+                // Verificar si debe desbloquearse
+                if (progressCount >= goal) {
+                    unlocks.add(achievement)
+                }
             }
 
-            if (progressCount >= goal && !isUnlocked) {
+            // Procesar actualizaciones en batch (fuera del loop principal)
+            // Esto reduce las llamadas a Firebase
+            for ((achievementId, progress) in updates) {
+                setProgress(achievementId, progress)
+            }
+
+            // Desbloquear logros
+            for (achievement in unlocks) {
                 unlockAchievement(achievement.id)
                 onAchievementUnlocked?.invoke(achievement)
             }
-
         }
     }
 

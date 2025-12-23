@@ -30,6 +30,12 @@ class UserViewModel(
     private val _achievementCount = MutableStateFlow(0)
     val achievementCount: StateFlow<Int> = _achievementCount
 
+    private val _seriesCount = MutableStateFlow(0)
+    val seriesCount: StateFlow<Int> = _seriesCount
+
+    private val _friendsCount = MutableStateFlow(0)
+    val friendsCount: StateFlow<Int> = _friendsCount
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
@@ -61,6 +67,8 @@ class UserViewModel(
                 _carCount.value = 0
                 _tagCount.value = 0
                 _achievementCount.value = 0
+                _seriesCount.value = 0
+                _friendsCount.value = 0
                 _recentCars.value = emptyList()
             }
         }
@@ -144,6 +152,8 @@ class UserViewModel(
             _carCount.value = 0
             _tagCount.value = 0
             _achievementCount.value = 0
+            _seriesCount.value = 0
+            _friendsCount.value = 0
             _recentCars.value = emptyList() // 🧹 limpiar también los carros recientes
             _errorMessage.value = null
         }
@@ -175,20 +185,50 @@ class UserViewModel(
     fun fetchUserStats() {
         viewModelScope.launch {
             try {
-                val cars = carMethods.getUserCars().getOrNull()?.size ?: 0
-                val tags = tagsMethods.getAllTags().size
+                // Use UserMethods.getUserStats() for efficient single-call stats retrieval
+                val statsResult = userMethods.getUserStats()
+                if (statsResult.isSuccess) {
+                    val stats = statsResult.getOrNull() ?: emptyMap()
+                    _carCount.value = stats["cars"] ?: 0
+                    _tagCount.value = stats["tags"] ?: 0
+                    _friendsCount.value = stats["friends"] ?: 0
+                    _seriesCount.value = stats["series"] ?: 0
 
-                _carCount.value = cars
-                _tagCount.value = tags
+                    // Update user object with stats
+                    _user.value = _user.value?.updateStats(
+                        cars = _carCount.value,
+                        tags = _tagCount.value,
+                        series = _seriesCount.value
+                    )
+                } else {
+                    // Fallback: calculate manually if getUserStats fails
+                    val carsResult = carMethods.getUserCars().getOrNull() ?: emptyList()
+                    val cars = carsResult.size
+                    val tags = tagsMethods.getAllTags().size
 
-                // Actualizar el objeto User con sus estadísticas
-                _user.value = _user.value?.updateStats(cars, tags)
+                    // Calcular series únicas (filtrar null y blancos, y contar distintos)
+                    val uniqueSeries = carsResult
+                        .mapNotNull { it.serie }
+                        .filter { it.isNotBlank() }
+                        .distinct()
+                        .size
 
-                // Fetch achievement count
+                    _carCount.value = cars
+                    _tagCount.value = tags
+                    _seriesCount.value = uniqueSeries
+                    _friendsCount.value = 0 // No data available
+
+                    // Actualizar el objeto User con sus estadísticas incluyendo series
+                    _user.value = _user.value?.updateStats(cars, tags, uniqueSeries)
+                }
+
+                // Fetch achievement count separately
                 fetchAchievementCount()
             } catch (e: Exception) {
                 _carCount.value = 0
                 _tagCount.value = 0
+                _seriesCount.value = 0
+                _friendsCount.value = 0
                 _achievementCount.value = 0
             }
         }

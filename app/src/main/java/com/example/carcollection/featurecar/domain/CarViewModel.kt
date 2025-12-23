@@ -14,7 +14,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 
 
 class CarViewModel(
@@ -35,6 +39,13 @@ class CarViewModel(
     // 🔹 Tags disponibles
     private val _allTags = MutableStateFlow<List<Tag>>(emptyList())
     val allTags: StateFlow<List<Tag>> = _allTags
+
+    // 🔹 Variables para búsqueda
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    // ✅ Job para cancelar búsquedas anteriores (debounce)
+    private var searchJob: Job? = null
 
     // 🔹 Carro actual para edición
     var currentCar: Car? = null
@@ -83,10 +94,16 @@ class CarViewModel(
         currentCar = car
     }
 
-    // 🔹 Funciones para actualizar filtros
+    // 🔹 Funciones para actualizar filtros con debounce en búsqueda
     fun onSearchQueryChange(query: String) {
-        _searchQuery.value = query
-        _filterState.value = _filterState.value.copy(query = query)
+        _searchQuery.value = query  // ✅ Actualizar inmediatamente para UI
+
+        // ✅ Debounce: cancelar búsqueda anterior y esperar 300ms
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            delay(300)  // Esperar 300ms de inactividad
+            _filterState.value = _filterState.value.copy(query = query)
+        }
     }
 
     fun onBrandSelected(brand: String?) {
@@ -178,10 +195,7 @@ class CarViewModel(
         viewModelScope, SharingStarted.WhileSubscribed(5000), null
     )
 
-    // 🔹 Variables para búsqueda y paginación
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
-
+    // 🔹 Variables para paginación
     private val _savedItemsPerPage = MutableStateFlow(20) // Default 20 items por página
     val savedItemsPerPage: StateFlow<Int> = _savedItemsPerPage.asStateFlow()
 

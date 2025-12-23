@@ -83,6 +83,9 @@ import com.example.carcollection.featurecar.domain.CarViewModel
 import com.example.carcollection.featuremenu.main.components.CarCard
 import com.example.carcollection.presentation.navigation.NavRoutes
 
+// ✅ Constante movida fuera del composable para evitar recreación
+private val ITEMS_PER_PAGE_OPTIONS = listOf(5, 10, 20, 50)
+
 @Composable
 fun DropdownMenuBox(
     selectedOption: String,
@@ -116,7 +119,8 @@ fun DropdownMenuBox(
 fun FilterSection(
     viewModel: CarViewModel,
     modifier: Modifier = Modifier,
-    expanded: Boolean
+    expanded: Boolean,
+    activeFiltersCount: Int  // ✅ Recibir como parámetro
 ) {
     val allBrands by viewModel.allBrands.collectAsState()
     val allYears by viewModel.allYears.collectAsState()
@@ -128,7 +132,7 @@ fun FilterSection(
     val selectedSeries by viewModel.selectedSeries.collectAsState()
     val selectedTag by viewModel.selectedTag.collectAsState()
 
-    val activeFiltersCount = listOfNotNull(selectedBrand, selectedYear, selectedSeries, selectedTag).size
+    // ✅ Eliminar cálculo duplicado (ahora viene como parámetro)
 
     Column(modifier = modifier) {
         AnimatedVisibility(
@@ -281,17 +285,29 @@ fun CollectionViewScreen(
 
     val allTags by viewModel.allTags.collectAsState(initial = emptyList())
 
-    val itemsPerPageOptions = listOf(5, 10, 20, 50)
-    var itemsPerPage by remember { mutableIntStateOf(viewModel.savedItemsPerPage.value) } // Changed to remember
-    // Corrected line:
+    // ✅ Recolectar estados de filtros una sola vez (fuera de TopAppBar)
+    val selectedBrand by viewModel.selectedBrand.collectAsState()
+    val selectedYear by viewModel.selectedYear.collectAsState()
+    val selectedSeries by viewModel.selectedSeries.collectAsState()
+    val selectedTag by viewModel.selectedTag.collectAsState()
+
+    var itemsPerPage by remember { mutableIntStateOf(viewModel.savedItemsPerPage.value) }
     var currentPage by rememberSaveable { mutableIntStateOf(viewModel.savedPage.value) }
 
+    // ✅ Memorizar cálculos para evitar recalcular en cada recomposición
+    val totalPages = remember(carsList.size, itemsPerPage) {
+        maxOf(1, (carsList.size + itemsPerPage - 1) / itemsPerPage)
+    }
 
+    val paginatedCars = remember(carsList, currentPage, itemsPerPage) {
+        carsList.drop(currentPage * itemsPerPage).take(itemsPerPage)
+    }
 
+    // ✅ Calcular activeFiltersCount una sola vez
+    val activeFiltersCount = remember(selectedBrand, selectedYear, selectedSeries, selectedTag) {
+        listOfNotNull(selectedBrand, selectedYear, selectedSeries, selectedTag).size
+    }
 
-
-    val totalPages = maxOf(1, (carsList.size + itemsPerPage - 1) / itemsPerPage)
-    val paginatedCars = carsList.drop(currentPage * itemsPerPage).take(itemsPerPage)
 
     val listState = rememberSaveable(saver = LazyListState.Saver) {
         LazyListState()
@@ -371,12 +387,7 @@ fun CollectionViewScreen(
                     }
                 },
                 actions = {
-                    val selectedBrand by viewModel.selectedBrand.collectAsState()
-                    val selectedYear by viewModel.selectedYear.collectAsState()
-                    val selectedSeries by viewModel.selectedSeries.collectAsState()
-                    val selectedTag by viewModel.selectedTag.collectAsState()
-                    val activeFiltersCount = listOfNotNull(selectedBrand, selectedYear, selectedSeries, selectedTag).size
-
+                    // ✅ Usar valores ya recolectados fuera del TopAppBar
                     BadgedBox(
                         badge = {
                             if (activeFiltersCount > 0) {
@@ -453,11 +464,15 @@ fun CollectionViewScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            FilterSection(
-                viewModel = viewModel,
-                modifier = Modifier.fillMaxWidth(),
-                expanded = expanded
-            )
+            // ✅ Solo renderizar FilterSection si está expandido
+            if (expanded) {
+                FilterSection(
+                    viewModel = viewModel,
+                    modifier = Modifier.fillMaxWidth(),
+                    expanded = expanded,
+                    activeFiltersCount = activeFiltersCount
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -488,7 +503,7 @@ fun CollectionViewScreen(
                         )
                         DropdownMenuBox(
                             selectedOption = itemsPerPage.toString(),
-                            options = itemsPerPageOptions.map { it.toString() },
+                            options = ITEMS_PER_PAGE_OPTIONS.map { it.toString() },
                             onOptionSelected = {
                                 itemsPerPage = it.toInt()
                                 viewModel.setItemsPerPage(itemsPerPage)
@@ -608,34 +623,30 @@ fun CollectionViewScreen(
                     state = listState
                 ) {
                     itemsIndexed(paginatedCars, key = { index, car -> car.id ?: index.toString() }) { _, car ->
-                    // Animar el item individualmente
-                        AnimatedVisibility(
-                            visible = true,
-                            enter = fadeIn(animationSpec = tween(300)),
-                            exit = fadeOut(animationSpec = tween(300))
-                        ) {
-                            CarCard(
-                                car = car,
-                                allTags = allTags,
-                                modifier = Modifier.animateItem(fadeInSpec = tween(300), fadeOutSpec = tween(300)),
-                                onEdit = {
-                                    viewModel.savedPage.value = currentPage
-                                    onEditCar(car.id.toString()) // 👈 Ya no lo conviertas a String, porque ya lo es
-                                },
-                                onDelete = { carToDelete = car },
-                                onClick = {
-                                    car.id?.let { _ ->
-                                        navController.navigate("${NavRoutes.DETAIL}/${car.id}")
-                                    } ?: run {
-                                        // Opcional: mostrar snackbar o log
-                                        Log.w("CollectionView",
-                                            "Car id es null, no se puede navegar$car"
-                                        )
-                                    }
+                        // ✅ Eliminar AnimatedVisibility innecesaria (visible = true siempre)
+                        // animateItem() ya maneja las animaciones de LazyColumn
+                        CarCard(
+                            car = car,
+                            allTags = allTags,
+                            modifier = Modifier.animateItem(
+                                fadeInSpec = tween(300),
+                                fadeOutSpec = tween(300)
+                            ),
+                            onEdit = {
+                                viewModel.savedPage.value = currentPage
+                                onEditCar(car.id.toString())
+                            },
+                            onDelete = { carToDelete = car },
+                            onClick = {
+                                car.id?.let { _ ->
+                                    navController.navigate("${NavRoutes.DETAIL}/${car.id}")
+                                } ?: run {
+                                    Log.w("CollectionView",
+                                        "Car id es null, no se puede navegar$car"
+                                    )
                                 }
-
-                            )
-                        }
+                            }
+                        )
                     }
                     item {
                         Spacer(modifier = Modifier.height(80.dp))

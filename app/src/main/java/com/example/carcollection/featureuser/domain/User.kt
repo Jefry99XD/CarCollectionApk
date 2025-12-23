@@ -26,7 +26,9 @@ data class User(
     @get:Exclude
     var totalTags: Int = 0,
     val totalFriends: Int = 0,
-    val totalSeries: Int = 0,
+
+    @get:Exclude
+    var totalSeries: Int = 0,
 
     // ─── Insignias ───
     val badges: List<String> = emptyList(), // Ejemplo: ["Coleccionista", "Veterano"]
@@ -45,10 +47,11 @@ data class User(
         get() = ((System.currentTimeMillis() - createdAt) / (1000 * 60 * 60 * 24)).toInt()
 
     // Método para actualizar las estadísticas
-    fun updateStats(cars: Int, tags: Int): User {
+    fun updateStats(cars: Int, tags: Int, series: Int = 0): User {
         return this.copy().apply {
             totalCars = cars
             totalTags = tags
+            totalSeries = series
         }
     }
 
