@@ -5,5 +5,8 @@ data class CarFilterState(
     val brand: String? = null,
     val year: String? = null,
     val series: String? = null,
-    val tag: String? = null
+    val tag: String? = null,
+    val color: String? = null,
+    val type: String? = null,
+    val quality: String? = null
 )

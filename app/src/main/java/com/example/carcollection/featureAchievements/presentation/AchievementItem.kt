@@ -42,7 +42,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.material3.HorizontalDivider
 import coil.compose.AsyncImage
 import com.example.carcollection.featureAchievements.domain.AchievementGlobal
-import com.example.carcollection.featureAchievements.domain.AchievementType
 import com.example.carcollection.featureAchievements.domain.UserAchievement
 
 
@@ -134,15 +133,6 @@ fun AchievementItem(
                         }
                     }
 
-                    // Show target name for NAME type
-                    if (achievement.type == AchievementType.NAME && !achievement.condition.name.isNullOrEmpty()) {
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = "🎯 Objetivo: ${achievement.condition.name}",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
 
                     Spacer(Modifier.height(6.dp))
 
@@ -170,15 +160,17 @@ fun AchievementItem(
                 }
             }
 
-            // Show items list for LIST_BY_NAME type (expandable section)
-            if (achievement.type == AchievementType.LIST_BY_NAME && !achievement.condition.namesList.isNullOrEmpty()) {
+            // Show items list if there's a single condition with a concept that could be a comma-separated list
+            // This is for achievements that require collecting specific named items
+            val firstCondition = achievement.conditions.firstOrNull()
+            if (firstCondition != null && firstCondition.concept.contains(",")) {
                 Spacer(Modifier.height(8.dp))
                 HorizontalDivider(
                     modifier = Modifier.padding(vertical = 4.dp),
                     color = Color.Gray.copy(alpha = 0.3f)
                 )
 
-                val itemsList = achievement.condition.namesList
+                val itemsList = firstCondition.concept
                     .lowercase()
                     .split(",")
                     .map { it.trim().replace("\\s+".toRegex(), " ") }

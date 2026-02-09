@@ -1,56 +1,50 @@
 package com.example.carcollection.featureAchievements.data
 
-import com.example.carcollection.featureAchievements.domain.AchievementGlobal
-import com.example.carcollection.featureAchievements.domain.AchievementType
-import com.example.carcollection.featureAchievements.domain.UserAchievement
+import android.annotation.SuppressLint
+import android.os.Build
+import androidx.annotation.RequiresApi
+import com.example.carcollection.featureAchievements.domain.*
 import com.example.carcollection.featurecar.domain.Car
+import com.example.carcollection.featureNotification.data.NotificationMethods
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 class AchievementMethods {
 
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
-
-    // Caché del último conteo de carros para evitar recalcular si no cambió nada
-    private var lastCarCount = -1
-
-    /**
-     * Limpia la caché y resetea contadores
-     * Útil cuando el usuario cierra sesión o cambia de cuenta
-     */
-    fun clearCache() {
-        lastCarCount = -1
-    }
+    private val notificationMethods = NotificationMethods()
 
     private fun userAchievementsCollection() =
         db.collection("users")
             .document(auth.currentUser?.uid ?: "")
             .collection("achievements")
 
-    fun globalAchievementsCollection() = db.collection("achievements")
+    private fun globalAchievementsCollection() =
+        db.collection("achievements")
 
-    // ─── Obtener todos los logros ────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────
+    // OBTENER LOGROS (GLOBAL + USUARIO)
+    // ─────────────────────────────────────────────────────────────
+
     suspend fun getAllAchievements(): List<Pair<AchievementGlobal, UserAchievement?>> {
         val globalDocs = globalAchievementsCollection().get().await().documents
         val userDocs = userAchievementsCollection().get().await().documents
-
         val userMap = userDocs.associateBy { it.id }
 
         return globalDocs.map { doc ->
             val global = doc.toObject(AchievementGlobal::class.java)!!.copy(id = doc.id)
-            val userProgress = userMap[doc.id]?.toObject(UserAchievement::class.java)
-
-
-            global to userProgress
+            val user = userMap[doc.id]?.toObject(UserAchievement::class.java)
+            global to user
         }
     }
 
-    // ─── Obtener logros de un usuario público ────────────────────────────────────
     suspend fun getPublicUserAchievements(userId: String): List<Pair<AchievementGlobal, UserAchievement?>> {
         val globalDocs = globalAchievementsCollection().get().await().documents
         val userDocs = db.collection("users")
@@ -59,303 +53,265 @@ class AchievementMethods {
             .get()
             .await()
             .documents
-
         val userMap = userDocs.associateBy { it.id }
 
         return globalDocs.map { doc ->
             val global = doc.toObject(AchievementGlobal::class.java)!!.copy(id = doc.id)
-            val userProgress = userMap[doc.id]?.toObject(UserAchievement::class.java)
-
-            global to userProgress
+            val user = userMap[doc.id]?.toObject(UserAchievement::class.java)
+            global to user
         }
     }
 
-    // ─── Incrementar progreso de logro ───────────────────────────────────────────
-    suspend fun incrementProgress(achievementId: String, increment: Int) {
-        val ref = userAchievementsCollection().document(achievementId)
+    // ─────────────────────────────────────────────────────────────
+    // FUNCIÓN PRINCIPAL (NUEVO MOTOR)
+    // ─────────────────────────────────────────────────────────────
 
-        try {
-            ref.update("progress", FieldValue.increment(increment.toLong())).await()
-        } catch (_: Exception) {
-            // Error updating progress
+    @SuppressLint("NewApi")
+    suspend fun evaluateAchievements(userCars: List<Car>) {
+        // Check API level at runtime
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            evaluateAchievementsInternal(userCars)
         }
     }
 
-    // ─── Establecer progreso de logro directamente ──────────────────────────────
-    suspend fun setProgress(achievementId: String, progress: Int) {
-        val ref = userAchievementsCollection().document(achievementId)
+    @SuppressLint("NewApi")
+    @RequiresApi(Build.VERSION_CODES.O)
+    private suspend fun evaluateAchievementsInternal(userCars: List<Car>) = withContext(Dispatchers.Default) {
 
-        try {
-            ref.update("progress", progress.toLong()).await()
-        } catch (_: Exception) {
-            // Error setting progress
+        val achievements = getAllAchievements()
+
+        for ((global, userState) in achievements) {
+            if (!global.active) continue
+            if (userState?.unlocked == true) continue
+
+            val updatedState = evaluateSingleAchievement(
+                global = global,
+                userState = userState,
+                cars = userCars
+            )
+
+            if (updatedState != null) {
+                userAchievementsCollection()
+                    .document(global.id)
+                    .set(updatedState)
+                    .await()
+
+                if (updatedState.unlocked) {
+                    // Crear notificación de logro desbloqueado
+                    notificationMethods.createAchievementNotification(
+                        achievementTitle = global.title,
+                        achievementId = global.id,
+                        iconUrl = global.iconUrl
+                    )
+                }
+            }
         }
     }
 
-    // ─── Desbloquear logro ──────────────────────────────────────────────────────
-    suspend fun unlockAchievement(achievementId: String) {
-        val ref = userAchievementsCollection().document(achievementId)
-        try {
-            ref.update(
-                mapOf(
-                    "unlocked" to true,
-                    "unlockedAt" to System.currentTimeMillis()
-                )
-            ).await()
-        } catch (_: Exception) {
+    // ─────────────────────────────────────────────────────────────
+    // EVALUAR UN LOGRO
+    // ─────────────────────────────────────────────────────────────
 
-        }
-    }
+    @SuppressLint("NewApi")
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun evaluateSingleAchievement(
+        global: AchievementGlobal,
+        userState: UserAchievement?,
+        cars: List<Car>
+    ): UserAchievement? {
 
-    // ─── Agregar nuevo logro global ─────────────────────────────────────────────
-    suspend fun addGlobalAchievement(achievement: AchievementGlobal) {
-        val collection = globalAchievementsCollection()
-        val docId = achievement.id.ifBlank { collection.document().id }
-
-        val data = hashMapOf(
-            "id" to docId,
-            "title" to achievement.title,
-            "description" to achievement.description,
-            "iconUrl" to achievement.iconUrl,
-            "goal" to achievement.goal,
-            "type" to achievement.type.name,
-            "condition" to mapOf(
-                "tag" to achievement.condition.tag,
-                "serie" to achievement.condition.serie,
-                "color" to achievement.condition.color,
-                "brand" to achievement.condition.brand,
-                "year" to achievement.condition.year,
-                "name" to achievement.condition.name,
-                "quality" to achievement.condition.quality,
-                "type" to achievement.condition.type,
-                "namesList" to achievement.condition.namesList
-            ),
-            "createdAt" to achievement.createdAt
+        val previous = userState ?: UserAchievement(
+            achievementId = global.id,
+            goal = global.goal
         )
 
-        collection.document(docId).set(data).await()
+        val countedIds = previous.countedCarIds.toMutableSet()
+
+        // TIME BASED
+        if (global.rules.timeWindow != null) {
+            return evaluateTimeBasedAchievement(global, previous, cars)
+        }
+
+        for (car in cars) {
+            val carId = car.id ?: continue
+            if (countedIds.contains(carId)) continue
+
+            if (carMatchesConditions(car, global.conditions, global.rules.conditionLogic)) {
+                countedIds.add(carId)
+            }
+        }
+
+        val progress = countedIds.size
+        val unlocked = progress >= global.goal
+
+        if (
+            progress == previous.progress &&
+            unlocked == previous.unlocked
+        ) {
+            return null // no cambios
+        }
+
+        return previous.copy(
+            progress = progress,
+            unlocked = unlocked,
+            unlockedAt = if (unlocked && previous.unlockedAt == null)
+                System.currentTimeMillis() else previous.unlockedAt,
+            countedCarIds = countedIds.toList(),
+            lastEvaluatedAt = System.currentTimeMillis()
+        )
     }
 
-    // ─── Crear documentos vacíos de usuario si no existen ───────────────────────
-    suspend fun ensureUserAchievementsExist() {
-        val globalAchievements = globalAchievementsCollection().get().await().documents
-        val userCollection = userAchievementsCollection()
+    // ─────────────────────────────────────────────────────────────
+    // LOGROS POR TIEMPO (DÍA / MES)
+    // ─────────────────────────────────────────────────────────────
 
-        for (doc in globalAchievements) {
-            val achievementId = doc.id
-            val userDoc = userCollection.document(achievementId).get().await()
-            if (!userDoc.exists()) {
-                val emptyUserAchievement = UserAchievement(
-                    achievementId = achievementId,
-                    progress = 0,
-                    unlocked = false,
-                    unlockedAt = null
-                )
-                userCollection.document(achievementId).set(emptyUserAchievement).await()
-            }
+    @SuppressLint("NewApi")
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun evaluateTimeBasedAchievement(
+        global: AchievementGlobal,
+        previous: UserAchievement,
+        cars: List<Car>
+    ): UserAchievement {
+
+        val formatter = when (global.rules.timeWindow) {
+            TimeWindow.DAY -> DateTimeFormatter.ofPattern("yyyy-MM-dd")
+            TimeWindow.MONTH -> DateTimeFormatter.ofPattern("yyyy-MM")
+            else -> return previous
         }
+
+        val grouped = cars.groupBy { car ->
+            formatter.format(
+                Instant.ofEpochMilli(car.createdAt ?: 0)
+                    .atZone(ZoneId.systemDefault())
+            )
+        }
+
+        val max = grouped.maxOfOrNull { it.value.size } ?: 0
+        val unlocked = max >= global.goal
+
+        return previous.copy(
+            progress = max,
+            unlocked = unlocked,
+            unlockedAt = if (unlocked && previous.unlockedAt == null)
+                System.currentTimeMillis() else previous.unlockedAt,
+            lastEvaluatedAt = System.currentTimeMillis()
+        )
     }
 
-    // ─── Verificar y actualizar todos los logros ────────────────────────────────
-    suspend fun checkAndUpdateAchievements(userCars: List<Car>, onAchievementUnlocked: ((AchievementGlobal) -> Unit)? = null) {
-        // Early exit: Si no hay carros, no hay nada que verificar
-        if (userCars.isEmpty() && lastCarCount == 0) {
-            return
-        }
+    // ─────────────────────────────────────────────────────────────
+    // MATCHING DE CONDICIONES
+    // ─────────────────────────────────────────────────────────────
 
-        // Early exit: Si el número de carros no cambió, probablemente no hay cambios significativos
-        // (esto es una optimización simple, puede mejorar con hash de la colección)
-        if (userCars.size == lastCarCount) {
-            // Nota: Todavía verifica logros porque podrían haber editado un carro
-            // pero reduce la frecuencia de verificación innecesaria
-        }
-
-        lastCarCount = userCars.size
-
-        // Ejecutar la verificación en Dispatchers.Default (mejor para CPU-intensive tasks)
-        withContext(Dispatchers.Default) {
-            ensureUserAchievementsExist()
-            val achievements = getAllAchievements()
-
-            // Threshold de similitud (85% similar = tolera 2-3 errores de tipeo)
-            val similarityThreshold = 0.85f
-
-            // Lista de actualizaciones a realizar (batch processing)
-            val updates = mutableListOf<Pair<String, Int>>()
-            val unlocks = mutableListOf<AchievementGlobal>()
-
-            for ((achievement, userAchievement) in achievements) {
-                // Skip si ya está desbloqueado (optimización)
-                if (userAchievement?.unlocked == true) {
-                    continue
-                }
-
-                var progressCount = 0
-
-            // Filtrar los carros según el tipo de logro
-            when (achievement.type) {
-                AchievementType.GENERAL -> {
-                    // Logros generales (ej: "agrega tu primer carro")
-                    progressCount = userCars.size
-                }
-
-                AchievementType.TAG -> {
-                    val targetTag = achievement.condition.tag
-                    if (!targetTag.isNullOrEmpty()) {
-                        progressCount = userCars.count { car ->
-                            car.tags.any { userTag ->
-                                // Comparación fuzzy: tolera errores de tipeo
-                                StringUtils.areSimilar(userTag, targetTag, similarityThreshold)
-                            }
-                        }
-                    }
-                }
-
-                AchievementType.SERIE -> {
-                    val targetSerie = achievement.condition.serie
-                    if (!targetSerie.isNullOrEmpty()) {
-                        progressCount = userCars.count { car ->
-                            // Comparación fuzzy: tolera errores de tipeo en la serie
-                            StringUtils.areSimilar(car.serie, targetSerie, similarityThreshold)
-                        }
-                    }
-                }
-
-                AchievementType.BRAND -> {
-                    val targetBrand = achievement.condition.brand
-                    if (!targetBrand.isNullOrEmpty()) {
-                        progressCount = userCars.count { car ->
-                            // Comparación fuzzy: tolera errores de tipeo en la marca
-                            StringUtils.areSimilar(car.brand, targetBrand, similarityThreshold)
-                        }
-                    }
-                }
-
-                AchievementType.COLOR -> {
-                    val targetColor = achievement.condition.color
-                    if (!targetColor.isNullOrEmpty()) {
-                        progressCount = userCars.count { car ->
-                            // Comparación fuzzy: tolera errores de tipeo en el color
-                            StringUtils.areSimilar(car.color, targetColor, similarityThreshold)
-                        }
-                    }
-                }
-
-                AchievementType.YEAR -> {
-                    val targetYear = achievement.condition.year
-                    if (!targetYear.isNullOrEmpty()) {
-                        progressCount = userCars.count { car ->
-                            // Para años, usar comparación exacta (normalizada)
-                            // No tiene sentido usar fuzzy en años (2024 vs 2023 son diferentes)
-                            StringUtils.normalize(car.year) == StringUtils.normalize(targetYear)
-                        }
-                    }
-                }
-
-                AchievementType.NAME -> {
-                    val targetName = achievement.condition.name
-                    if (!targetName.isNullOrEmpty()) {
-                        progressCount = userCars.count { car ->
-                            // Búsqueda parcial fuzzy: tolera errores de tipeo
-                            StringUtils.containsFuzzy(car.name, targetName, similarityThreshold)
-                        }
-                    }
-                }
-
-                AchievementType.QUALITY -> {
-                    val targetQuality = achievement.condition.quality
-                    if (!targetQuality.isNullOrEmpty()) {
-                        progressCount = userCars.count { car ->
-                            // Comparación fuzzy: tolera errores de tipeo en calidad
-                            StringUtils.areSimilar(car.quality, targetQuality, similarityThreshold)
-                        }
-                    }
-                }
-
-                AchievementType.TYPE -> {
-                    val targetType = achievement.condition.type
-                    if (!targetType.isNullOrEmpty()) {
-                        progressCount = userCars.count { car ->
-                            // Comparación fuzzy: tolera errores de tipeo en tipo
-                            StringUtils.areSimilar(car.type, targetType, similarityThreshold)
-                        }
-                    }
-                }
-
-                AchievementType.LIST_BY_NAME -> {
-                    val namesList = achievement.condition.namesList
-                        ?.split(",")
-                        ?.map { StringUtils.normalize(it) }
-                        ?.filter { it.isNotEmpty() }
-                        ?.toSet()
-
-                    if (!namesList.isNullOrEmpty()) {
-                        // Progreso = cuántos nombres de la lista están en la colección del usuario
-                        // Usando comparación fuzzy para tolerar errores de tipeo
-                        progressCount = namesList.count { requiredName ->
-                            userCars.any { car ->
-                                val carName = StringUtils.normalize(car.name ?: "")
-                                if (carName.isEmpty()) return@any false
-
-                                // Comparación fuzzy: tolera errores de tipeo
-                                StringUtils.similarity(carName, requiredName) >= similarityThreshold
-                            }
-                        }
-                    }
-                }
-
-                AchievementType.MIXED -> {
-                    // Condiciones mixtas: todas deben cumplirse (AND)
-                    progressCount = userCars.count { car ->
-                        val brandMatch = achievement.condition.brand == null ||
-                            StringUtils.areSimilar(car.brand, achievement.condition.brand, similarityThreshold)
-
-                        val colorMatch = achievement.condition.color == null ||
-                            StringUtils.areSimilar(car.color, achievement.condition.color, similarityThreshold)
-
-                        val serieMatch = achievement.condition.serie == null ||
-                            StringUtils.areSimilar(car.serie, achievement.condition.serie, similarityThreshold)
-
-                        val yearMatch = achievement.condition.year == null ||
-                            StringUtils.normalize(car.year) == StringUtils.normalize(achievement.condition.year)
-
-                        val typeMatch = achievement.condition.type == null ||
-                            StringUtils.areSimilar(car.type, achievement.condition.type, similarityThreshold)
-
-                        val qualityMatch = achievement.condition.quality == null ||
-                            StringUtils.areSimilar(car.quality, achievement.condition.quality, similarityThreshold)
-
-                        brandMatch && colorMatch && serieMatch && yearMatch && typeMatch && qualityMatch
-                    }
-                }
+    private fun carMatchesConditions(
+        car: Car,
+        conditions: List<AchievementCondition>,
+        logic: ConditionLogic
+    ): Boolean {
+        return when (logic) {
+            ConditionLogic.AND -> conditions.all { condition ->
+                carMatchesCondition(car, condition)
             }
-
-                val currentProgress = userAchievement?.progress ?: 0
-                val goal = achievement.goal
-
-                // Solo agregar a updates si el progreso cambió
-                if (progressCount != currentProgress) {
-                    updates.add(achievement.id to progressCount)
-                }
-
-                // Verificar si debe desbloquearse
-                if (progressCount >= goal) {
-                    unlocks.add(achievement)
-                }
-            }
-
-            // Procesar actualizaciones en batch (fuera del loop principal)
-            // Esto reduce las llamadas a Firebase
-            for ((achievementId, progress) in updates) {
-                setProgress(achievementId, progress)
-            }
-
-            // Desbloquear logros
-            for (achievement in unlocks) {
-                unlockAchievement(achievement.id)
-                onAchievementUnlocked?.invoke(achievement)
+            ConditionLogic.OR -> conditions.any { condition ->
+                carMatchesCondition(car, condition)
             }
         }
     }
+
+    private fun carMatchesCondition(
+        car: Car,
+        condition: AchievementCondition
+    ): Boolean {
+
+        // Si el concepto está vacío Y no hay aliases, matchea cualquier carro
+        if (condition.concept.isEmpty() && condition.aliases.isEmpty()) {
+            return true
+        }
+
+        val valuesToMatch = mutableListOf<String>()
+        if (condition.concept.isNotEmpty()) {
+            valuesToMatch.add(condition.concept.lowercase())
+        }
+        valuesToMatch.addAll(condition.aliases.map { it.lowercase() })
+
+        // Si no hay valores para matchear, matchea cualquier carro
+        if (valuesToMatch.isEmpty()) {
+            return true
+        }
+
+        for (field in condition.matchFields) {
+            val fieldValue = getCarFieldValue(car, field) ?: continue
+
+            for (target in valuesToMatch) {
+                if (matches(fieldValue, target, condition.matchType)) {
+                    return true
+                }
+            }
+        }
+
+        return false
+    }
+
+    private fun getCarFieldValue(car: Car, field: CarMatchField): String? {
+        return when (field) {
+            CarMatchField.NAME -> car.name
+            CarMatchField.BRAND -> car.brand
+            CarMatchField.SERIE -> car.serie
+            CarMatchField.TYPE -> car.type
+            CarMatchField.QUALITY -> car.quality
+            CarMatchField.COLOR -> car.color
+            CarMatchField.YEAR -> car.year
+            CarMatchField.TAGS -> car.tags.joinToString(" ")
+        }?.lowercase()
+    }
+
+    private fun matches(value: String, target: String, type: MatchType): Boolean {
+        return when (type) {
+            MatchType.EXACT -> value == target
+            MatchType.CONTAINS -> value.contains(target)
+            MatchType.STARTS_WITH -> value.startsWith(target)
+        }
+    }
+
+    suspend fun addOrUpdateGlobalAchievement(
+        achievement: AchievementGlobal
+    ) {
+        require(achievement.id.isNotBlank()) {
+            "Achievement id no puede estar vacío"
+        }
+
+        FirebaseFirestore.getInstance()
+            .collection("achievements")
+            .document(achievement.id)
+            .set(achievement)
+            .await()
+    }
+
+    suspend fun deleteGlobalAchievement(
+        achievementId: String
+    ) {
+        require(achievementId.isNotBlank()) {
+            "achievementId no puede estar vacío"
+        }
+
+        FirebaseFirestore.getInstance()
+            .collection("achievements")
+            .document(achievementId)
+            .delete()
+            .await()
+    }
+
+    suspend fun getAllGlobalAchievements(): List<AchievementGlobal> {
+        return FirebaseFirestore.getInstance()
+            .collection("achievements")
+            .get()
+            .await()
+            .documents
+            .mapNotNull { doc ->
+                doc.toObject(AchievementGlobal::class.java)
+                    ?.copy(id = doc.id)
+            }
+    }
+
+
 
 }

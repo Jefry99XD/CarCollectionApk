@@ -29,6 +29,7 @@ object NavRoutes {
     const val USER_LIST = "user_list"
     const val STATS_MAIN = "stats_main"
     const val EASTER_EGG = "easter_egg_secret"
+    const val NOTIFICATIONS = "notifications"
 
     fun editTag(tagId: String) = "edit_tag/$tagId"
 

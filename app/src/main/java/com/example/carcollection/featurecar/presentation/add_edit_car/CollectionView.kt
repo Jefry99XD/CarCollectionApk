@@ -4,7 +4,6 @@ package com.example.carcollection.featurecar.presentation.add_edit_car
 import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -64,6 +63,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -77,7 +77,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.example.carcollection.featureAchievements.presentation.AchievementUnlockedPopup
 import com.example.carcollection.featurecar.domain.Car
 import com.example.carcollection.featurecar.domain.CarViewModel
 import com.example.carcollection.featuremenu.main.components.CarCard
@@ -126,11 +125,17 @@ fun FilterSection(
     val allYears by viewModel.allYears.collectAsState()
     val allSeries by viewModel.allSeries.collectAsState()
     val allTags by viewModel.allTags.collectAsState(initial = emptyList())
+    val allColors by viewModel.allColors.collectAsState()
+    val allTypes by viewModel.allTypes.collectAsState()
+    val allQualities by viewModel.allQualities.collectAsState()
 
     val selectedBrand by viewModel.selectedBrand.collectAsState()
     val selectedYear by viewModel.selectedYear.collectAsState()
     val selectedSeries by viewModel.selectedSeries.collectAsState()
     val selectedTag by viewModel.selectedTag.collectAsState()
+    val selectedColor by viewModel.selectedColor.collectAsState()
+    val selectedType by viewModel.selectedType.collectAsState()
+    val selectedQuality by viewModel.selectedQuality.collectAsState()
 
     // ✅ Eliminar cálculo duplicado (ahora viene como parámetro)
 
@@ -261,6 +266,48 @@ fun FilterSection(
                                 Spacer(modifier = Modifier.weight(1f))
                             }
                         }
+
+                        // Nueva fila para color y tipo
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Box(modifier = Modifier.weight(1f)) {
+                                DropdownMenuBox(
+                                    selectedOption = selectedColor ?: "Color",
+                                    options = listOf("Color") + allColors,
+                                    onOptionSelected = {
+                                        viewModel.onColorSelected(if (it == "Color") null else it)
+                                    }
+                                )
+                            }
+                            Box(modifier = Modifier.weight(1f)) {
+                                DropdownMenuBox(
+                                    selectedOption = selectedType ?: "Tipo",
+                                    options = listOf("Tipo") + allTypes,
+                                    onOptionSelected = {
+                                        viewModel.onTypeSelected(if (it == "Tipo") null else it)
+                                    }
+                                )
+                            }
+                        }
+
+                        // Nueva fila para calidad
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Box(modifier = Modifier.weight(1f)) {
+                                DropdownMenuBox(
+                                    selectedOption = selectedQuality ?: "Calidad",
+                                    options = listOf("Calidad") + allQualities,
+                                    onOptionSelected = {
+                                        viewModel.onQualitySelected(if (it == "Calidad") null else it)
+                                    }
+                                )
+                            }
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
                     }
                 }
             }
@@ -290,22 +337,31 @@ fun CollectionViewScreen(
     val selectedYear by viewModel.selectedYear.collectAsState()
     val selectedSeries by viewModel.selectedSeries.collectAsState()
     val selectedTag by viewModel.selectedTag.collectAsState()
+    val selectedColor by viewModel.selectedColor.collectAsState()
+    val selectedType by viewModel.selectedType.collectAsState()
+    val selectedQuality by viewModel.selectedQuality.collectAsState()
 
     var itemsPerPage by remember { mutableIntStateOf(viewModel.savedItemsPerPage.value) }
     var currentPage by rememberSaveable { mutableIntStateOf(viewModel.savedPage.value) }
 
-    // ✅ Memorizar cálculos para evitar recalcular en cada recomposición
-    val totalPages = remember(carsList.size, itemsPerPage) {
-        maxOf(1, (carsList.size + itemsPerPage - 1) / itemsPerPage)
+    // ✅ Usar derivedStateOf para optimizar cálculos que dependen de estados
+    val totalPages by remember {
+        derivedStateOf {
+            maxOf(1, (carsList.size + itemsPerPage - 1) / itemsPerPage)
+        }
     }
 
-    val paginatedCars = remember(carsList, currentPage, itemsPerPage) {
-        carsList.drop(currentPage * itemsPerPage).take(itemsPerPage)
+    val paginatedCars by remember {
+        derivedStateOf {
+            carsList.drop(currentPage * itemsPerPage).take(itemsPerPage)
+        }
     }
 
-    // ✅ Calcular activeFiltersCount una sola vez
-    val activeFiltersCount = remember(selectedBrand, selectedYear, selectedSeries, selectedTag) {
-        listOfNotNull(selectedBrand, selectedYear, selectedSeries, selectedTag).size
+    // ✅ Calcular activeFiltersCount de forma optimizada
+    val activeFiltersCount by remember {
+        derivedStateOf {
+            listOfNotNull(selectedBrand, selectedYear, selectedSeries, selectedTag, selectedColor, selectedType, selectedQuality).size
+        }
     }
 
 
@@ -317,22 +373,15 @@ fun CollectionViewScreen(
 
     var expanded by rememberSaveable { mutableStateOf(false) }
 
-
-    val unlockedAchievement by viewModel.unlockedAchievement.collectAsState()
-
-    val achievement = unlockedAchievement
-    var showPopup by remember { mutableStateOf(false) }
-
-    LaunchedEffect(achievement) {
-        if (achievement != null) {
-            showPopup = true
-        }
-    }
+    // ✅ Solo cargar datos si no están cargados (mejor rendimiento)
+    val isLoading by viewModel.isLoading.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.loadUserCars()
-        viewModel.loadTags()
-        viewModel.checkAchievements()
+        // Solo cargar si la lista está vacía
+        if (carsList.isEmpty() && !isLoading) {
+            viewModel.loadUserCars()
+            viewModel.loadTags()
+        }
     }
 
 
@@ -617,9 +666,7 @@ fun CollectionViewScreen(
             else{
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .animateContentSize(),  // Animar cambios en tamaño del LazyColumn
+                    modifier = Modifier.weight(1f),
                     state = listState
                 ) {
                     itemsIndexed(paginatedCars, key = { index, car -> car.id ?: index.toString() }) { _, car ->
@@ -676,21 +723,6 @@ fun CollectionViewScreen(
 
 
 
-            AnimatedVisibility(
-                visible = showPopup && achievement != null,
-                enter = fadeIn(tween(200)),
-                exit = fadeOut(tween(200))
-            ) {
-                achievement?.let {
-                    AchievementUnlockedPopup(
-                        achievement = it,
-                        onDismiss = {
-                            showPopup = false
-                            viewModel.notifyAchievementUnlocked(null)
-                        }
-                    )
-                }
-            }
 
         }
     }

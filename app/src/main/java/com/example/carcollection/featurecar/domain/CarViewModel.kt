@@ -1,9 +1,9 @@
 package com.example.carcollection.featurecar.domain
 
+import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.carcollection.featureAchievements.data.AchievementMethods
-import com.example.carcollection.featureAchievements.domain.AchievementGlobal
 import com.example.carcollection.featurecar.data.CarMethods
 import com.example.carcollection.featuretags.data.TagsMethods
 import com.example.carcollection.featuretags.domain.Tag
@@ -12,13 +12,11 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
 
 class CarViewModel(
@@ -31,6 +29,13 @@ class CarViewModel(
     val cars: StateFlow<List<Car>> = _cars
 
     private val achievementMethods = AchievementMethods()
+
+    // 🔹 Estado de carga
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    // 🔹 Flag para evitar cargas duplicadas
+    private var hasLoadedInitialData = false
 
     // 🔹 Estado de filtros
     private val _filterState = MutableStateFlow(CarFilterState())
@@ -55,18 +60,18 @@ class CarViewModel(
         viewModelScope.launch {
             loadUserCars()
             _allTags.value = tagsMethods.getAllTags()
-            checkAchievements()
         }
     }
 
     fun checkAchievements() {
         viewModelScope.launch {
             try {
-                // Obtener la lista actualizada de autos del usuario
-                val userCars = _cars.value
-                // Revisar y actualizar logros
-                achievementMethods.checkAndUpdateAchievements(userCars) { achievement ->
-                    notifyAchievementUnlocked(achievement)
+                // Check API level at runtime
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    // Obtener la lista actualizada de autos del usuario
+                    val userCars = _cars.value
+                    // Revisar y actualizar logros (las notificaciones se crean automáticamente)
+                    achievementMethods.evaluateAchievements(userCars)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -76,10 +81,23 @@ class CarViewModel(
 
 
     fun loadUserCars() {
+        // Evitar cargas duplicadas si ya se cargó
+        if (_isLoading.value) return
+
         viewModelScope.launch {
-            val result = carMethods.getUserCars()
-            _cars.value = result.getOrDefault(emptyList())
-            checkAchievements()
+            _isLoading.value = true
+            try {
+                val result = carMethods.getUserCars()
+                _cars.value = result.getOrDefault(emptyList())
+
+                // Solo verificar logros en la primera carga o cuando se agregan/eliminan autos
+                if (!hasLoadedInitialData) {
+                    hasLoadedInitialData = true
+                    checkAchievements()
+                }
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
 
@@ -122,6 +140,18 @@ class CarViewModel(
         _filterState.value = _filterState.value.copy(tag = tag)
     }
 
+    fun onColorSelected(color: String?) {
+        _filterState.value = _filterState.value.copy(color = color)
+    }
+
+    fun onTypeSelected(type: String?) {
+        _filterState.value = _filterState.value.copy(type = type)
+    }
+
+    fun onQualitySelected(quality: String?) {
+        _filterState.value = _filterState.value.copy(quality = quality)
+    }
+
     fun clearFilters() {
         _filterState.value = CarFilterState()
     }
@@ -142,6 +172,9 @@ class CarViewModel(
                     (filters.brand?.equals(car.brand, ignoreCase = true) ?: true) &&
                     (filters.year?.equals(car.year, ignoreCase = true) ?: true) &&
                     (filters.series?.equals(car.serie, ignoreCase = true) ?: true) &&
+                    (filters.color?.equals(car.color, ignoreCase = true) ?: true) &&
+                    (filters.type?.equals(car.type, ignoreCase = true) ?: true) &&
+                    (filters.quality?.equals(car.quality, ignoreCase = true) ?: true) &&
                     (filters.tag?.let { tag -> car.tags.any { it.equals(tag, ignoreCase = true) } }
                         ?: true)
         }
@@ -162,8 +195,9 @@ class CarViewModel(
         viewModelScope.launch {
             val result = carMethods.deleteCarFromCollection(carId)
             if (result.isSuccess) {
+                // Forzar recarga y verificación de logros
+                hasLoadedInitialData = false
                 loadUserCars()
-                checkAchievements()
             }
         }
     }
@@ -181,6 +215,18 @@ class CarViewModel(
         .map { cars -> cars.mapNotNull { it.serie }.distinct() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val allColors: StateFlow<List<String>> = _cars
+        .map { cars -> cars.mapNotNull { it.color }.distinct() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val allTypes: StateFlow<List<String>> = _cars
+        .map { cars -> cars.mapNotNull { it.type }.distinct() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val allQualities: StateFlow<List<String>> = _cars
+        .map { cars -> cars.mapNotNull { it.quality }.distinct() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     // Para filtros seleccionados
     val selectedBrand: StateFlow<String?> = _filterState.map { it.brand }.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), null
@@ -192,6 +238,15 @@ class CarViewModel(
         viewModelScope, SharingStarted.WhileSubscribed(5000), null
     )
     val selectedTag: StateFlow<String?> = _filterState.map { it.tag }.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), null
+    )
+    val selectedColor: StateFlow<String?> = _filterState.map { it.color }.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), null
+    )
+    val selectedType: StateFlow<String?> = _filterState.map { it.type }.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), null
+    )
+    val selectedQuality: StateFlow<String?> = _filterState.map { it.quality }.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), null
     )
 
@@ -208,13 +263,5 @@ class CarViewModel(
 
     fun setPage(page: Int) {
         _savedPage.value = page
-    }
-
-
-    private val _unlockedAchievement = MutableStateFlow<AchievementGlobal?>(null)
-    val unlockedAchievement = _unlockedAchievement.asStateFlow()
-
-    fun notifyAchievementUnlocked(achievement: AchievementGlobal?) {
-        _unlockedAchievement.value = achievement
     }
 }

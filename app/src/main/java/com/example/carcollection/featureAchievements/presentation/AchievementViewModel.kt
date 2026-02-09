@@ -9,9 +9,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+class AchievementViewModel : ViewModel() {
 
-class AchievementViewModel  : ViewModel(){
-    private val achievementMethods: AchievementMethods = AchievementMethods()
+    private val methods = AchievementMethods()
 
     private val _achievements =
         MutableStateFlow<List<Pair<AchievementGlobal, UserAchievement?>>>(emptyList())
@@ -23,12 +23,14 @@ class AchievementViewModel  : ViewModel(){
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
+    // ─────────────────────────────────────────────
+    // Obtener todos los logros globales
+    // ─────────────────────────────────────────────
     fun fetchAchievements() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val data = achievementMethods.getAllAchievements()
-                _achievements.value = data
+                _achievements.value = methods.getAllAchievements()
                 _errorMessage.value = null
             } catch (e: Exception) {
                 _errorMessage.value = e.message
@@ -38,33 +40,14 @@ class AchievementViewModel  : ViewModel(){
         }
     }
 
-    fun addProgress(achievementId: String, increment: Int = 1) {
-        viewModelScope.launch {
-            try {
-                achievementMethods.incrementProgress(achievementId, increment)
-                fetchAchievements()
-            } catch (e: Exception) {
-                _errorMessage.value = e.message
-            }
-        }
-    }
-
-    fun unlockAchievement(achievementId: String) {
-        viewModelScope.launch {
-            try {
-                achievementMethods.unlockAchievement(achievementId)
-                fetchAchievements()
-            } catch (e: Exception) {
-                _errorMessage.value = e.message
-            }
-        }
-    }
-
-    fun addAchievement(achievement: AchievementGlobal) {
+    // ─────────────────────────────────────────────
+    // Agregar o actualizar logro
+    // ─────────────────────────────────────────────
+    fun addOrUpdateGlobalAchievement(achievement: AchievementGlobal) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                achievementMethods.addGlobalAchievement(achievement)
+                methods.addOrUpdateGlobalAchievement(achievement)
                 fetchAchievements()
             } catch (e: Exception) {
                 _errorMessage.value = e.message
@@ -72,13 +55,51 @@ class AchievementViewModel  : ViewModel(){
                 _isLoading.value = false
             }
         }
+    }
+
+    // ─────────────────────────────────────────────
+    // Borrar logro
+    // ─────────────────────────────────────────────
+    fun deleteAchievement(achievementId: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                methods.deleteGlobalAchievement(achievementId)
+                fetchAchievements()
+            } catch (e: Exception) {
+                _errorMessage.value = e.message
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun clearError() {
+        _errorMessage.value = null
+    }
+
+    fun addGlobalAchievement(achievementGlobal: AchievementGlobal) {
+        viewModelScope.launch {
+
+            _isLoading.value = true
+
+            try {
+                methods.addOrUpdateGlobalAchievement(achievementGlobal)
+                fetchAchievements()
+            } catch (e: Exception) {
+                _errorMessage.value = e.message
+            } finally {
+                _isLoading.value = false
+            }
+        }
+
     }
 
     fun fetchPublicUserAchievements(userId: String) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val data = achievementMethods.getPublicUserAchievements(userId)
+                val data = methods.getPublicUserAchievements(userId)
                 _achievements.value = data
                 _errorMessage.value = null
             } catch (e: Exception) {
@@ -88,5 +109,6 @@ class AchievementViewModel  : ViewModel(){
             }
         }
     }
+
 
 }

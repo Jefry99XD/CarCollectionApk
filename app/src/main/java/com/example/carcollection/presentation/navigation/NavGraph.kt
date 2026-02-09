@@ -438,5 +438,12 @@ fun AppNavGraph(
             )
         }
 
+        // Pantalla de notificaciones
+        composable(NavRoutes.NOTIFICATIONS) {
+            com.example.carcollection.featureNotification.presentation.NotificationScreen(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
     }
 }
