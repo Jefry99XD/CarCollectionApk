@@ -114,13 +114,13 @@ fun MenuScreen(
                 )
             }
 
-            // Solo mostrar el botón de Agregar Logro para administradores
+            // Solo mostrar el botón de Administrar Logros para administradores
             if (isAdmin) {
                 item {
                     MenuButton(
-                        text = "Agregar Logro",
+                        text = "Administrar Logros",
                         icon = Icons.Filled.AddCircle,
-                        description = "Panel de administrador",
+                        description = "Crear, editar y eliminar logros",
                         onClick = onNavigateToAddAchievement,
                         isAdmin = true
                     )

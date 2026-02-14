@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
@@ -52,6 +53,11 @@ class CarViewModel(
     // ✅ Job para cancelar búsquedas anteriores (debounce)
     private var searchJob: Job? = null
 
+    // ✅ Job y debouncing para evaluación de logros
+    private var achievementCheckJob: Job? = null
+    private var lastAchievementCheck = 0L
+    private val ACHIEVEMENT_CHECK_DELAY = 3000L // 3 segundos
+
     // 🔹 Carro actual para edición
     var currentCar: Car? = null
         private set
@@ -64,14 +70,37 @@ class CarViewModel(
     }
 
     fun checkAchievements() {
-        viewModelScope.launch {
+        // Cancelar job anterior si existe
+        achievementCheckJob?.cancel()
+
+        val now = System.currentTimeMillis()
+        val timeSinceLastCheck = now - lastAchievementCheck
+
+        // Si ya pasó suficiente tiempo, ejecutar inmediatamente
+        // Si no, programar con delay
+        val delay = if (timeSinceLastCheck > ACHIEVEMENT_CHECK_DELAY) {
+            0L
+        } else {
+            ACHIEVEMENT_CHECK_DELAY - timeSinceLastCheck
+        }
+
+        achievementCheckJob = viewModelScope.launch(Dispatchers.IO) {
             try {
+                if (delay > 0) {
+                    delay(delay)
+                }
+
+                lastAchievementCheck = System.currentTimeMillis()
+
                 // Check API level at runtime
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     // Obtener la lista actualizada de autos del usuario
                     val userCars = _cars.value
-                    // Revisar y actualizar logros (las notificaciones se crean automáticamente)
-                    achievementMethods.evaluateAchievements(userCars)
+                    // Obtener el usuario actual
+                    val userMethods = com.example.carcollection.featureuser.data.UserMethods()
+                    val currentUser = userMethods.getUserProfile().getOrNull()
+                    // Revisar y actualizar logros
+                    achievementMethods.evaluateAchievements(userCars, currentUser)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

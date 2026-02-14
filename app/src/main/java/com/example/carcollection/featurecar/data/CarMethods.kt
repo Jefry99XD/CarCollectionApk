@@ -2,6 +2,8 @@ package com.example.carcollection.featurecar.data;
 
 
 import com.example.carcollection.featurecar.domain.Car
+import com.example.carcollection.featureuser.data.UserMethods
+import com.example.carcollection.featureuser.domain.XPSource
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
@@ -12,6 +14,7 @@ class CarMethods {
 
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
+    private val userMethods = UserMethods()
 
     // Sistema de caché en memoria para getUserCars
     private var carsCache: List<Car>? = null
@@ -57,6 +60,19 @@ class CarMethods {
 
                 // Invalidar caché después de agregar
                 invalidateCache()
+
+                // 🎮 Otorgar XP por agregar carro
+                try {
+                    userMethods.addXP(
+                        amount = XPSource.CAR_ADDED.xpAmount,
+                        source = XPSource.CAR_ADDED,
+                        sourceId = documentReference.id
+                    )
+                    println("✅ Granted ${XPSource.CAR_ADDED.xpAmount} XP for adding car")
+                } catch (xpError: Exception) {
+                    println("⚠️ Failed to grant XP: ${xpError.message}")
+                    // No fallar la operación completa si solo falla la XP
+                }
 
                 println("Car '${car.name}' added to user $userId with ID: ${documentReference.id}")
                 Result.success(documentReference.id) // Return the ID of the newly added car

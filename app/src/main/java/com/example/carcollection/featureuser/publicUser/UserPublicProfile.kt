@@ -16,7 +16,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.BeachAccess
 import androidx.compose.material.icons.filled.DirectionsCar
-import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -43,6 +42,9 @@ import coil.compose.AsyncImage
 import com.example.carcollection.featureuser.RecentCarItem
 import com.example.carcollection.featureuser.StatItem
 import com.example.carcollection.featureuser.UserViewModel
+import com.example.carcollection.featureuser.components.BadgeSize
+import com.example.carcollection.featureuser.components.LevelBadge
+import com.example.carcollection.featureuser.components.XPProgressBar
 
 
 data class CarPreview(
@@ -58,7 +60,8 @@ fun UserPublicProfile(
     viewModel: UserViewModel,
     onBackClick: () -> Unit,
     onViewCollection: () -> Unit,
-    onViewAchievements: () -> Unit = {}
+    onViewAchievements: () -> Unit = {},
+    onViewWishlist: () -> Unit = {}
 ) {
     // 🔄 Observamos los estados del ViewModel
     val publicUser by viewModel.publicUser.collectAsState()
@@ -111,14 +114,26 @@ fun UserPublicProfile(
             )
 
             // ============================================================
-            // NOMBRE
+            // NOMBRE Y NIVEL
             // ============================================================
-            Text(
-                text = publicUser?.username ?: "Cargando...",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = publicUser?.username ?: "Cargando...",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center
+                )
+
+                publicUser?.let { user ->
+                    LevelBadge(
+                        level = user.level,
+                        size = BadgeSize.MEDIUM
+                    )
+                }
+            }
 
             // ============================================================
             // BIO
@@ -137,6 +152,48 @@ fun UserPublicProfile(
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.Gray
                     )
+                }
+            }
+
+            // ============================================================
+            // 🎮 NIVEL Y XP
+            // ============================================================
+            publicUser?.let { user ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            "Progreso y Nivel",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+
+                        XPProgressBar(
+                            currentXP = user.currentLevelXP,
+                            neededXP = user.xpForNextLevel,
+                            level = user.level,
+                            showDetailedInfo = true
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                "XP Total: ${String.format("%,d", user.totalXP)}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
             }
 
@@ -164,7 +221,6 @@ fun UserPublicProfile(
                             "Carros",
                             publicStats?.get("cars") ?: 0
                         )
-                        StatItem(Icons.Default.People, "Amigos", publicStats?.get("friends") ?: 0)
                         StatItem(
                             Icons.Default.BeachAccess,
                             "Series",
@@ -183,22 +239,34 @@ fun UserPublicProfile(
             // ============================================================
             // BOTONES
             // ============================================================
-            Row(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Button(
-                    onClick = onViewCollection,
-                    modifier = Modifier.weight(1f)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text("Ver colección")
+                    Button(
+                        onClick = onViewCollection,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Ver colección")
+                    }
+
+                    Button(
+                        onClick = onViewAchievements,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Ver logros")
+                    }
                 }
 
                 Button(
-                    onClick = onViewAchievements,
-                    modifier = Modifier.weight(1f)
+                    onClick = onViewWishlist,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Ver logros")
+                    Text("📋 Ver lista de deseos")
                 }
             }
 
@@ -224,8 +292,9 @@ fun UserPublicProfile(
                             RecentCarItem(
                                 name = car.name ?: "Sin nombre",
                                 year = car.year?.toString()
-                                    ?: "Año desconocido", // Convertimos el año a String
-                                imageUrl = car.photoUrl ?: ""
+                                    ?: "Año desconocido",
+                                imageUrl = car.photoUrl ?: "",
+                                serie = car.serie ?: ""
                             )
                         }
                     } else {

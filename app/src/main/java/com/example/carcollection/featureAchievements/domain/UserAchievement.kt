@@ -29,6 +29,10 @@ data class UserAchievement(
     // Ej: "2026-01-20" o "2026-01"
     val timeKey: String? = null,
 
+    // Índices de condiciones que ya se han matcheado (para logros OR con lista)
+    // Ej: [0, 2, 5] significa que las condiciones 0, 2 y 5 ya tienen al menos un carro
+    val matchedConditionIndices: List<Int> = emptyList(),
+
     // Última vez que se evaluó el logro
     val lastEvaluatedAt: Long = System.currentTimeMillis()
 ) {
@@ -40,6 +44,7 @@ data class UserAchievement(
         unlockedAt = null,
         countedCarIds = emptyList(),
         timeKey = null,
+        matchedConditionIndices = emptyList(),
         lastEvaluatedAt = System.currentTimeMillis()
     )
 }

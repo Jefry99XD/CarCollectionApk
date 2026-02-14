@@ -21,6 +21,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -45,16 +46,24 @@ fun CarCard(
     allTags: List<Tag>,
     modifier: Modifier = Modifier
 ) {
-    val firstTagColor = car.tags.firstOrNull()?.let { tagName ->
-        allTags.find { it.name == tagName }?.color
-    } ?: "#FFFFFF"
-
-    val cardColor = try {
-        Color(firstTagColor.toColorInt())
-    } catch (_: Exception) {
-        Color.White
+    // ✅ Usar remember para evitar recálculo en cada recomposición
+    val firstTagColor = remember(car.tags, allTags) {
+        car.tags.firstOrNull()?.let { tagName ->
+            allTags.find { it.name == tagName }?.color
+        } ?: "#FFFFFF"
     }
-    val textColor = getContrastingTextColor(cardColor)
+
+    val cardColor = remember(firstTagColor) {
+        try {
+            Color(firstTagColor.toColorInt())
+        } catch (_: Exception) {
+            Color.White
+        }
+    }
+
+    val textColor = remember(cardColor) {
+        getContrastingTextColor(cardColor)
+    }
 
     Card(
         shape = RoundedCornerShape(8.dp),

@@ -23,7 +23,6 @@ import androidx.compose.material.icons.filled.BeachAccess
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocalOffer
-import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -51,6 +50,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.carcollection.featureuser.components.LevelCard
 import com.example.carcollection.presentation.navigation.NavRoutes
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,7 +71,6 @@ fun UserMain(
     val tagCount by userViewModel.tagCount.collectAsState()
     val achievementCount by userViewModel.achievementCount.collectAsState()
     val seriesCount by userViewModel.seriesCount.collectAsState()
-    val friendsCount by userViewModel.friendsCount.collectAsState()
 
     LaunchedEffect(Unit) {
         userViewModel.fetchUserProfile()
@@ -163,11 +162,23 @@ fun UserMain(
                                 fontWeight = FontWeight.Medium
                             )
                             Text(
-                                user?.bio ?: "“Agrega una Bio”",
+                                user?.bio ?: "Agrega una Bio",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = Color.Gray
                             )
                         }
+                    }
+
+                    // ─── 🎮 Sistema de Niveles ───
+                    user?.let { currentUser ->
+                        LevelCard(
+                            level = currentUser.level,
+                            totalXP = currentUser.totalXP,
+                            currentLevelXP = currentUser.currentLevelXP,
+                            xpForNextLevel = currentUser.xpForNextLevel,
+                            xpFromCars = currentUser.xpFromCars,
+                            xpFromAchievements = currentUser.xpFromAchievements
+                        )
                     }
 
                     // ─── 📊 Estadísticas básicas ───
@@ -192,7 +203,6 @@ fun UserMain(
                                     carCount
                                 )
                                 StatItem(Icons.Default.LocalOffer, "Tags", tagCount)
-                                StatItem(Icons.Default.People, "Amigos", friendsCount)
                                 StatItem(
                                     Icons.Default.BeachAccess,
                                     "Series",

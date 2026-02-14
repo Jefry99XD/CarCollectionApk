@@ -24,6 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
+import com.example.carcollection.featureuser.components.BadgeSize
+import com.example.carcollection.featureuser.components.LevelBadge
 import com.example.carcollection.featureuser.domain.User
 
 enum class SortOption(val display: String) {
@@ -43,6 +45,7 @@ fun UserListScreen(
  {
     var searchQuery by remember { mutableStateOf("") }
     var sortOption by remember { mutableStateOf<SortOption?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
 
 
      val users by viewModel.publicUsers.collectAsState()
@@ -62,11 +65,15 @@ fun UserListScreen(
      }
 
 
-
-
-
      LaunchedEffect(Unit) {
+         isLoading = true
          viewModel.fetchPublicUsers()
+     }
+
+     LaunchedEffect(users) {
+         if (users.isNotEmpty()) {
+             isLoading = false
+         }
      }
 
 
@@ -117,13 +124,37 @@ fun UserListScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 🔥 User list
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(filteredUsers, key = { it.uid }) { user ->
-                    UserCard(
-                        user = user,
-                        onViewProfile = { onViewProfile(user.uid) }
+            // 🔥 User list con loading state
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else if (filteredUsers.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No se encontraron usuarios",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.Gray
                     )
+                }
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(filteredUsers, key = { it.uid }) { user ->
+                        UserCard(
+                            user = user,
+                            onViewProfile = { onViewProfile(user.uid) }
+                        )
+                    }
                 }
             }
 
@@ -189,11 +220,22 @@ fun UserCard(
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                Text(
-                    user.username ?: "Sin nombre",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        user.username ?: "Sin nombre",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+
+                    // Badge de nivel
+                    LevelBadge(
+                        level = user.level,
+                        size = BadgeSize.SMALL
+                    )
+                }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.DirectionsCar, contentDescription = null, modifier = Modifier.size(16.dp))

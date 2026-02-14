@@ -1,6 +1,7 @@
 package com.example.carcollection.featureWishlist.data
 
 import com.example.carcollection.featurecar.domain.Car
+import com.example.carcollection.featureWishlist.domain.WishlistItem
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
@@ -166,6 +167,41 @@ class WishlistMethods {
             }
         } else {
             Result.failure(Exception("No user logged in to retrieve wishlist."))
+        }
+    }
+
+    /**
+     * Obtener la wishlist pública de otro usuario
+     */
+    suspend fun getPublicWishlist(userId: String): Result<List<WishlistItem>> {
+        return try {
+            val snapshot = db.collection("users")
+                .document(userId)
+                .collection("wishlist")
+                .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .get()
+                .await()
+
+            val wishlist = snapshot.documents.mapNotNull { doc ->
+                val car = doc.toObject(Car::class.java)
+                car?.let {
+                    WishlistItem(
+                        id = doc.id,
+                        userId = userId,
+                        carName = it.name ?: "Sin nombre",
+                        brand = it.brand ?: "",
+                        serie = it.serie ?: "",
+                        imageUrl = it.photoUrl ?: "",
+                        priority = "Media", // Por ahora todos tienen prioridad media
+                        notes = "", // Por ahora sin notas en la vista pública
+                        addedAt = it.createdAt ?: System.currentTimeMillis()
+                    )
+                }
+            }
+
+            Result.success(wishlist)
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to fetch public wishlist: ${e.message}"))
         }
     }
 }

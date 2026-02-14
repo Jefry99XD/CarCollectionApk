@@ -6,6 +6,9 @@ import androidx.annotation.RequiresApi
 import com.example.carcollection.featureAchievements.domain.*
 import com.example.carcollection.featurecar.domain.Car
 import com.example.carcollection.featureNotification.data.NotificationMethods
+import com.example.carcollection.featureuser.data.UserMethods
+import com.example.carcollection.featureuser.domain.User
+import com.example.carcollection.featureuser.domain.XPSource
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +23,7 @@ class AchievementMethods {
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
     private val notificationMethods = NotificationMethods()
+    private val userMethods = UserMethods()
 
     private fun userAchievementsCollection() =
         db.collection("users")
@@ -67,27 +71,31 @@ class AchievementMethods {
     // ─────────────────────────────────────────────────────────────
 
     @SuppressLint("NewApi")
-    suspend fun evaluateAchievements(userCars: List<Car>) {
+    suspend fun evaluateAchievements(userCars: List<Car>, currentUser: User? = null) {
         // Check API level at runtime
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            evaluateAchievementsInternal(userCars)
+            evaluateAchievementsInternal(userCars, currentUser)
         }
     }
 
     @SuppressLint("NewApi")
     @RequiresApi(Build.VERSION_CODES.O)
-    private suspend fun evaluateAchievementsInternal(userCars: List<Car>) = withContext(Dispatchers.Default) {
+    private suspend fun evaluateAchievementsInternal(userCars: List<Car>, currentUser: User?) = withContext(Dispatchers.Default) {
 
         val achievements = getAllAchievements()
 
-        for ((global, userState) in achievements) {
-            if (!global.active) continue
-            if (userState?.unlocked == true) continue
+        // Early exit si no hay logros activos
+        val activeAchievements = achievements.filter { it.first.active && it.second?.unlocked != true }
+        if (activeAchievements.isEmpty()) {
+            return@withContext
+        }
 
+        for ((global, userState) in activeAchievements) {
             val updatedState = evaluateSingleAchievement(
                 global = global,
                 userState = userState,
-                cars = userCars
+                cars = userCars,
+                currentUser = currentUser
             )
 
             if (updatedState != null) {
@@ -98,11 +106,24 @@ class AchievementMethods {
 
                 if (updatedState.unlocked) {
                     // Crear notificación de logro desbloqueado
-                    notificationMethods.createAchievementNotification(
-                        achievementTitle = global.title,
-                        achievementId = global.id,
-                        iconUrl = global.iconUrl
-                    )
+                    withContext(Dispatchers.Main) {
+                        notificationMethods.createAchievementNotification(
+                            achievementTitle = global.title,
+                            achievementId = global.id,
+                            iconUrl = global.iconUrl
+                        )
+                    }
+
+                    // 🎮 Otorgar XP por desbloquear logro
+                    try {
+                        userMethods.addXP(
+                            amount = XPSource.ACHIEVEMENT_UNLOCKED.xpAmount,
+                            source = XPSource.ACHIEVEMENT_UNLOCKED,
+                            sourceId = global.id
+                        )
+                    } catch (_: Exception) {
+                        // No fallar la operación completa si solo falla la XP
+                    }
                 }
             }
         }
@@ -117,13 +138,19 @@ class AchievementMethods {
     private fun evaluateSingleAchievement(
         global: AchievementGlobal,
         userState: UserAchievement?,
-        cars: List<Car>
+        cars: List<Car>,
+        currentUser: User?
     ): UserAchievement? {
 
         val previous = userState ?: UserAchievement(
             achievementId = global.id,
             goal = global.goal
         )
+
+        // 🎮 LOGROS DE NIVEL - Nueva lógica
+        if (global.id.startsWith("level_")) {
+            return evaluateLevelAchievement(global, previous, currentUser)
+        }
 
         val countedIds = previous.countedCarIds.toMutableSet()
 
@@ -132,17 +159,56 @@ class AchievementMethods {
             return evaluateTimeBasedAchievement(global, previous, cars)
         }
 
+        // Para logros con lógica OR, rastreamos qué condiciones se han matcheado
+        val matchedConditionIndices = previous.matchedConditionIndices.toMutableSet()
+
         for (car in cars) {
             val carId = car.id ?: continue
+
+            // Si ya contamos este carro, saltarlo
             if (countedIds.contains(carId)) continue
 
-            if (carMatchesConditions(car, global.conditions, global.rules.conditionLogic)) {
-                countedIds.add(carId)
+            // ✅ Early exit: si ya alcanzamos la meta, no seguir evaluando
+            val currentProgress = if (global.rules.conditionLogic == ConditionLogic.OR && global.conditions.isNotEmpty()) {
+                matchedConditionIndices.size
+            } else {
+                countedIds.size
+            }
+
+            if (currentProgress >= global.goal) {
+                break // Ya alcanzamos la meta, no necesitamos seguir
+            }
+
+            // Verificar qué condición(es) matchea este carro
+            if (global.rules.conditionLogic == ConditionLogic.OR) {
+                // Para OR: encontrar la primera condición que matchee
+                val matchedIndex = global.conditions.indexOfFirst { condition ->
+                    carMatchesCondition(car, condition)
+                }
+
+                if (matchedIndex >= 0) {
+                    matchedConditionIndices.add(matchedIndex)
+                    countedIds.add(carId)
+                }
+            } else {
+                // Para AND: mantener lógica original
+                if (carMatchesConditions(car, global.conditions, global.rules.conditionLogic)) {
+                    countedIds.add(carId)
+                }
             }
         }
 
-        val progress = countedIds.size
+        // Calcular progreso según la lógica
+        val progress = if (global.rules.conditionLogic == ConditionLogic.OR && global.conditions.isNotEmpty()) {
+            // Para OR: contar cuántas condiciones diferentes se han matcheado
+            matchedConditionIndices.size
+        } else {
+            // Para AND o sin condiciones: contar IDs únicos
+            countedIds.size
+        }
+
         val unlocked = progress >= global.goal
+
 
         if (
             progress == previous.progress &&
@@ -157,6 +223,43 @@ class AchievementMethods {
             unlockedAt = if (unlocked && previous.unlockedAt == null)
                 System.currentTimeMillis() else previous.unlockedAt,
             countedCarIds = countedIds.toList(),
+            matchedConditionIndices = matchedConditionIndices.sorted(),
+            lastEvaluatedAt = System.currentTimeMillis()
+        )
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // LOGROS DE NIVEL
+    // ─────────────────────────────────────────────────────────────
+
+    private fun evaluateLevelAchievement(
+        global: AchievementGlobal,
+        previous: UserAchievement,
+        currentUser: User?
+    ): UserAchievement? {
+
+        if (currentUser == null) {
+            return null
+        }
+
+        val currentLevel = currentUser.level
+        val requiredLevel = global.goal
+
+        // El progreso es el nivel actual (máximo el requerido)
+        val progress = minOf(currentLevel, requiredLevel)
+        val unlocked = currentLevel >= requiredLevel
+
+        // Si no hay cambios, retornar null
+        if (progress == previous.progress && unlocked == previous.unlocked) {
+            return null
+        }
+
+
+        return previous.copy(
+            progress = progress,
+            unlocked = unlocked,
+            unlockedAt = if (unlocked && previous.unlockedAt == null)
+                System.currentTimeMillis() else previous.unlockedAt,
             lastEvaluatedAt = System.currentTimeMillis()
         )
     }
@@ -242,7 +345,8 @@ class AchievementMethods {
             val fieldValue = getCarFieldValue(car, field) ?: continue
 
             for (target in valuesToMatch) {
-                if (matches(fieldValue, target, condition.matchType)) {
+                val matched = matches(fieldValue, target, condition.matchType)
+                if (matched) {
                     return true
                 }
             }
@@ -312,6 +416,18 @@ class AchievementMethods {
             }
     }
 
+    suspend fun getAchievementById(achievementId: String): AchievementGlobal? {
+        require(achievementId.isNotBlank()) {
+            "achievementId no puede estar vacío"
+        }
 
+        return FirebaseFirestore.getInstance()
+            .collection("achievements")
+            .document(achievementId)
+            .get()
+            .await()
+            .toObject(AchievementGlobal::class.java)
+            ?.copy(id = achievementId)
+    }
 
 }

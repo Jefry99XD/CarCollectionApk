@@ -89,13 +89,23 @@ private val ITEMS_PER_PAGE_OPTIONS = listOf(5, 10, 20, 50)
 fun DropdownMenuBox(
     selectedOption: String,
     options: List<String>,
-    onOptionSelected: (String) -> Unit
+    onOptionSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    // ✅ Usar key para mantener estado entre recomposiciones
+    var expanded by remember(selectedOption) { mutableStateOf(false) }
 
-    Box {
-        OutlinedButton(onClick = { expanded = true }) {
-            Text(selectedOption)
+    Box(modifier = modifier) {
+        OutlinedButton(
+            onClick = { expanded = true },
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+        ) {
+            Text(
+                text = selectedOption,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.labelLarge
+            )
         }
         DropdownMenu(
             expanded = expanded,
@@ -119,25 +129,25 @@ fun FilterSection(
     viewModel: CarViewModel,
     modifier: Modifier = Modifier,
     expanded: Boolean,
-    activeFiltersCount: Int  // ✅ Recibir como parámetro
+    activeFiltersCount: Int,
+    // ✅ Recibir listas como parámetros para evitar recolección duplicada
+    allBrands: List<String>,
+    allYears: List<String>,
+    allSeries: List<String>,
+    allTags: List<com.example.carcollection.featuretags.domain.Tag>,
+    allColors: List<String>,
+    allTypes: List<String>,
+    allQualities: List<String>,
+    // ✅ Recibir selecciones como parámetros
+    selectedBrand: String?,
+    selectedYear: String?,
+    selectedSeries: String?,
+    selectedTag: String?,
+    selectedColor: String?,
+    selectedType: String?,
+    selectedQuality: String?
 ) {
-    val allBrands by viewModel.allBrands.collectAsState()
-    val allYears by viewModel.allYears.collectAsState()
-    val allSeries by viewModel.allSeries.collectAsState()
-    val allTags by viewModel.allTags.collectAsState(initial = emptyList())
-    val allColors by viewModel.allColors.collectAsState()
-    val allTypes by viewModel.allTypes.collectAsState()
-    val allQualities by viewModel.allQualities.collectAsState()
-
-    val selectedBrand by viewModel.selectedBrand.collectAsState()
-    val selectedYear by viewModel.selectedYear.collectAsState()
-    val selectedSeries by viewModel.selectedSeries.collectAsState()
-    val selectedTag by viewModel.selectedTag.collectAsState()
-    val selectedColor by viewModel.selectedColor.collectAsState()
-    val selectedType by viewModel.selectedType.collectAsState()
-    val selectedQuality by viewModel.selectedQuality.collectAsState()
-
-    // ✅ Eliminar cálculo duplicado (ahora viene como parámetro)
+    // ✅ Ya no recolectamos estados aquí, vienen como parámetros
 
     Column(modifier = modifier) {
         AnimatedVisibility(
@@ -332,6 +342,14 @@ fun CollectionViewScreen(
 
     val allTags by viewModel.allTags.collectAsState(initial = emptyList())
 
+    // ✅ Recolectar TODAS las listas una sola vez
+    val allBrands by viewModel.allBrands.collectAsState()
+    val allYears by viewModel.allYears.collectAsState()
+    val allSeries by viewModel.allSeries.collectAsState()
+    val allColors by viewModel.allColors.collectAsState()
+    val allTypes by viewModel.allTypes.collectAsState()
+    val allQualities by viewModel.allQualities.collectAsState()
+
     // ✅ Recolectar estados de filtros una sola vez (fuera de TopAppBar)
     val selectedBrand by viewModel.selectedBrand.collectAsState()
     val selectedYear by viewModel.selectedYear.collectAsState()
@@ -519,7 +537,21 @@ fun CollectionViewScreen(
                     viewModel = viewModel,
                     modifier = Modifier.fillMaxWidth(),
                     expanded = expanded,
-                    activeFiltersCount = activeFiltersCount
+                    activeFiltersCount = activeFiltersCount,
+                    allBrands = allBrands,
+                    allYears = allYears,
+                    allSeries = allSeries,
+                    allTags = allTags,
+                    allColors = allColors,
+                    allTypes = allTypes,
+                    allQualities = allQualities,
+                    selectedBrand = selectedBrand,
+                    selectedYear = selectedYear,
+                    selectedSeries = selectedSeries,
+                    selectedTag = selectedTag,
+                    selectedColor = selectedColor,
+                    selectedType = selectedType,
+                    selectedQuality = selectedQuality
                 )
             }
 

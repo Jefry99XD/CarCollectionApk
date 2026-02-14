@@ -25,6 +25,13 @@ class WishListViewModel(
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message.asStateFlow()
 
+    // Estados para wishlist pública
+    private val _publicWishlist = MutableStateFlow<List<WishlistItem>>(emptyList())
+    val publicWishlist: StateFlow<List<WishlistItem>> = _publicWishlist.asStateFlow()
+
+    private val _isLoadingPublic = MutableStateFlow(false)
+    val isLoadingPublic: StateFlow<Boolean> = _isLoadingPublic.asStateFlow()
+
     init {
         // Cargar inicialmente
         loadWishlist()
@@ -88,5 +95,26 @@ class WishListViewModel(
 
     fun clearMessage() {
         _message.value = null
+    }
+
+    /**
+     * Cargar la wishlist pública de otro usuario
+     */
+    fun fetchPublicWishlist(userId: String) {
+        viewModelScope.launch {
+            _isLoadingPublic.value = true
+            try {
+                val result = wishlistMethods.getPublicWishlist(userId)
+                if (result.isSuccess) {
+                    _publicWishlist.value = result.getOrDefault(emptyList<WishlistItem>())
+                } else {
+                    _publicWishlist.value = emptyList<WishlistItem>()
+                }
+            } catch (e: Exception) {
+                _publicWishlist.value = emptyList<WishlistItem>()
+            } finally {
+                _isLoadingPublic.value = false
+            }
+        }
     }
 }

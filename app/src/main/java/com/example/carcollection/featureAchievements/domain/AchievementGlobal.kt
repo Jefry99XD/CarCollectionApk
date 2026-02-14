@@ -40,7 +40,8 @@ enum class AchievementCategory {
     FANTASY,        // Fantasía / Fantasy
     PREMIUM,        // Calidad premium
     TIME_BASED,     // Día / Mes
-    MIXED           // Condiciones compuestas
+    MIXED,          // Condiciones compuestas
+    USER            // Logros de nivel/progreso del usuario
 }
 
 /**

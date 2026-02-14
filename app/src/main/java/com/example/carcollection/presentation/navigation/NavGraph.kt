@@ -7,7 +7,10 @@ import android.app.Application
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -17,6 +20,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.carcollection.featureAchievements.presentation.AchievementScreen
 import com.example.carcollection.featureAchievements.presentation.AchievementViewModel
+import com.example.carcollection.featureAchievements.presentation.AchievementAdminScreen
 import com.example.carcollection.featureAchievements.presentation.AddAchievementForm
 import com.example.carcollection.featurecar.data.CarMethods
 import com.example.carcollection.featurecar.domain.CarFormViewModel
@@ -52,6 +56,8 @@ import com.example.carcollection.presentation.consultas.CarLibraryViewModel
 import com.example.carcollection.presentation.consultas.CarModelLibraryScreen
 import com.example.carcollection.presentation.consultas.LibraryScreen
 import com.example.carcollection.featureWishlist.presentation.WishListScreen
+import com.example.carcollection.featureWishlist.presentation.PublicWishlistScreen
+import com.example.carcollection.featureWishlist.domain.WishListViewModel
 import com.example.carcollection.presentation.consultas.QueryMenuScreen
 import com.example.carcollection.presentation.consultas.STHScreen
 import com.example.carcollection.presentation.consultas.STHViewModel
@@ -69,7 +75,12 @@ fun AppNavGraph(
     val carMethods = CarMethods()
     val tagsMethods = TagsMethods()
     val achievementViewModel: AchievementViewModel = viewModel()
+    val wishListViewModel: WishListViewModel = viewModel()
     val collectionViewModel = remember { CarViewModel( carMethods, tagsMethods) }
+
+    // ViewModel compartido para datos de biblioteca
+    var preloadedCarData by remember { mutableStateOf<PreloadedCarData?>(null) }
+
     NavHost(navController = navController, startDestination = NavRoutes.MENU) {
 
         // Pantalla principal (menú)
@@ -79,7 +90,7 @@ fun AppNavGraph(
                 onNavigateToCollection = { navController.navigate(NavRoutes.COLLECTION) },
                 onNavigateToTags = { navController.navigate(NavRoutes.VIEW_TAGS) },
                 onNavigateToConsultas = { navController.navigate(NavRoutes.CONSULTAS)},
-                onNavigateToAddAchievement = { navController.navigate(NavRoutes.ADD_ACHIEVEMENT) }
+                onNavigateToAddAchievement = { navController.navigate(NavRoutes.ACHIEVEMENT_ADMIN) }
             )
         }
 
@@ -100,6 +111,20 @@ fun AppNavGraph(
             val viewModel = viewModel<CarFormViewModel>(
                 factory = CarFormViewModelFactory(carMethods, tagsMethods)
             )
+
+            // Precargar datos de biblioteca si existen
+            LaunchedEffect(preloadedCarData) {
+                preloadedCarData?.let { data ->
+                    viewModel.onNameChange(data.name)
+                    data.year?.let { viewModel.onYearChange(it) }
+                    data.serie?.let { viewModel.onSerieChange(it) }
+                    data.color?.let { viewModel.onColorChange(it) }
+                    data.photoUrl?.let { viewModel.onPhotoUrlChange(it) }
+                    // Limpiar datos después de usarlos
+                    preloadedCarData = null
+                }
+            }
+
             AddEditCarScreen(
                 viewModel = viewModel,
                 onSaveSuccess = { navController.popBackStack() },
@@ -323,6 +348,12 @@ fun AppNavGraph(
                     onBackClick = {
                         carLibraryViewModel.clearSelection()
                         navController.popBackStack()
+                    },
+                    onAddCarFromLibrary = { name, year, serie, color, photoUrl ->
+                        // Guardar datos precargados
+                        preloadedCarData = PreloadedCarData(name, year, serie, color, photoUrl)
+                        // Navegar a agregar carro
+                        navController.navigate(NavRoutes.ADD_EDIT_CAR)
                     }
                 )
             }
@@ -367,6 +398,10 @@ fun AppNavGraph(
                 },
                 onViewAchievements = {
                     navController.navigate("public_achievements/$uid")
+                },
+                onViewWishlist = {
+                    val username = userViewModel.publicUser.value?.username ?: "Usuario"
+                    navController.navigate(NavRoutes.publicWishlist(uid, username))
                 }
             )
 
@@ -393,6 +428,33 @@ fun AppNavGraph(
                 onBackClick = { navController.popBackStack() },
             )
         }
+
+        // Achievement Admin Screen
+        composable(NavRoutes.ACHIEVEMENT_ADMIN) {
+            AchievementAdminScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToAdd = { navController.navigate(NavRoutes.ADD_ACHIEVEMENT) },
+                onNavigateToEdit = { achievementId ->
+                    navController.navigate(NavRoutes.editAchievement(achievementId))
+                }
+            )
+        }
+
+        // Edit Achievement Screen
+        composable(
+            route = NavRoutes.EDIT_ACHIEVEMENT,
+            arguments = listOf(
+                navArgument("achievementId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val achievementId = backStackEntry.arguments?.getString("achievementId")
+            AddAchievementForm(
+                viewModel = achievementViewModel,
+                onBackClick = { navController.popBackStack() },
+                achievementId = achievementId
+            )
+        }
+
         composable(NavRoutes.USER_LIST){
             UserListScreen(
                 userViewModel,
@@ -431,6 +493,24 @@ fun AppNavGraph(
             )
         }
 
+        composable(
+            NavRoutes.PUBLIC_WISHLIST,
+            arguments = listOf(
+                navArgument("userId") { type = NavType.StringType },
+                navArgument("username") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            val username = backStackEntry.arguments?.getString("username") ?: "Usuario"
+
+            PublicWishlistScreen(
+                userId = userId,
+                username = username,
+                viewModel = wishListViewModel,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
         // 🥚 Easter Egg secreto
         composable(NavRoutes.EASTER_EGG) {
             EasterEggScreen(
@@ -447,3 +527,13 @@ fun AppNavGraph(
 
     }
 }
+
+// Data class para datos precargados desde la biblioteca
+data class PreloadedCarData(
+    val name: String,
+    val year: String?,
+    val serie: String?,
+    val color: String?,
+    val photoUrl: String?
+)
+

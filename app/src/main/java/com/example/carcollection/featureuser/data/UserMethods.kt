@@ -4,6 +4,8 @@ import android.net.Uri
 import androidx.core.net.toUri
 import com.example.carcollection.featurecar.domain.Car
 import com.example.carcollection.featureuser.domain.User
+import com.example.carcollection.featureuser.domain.XPActivity
+import com.example.carcollection.featureuser.domain.XPSource
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
@@ -213,19 +215,19 @@ class UserMethods {
                 .collection("carsCollection").get().await().size()
             val tagsCount = db.collection("users").document(userId)
                 .collection("tags").get().await().size()
-            val friendsCount = db.collection("users").document(userId)
-                .collection("friends").get().await().size()
 
             // Para series diferentes (asumiendo que los autos tienen un campo "serie")
             val cars = db.collection("users").document(userId)
                 .collection("carsCollection").get().await()
-            val seriesSet = cars.documents.mapNotNull { it.getString("serie") }.toSet()
+            val seriesSet = cars.documents
+                .mapNotNull { it.getString("serie") }
+                .filter { it.isNotBlank() }
+                .toSet()
 
             Result.success(
                 mapOf(
                     "cars" to carsCount,
                     "tags" to tagsCount,
-                    "friends" to friendsCount,
                     "series" to seriesSet.size
                 )
             )
@@ -310,18 +312,17 @@ class UserMethods {
                 .whereEqualTo("unlocked", true)
                 .get().await()
 
-            val friends = db.collection("users").document(userId)
-                .collection("friends").get().await()
-
             // Series únicas
-            val seriesSet = cars.documents.mapNotNull { it.getString("serie") }.toSet()
+            val seriesSet = cars.documents
+                .mapNotNull { it.getString("serie") }
+                .filter { it.isNotBlank() }
+                .toSet()
 
             Result.success(
                 mapOf(
                     "cars" to cars.size(),
                     "tags" to tags.size(),
                     "achievements" to achievements.size(),
-                    "friends" to friends.size(),
                     "series" to seriesSet.size
                 )
             )
@@ -438,6 +439,8 @@ class UserMethods {
                     "id" to doc.id,
                     "username" to (data["username"] ?: ""),
                     "photoUrl" to (data["photoUrl"] ?: ""),
+                    "level" to (data["level"] ?: 1),
+                    "totalXP" to (data["totalXP"] ?: 0L),
                     "carsCount" to carsCount,
                     "achievementsCount" to achievementsCount
                 )
@@ -491,9 +494,226 @@ class UserMethods {
         }
     }
 
+    // ════════════════════════════════════════════════════════════════
+    // SISTEMA DE NIVELES Y XP
+    // ════════════════════════════════════════════════════════════════
 
+    /**
+     * Agregar XP al usuario actual
+     * @param amount Cantidad de XP a agregar
+     * @param source Fuente de la XP (CAR_ADDED, ACHIEVEMENT_UNLOCKED)
+     * @param sourceId ID del objeto relacionado (carro, logro, etc.)
+     */
+    suspend fun addXP(amount: Int, source: XPSource, sourceId: String? = null): Result<User> {
+        val firebaseUser = auth.currentUser
+            ?: return Result.failure(Exception("No user logged in"))
 
+        val userId = firebaseUser.uid
 
+        return try {
+            val userDocRef = db.collection("users").document(userId)
+
+            // Usar transacción para garantizar consistencia
+            val updatedUser = db.runTransaction { transaction ->
+                val snapshot = transaction.get(userDocRef)
+                val currentUser = snapshot.toObject(User::class.java)
+                    ?: throw Exception("User not found")
+
+                // Calcular nueva XP
+                val newTotalXP = currentUser.totalXP + amount
+                val newXPFromCars = if (source == XPSource.CAR_ADDED) {
+                    currentUser.xpFromCars + amount
+                } else {
+                    currentUser.xpFromCars
+                }
+                val newXPFromAchievements = if (source == XPSource.ACHIEVEMENT_UNLOCKED) {
+                    currentUser.xpFromAchievements + amount
+                } else {
+                    currentUser.xpFromAchievements
+                }
+
+                // Calcular nuevo nivel
+                val newLevel = User.calculateLevelFromXP(newTotalXP)
+                val leveledUp = newLevel > currentUser.level
+
+                // Actualizar campos
+                val updates = mapOf(
+                    "totalXP" to newTotalXP,
+                    "level" to newLevel,
+                    "xpFromCars" to newXPFromCars,
+                    "xpFromAchievements" to newXPFromAchievements
+                )
+
+                transaction.update(userDocRef, updates)
+
+                // Registrar actividad de XP
+                val xpActivity = XPActivity(
+                    userId = userId,
+                    amount = amount,
+                    source = source.name,
+                    sourceId = sourceId,
+                    timestamp = System.currentTimeMillis(),
+                    levelBefore = currentUser.level,
+                    levelAfter = newLevel
+                )
+
+                // Guardar en subcollection (sin bloquear la transacción)
+                val activityRef = userDocRef.collection("xpHistory").document()
+                transaction.set(activityRef, xpActivity)
+
+                // Retornar usuario actualizado
+                currentUser.copy(
+                    uid = userId,
+                    totalXP = newTotalXP,
+                    level = newLevel,
+                    xpFromCars = newXPFromCars,
+                    xpFromAchievements = newXPFromAchievements
+                )
+            }.await()
+
+            Result.success(updatedUser)
+
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to add XP: ${e.message}"))
+        }
+    }
+
+    /**
+     * Obtener historial de XP del usuario actual
+     */
+    suspend fun getXPHistory(limit: Int = 50): Result<List<XPActivity>> {
+        val firebaseUser = auth.currentUser
+            ?: return Result.failure(Exception("No user logged in"))
+
+        val userId = firebaseUser.uid
+
+        return try {
+            val snapshot = db.collection("users")
+                .document(userId)
+                .collection("xpHistory")
+                .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .limit(limit.toLong())
+                .get()
+                .await()
+
+            val history = snapshot.documents.mapNotNull {
+                it.toObject(XPActivity::class.java)?.copy(id = it.id)
+            }
+
+            Result.success(history)
+
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to fetch XP history: ${e.message}"))
+        }
+    }
+
+    /**
+     * Migración retroactiva: Calcular y asignar XP a usuarios existentes
+     * basado en sus carros y logros actuales
+     */
+    suspend fun migrateUserXP(): Result<User> {
+        val firebaseUser = auth.currentUser
+            ?: return Result.failure(Exception("No user logged in"))
+
+        val userId = firebaseUser.uid
+
+        return try {
+            // Obtener cantidad de carros
+            val carsSnapshot = db.collection("users")
+                .document(userId)
+                .collection("carsCollection")
+                .get()
+                .await()
+            val carsCount = carsSnapshot.size()
+
+            // Obtener cantidad de logros desbloqueados
+            val achievementsSnapshot = db.collection("users")
+                .document(userId)
+                .collection("achievements")
+                .whereEqualTo("unlocked", true)
+                .get()
+                .await()
+            val achievementsCount = achievementsSnapshot.size()
+
+            // Calcular XP total
+            val xpFromCars = carsCount * XPSource.CAR_ADDED.xpAmount
+            val xpFromAchievements = achievementsCount * XPSource.ACHIEVEMENT_UNLOCKED.xpAmount
+            val totalXP = xpFromCars + xpFromAchievements
+
+            // Calcular nivel
+            val level = User.calculateLevelFromXP(totalXP.toLong())
+
+            // Actualizar usuario
+            val userDocRef = db.collection("users").document(userId)
+            val updates = mapOf(
+                "totalXP" to totalXP.toLong(),
+                "level" to level,
+                "xpFromCars" to xpFromCars.toLong(),
+                "xpFromAchievements" to xpFromAchievements.toLong()
+            )
+
+            userDocRef.update(updates).await()
+
+            // Obtener usuario actualizado
+            val updatedSnapshot = userDocRef.get().await()
+            val updatedUser = updatedSnapshot.toObject(User::class.java)
+                ?: throw Exception("Failed to fetch updated user")
+
+            Result.success(updatedUser.copy(uid = userId))
+
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to migrate XP: ${e.message}"))
+        }
+    }
+
+    /**
+     * Verificar si el usuario necesita migración de XP
+     * (si totalXP == 0 pero tiene carros/logros)
+     */
+    suspend fun needsXPMigration(): Result<Boolean> {
+        val firebaseUser = auth.currentUser
+            ?: return Result.failure(Exception("No user logged in"))
+
+        val userId = firebaseUser.uid
+
+        return try {
+            val userDoc = db.collection("users").document(userId).get().await()
+            val user = userDoc.toObject(User::class.java)
+
+            if (user == null) {
+                return Result.success(false)
+            }
+
+            // Si ya tiene XP, no necesita migración
+            if (user.totalXP > 0) {
+                return Result.success(false)
+            }
+
+            // Verificar si tiene carros o logros
+            val carsCount = db.collection("users")
+                .document(userId)
+                .collection("carsCollection")
+                .limit(1)
+                .get()
+                .await()
+                .size()
+
+            val achievementsCount = db.collection("users")
+                .document(userId)
+                .collection("achievements")
+                .whereEqualTo("unlocked", true)
+                .limit(1)
+                .get()
+                .await()
+                .size()
+
+            // Necesita migración si tiene carros o logros pero XP = 0
+            Result.success(carsCount > 0 || achievementsCount > 0)
+
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to check migration status: ${e.message}"))
+        }
+    }
 
 
 }

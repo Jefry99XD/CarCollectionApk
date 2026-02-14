@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Favorite
@@ -67,6 +68,7 @@ import com.example.carcollection.featureWishlist.domain.WishListViewModel
 fun CarModelLibraryScreen(
     carEntry: CarLibraryEntry,
     onBackClick: () -> Unit,
+    onAddCarFromLibrary: (String, String?, String?, String?, String?) -> Unit = { _, _, _, _, _ -> },
     wishListViewModel: WishListViewModel = viewModel()
 ) {
     println("🚗 CarModelLibrary: Showing ${carEntry.name} with ${carEntry.variations?.size} variations")
@@ -188,7 +190,10 @@ fun CarModelLibraryScreen(
                     carName = carEntry.name,
                     variation = variation,
                     wishListViewModel = wishListViewModel,
-                    wishlist = wishlist
+                    wishlist = wishlist,
+                    onAddToCollection = { name, year, serie, color, photoUrl ->
+                        onAddCarFromLibrary(name, year, serie, color, photoUrl)
+                    }
                 )
             }
 
@@ -278,7 +283,8 @@ fun VariationDetailCard(
     carName: String?,
     variation: CarVariation,
     wishListViewModel: WishListViewModel,
-    wishlist: List<Car>
+    wishlist: List<Car>,
+    onAddToCollection: (String, String?, String?, String?, String?) -> Unit
 ) {
     // Verificar si esta variación ya está en la wishlist
     val isInWishlist = remember(wishlist, carName, variation) {
@@ -310,10 +316,31 @@ fun VariationDetailCard(
                 .padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Heart button at top right corner
+            // Botones de acción en la parte superior
             Box(
                 modifier = Modifier.fillMaxWidth()
             ) {
+                // Botón de agregar a colección (izquierda)
+                IconButton(
+                    onClick = {
+                        onAddToCollection(
+                            carName ?: "Unknown",
+                            variation.year,
+                            variation.series,
+                            variation.color,
+                            variation.url
+                        )
+                    },
+                    modifier = Modifier.align(Alignment.TopStart)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Agregar a colección",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                // Botón de wishlist (derecha)
                 IconButton(
                     onClick = {
                         if (isInWishlist && wishlistItemId != null) {

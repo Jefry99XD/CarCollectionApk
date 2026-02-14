@@ -92,7 +92,35 @@ class AchievementViewModel : ViewModel() {
                 _isLoading.value = false
             }
         }
+    }
 
+    // ─────────────────────────────────────────────
+    // Obtener logro por ID
+    // ─────────────────────────────────────────────
+    suspend fun getAchievementById(achievementId: String): AchievementGlobal? {
+        return try {
+            methods.getAchievementById(achievementId)
+        } catch (e: Exception) {
+            _errorMessage.value = e.message
+            null
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    // Actualizar logro existente
+    // ─────────────────────────────────────────────
+    fun updateGlobalAchievement(achievement: AchievementGlobal) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                methods.addOrUpdateGlobalAchievement(achievement)
+                fetchAchievements()
+            } catch (e: Exception) {
+                _errorMessage.value = e.message
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
 
     fun fetchPublicUserAchievements(userId: String) {

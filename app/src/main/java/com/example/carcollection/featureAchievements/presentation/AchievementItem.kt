@@ -160,21 +160,21 @@ fun AchievementItem(
                 }
             }
 
-            // Show items list if there's a single condition with a concept that could be a comma-separated list
-            // This is for achievements that require collecting specific named items
-            val firstCondition = achievement.conditions.firstOrNull()
-            if (firstCondition != null && firstCondition.concept.contains(",")) {
+            // Show items list for OR achievements (list-based achievements)
+            // Each condition represents a required item/concept
+            if (achievement.rules.conditionLogic == com.example.carcollection.featureAchievements.domain.ConditionLogic.OR
+                && achievement.conditions.size > 1
+                && achievement.conditions.all { it.concept.isNotEmpty() }) {
+
                 Spacer(Modifier.height(8.dp))
                 HorizontalDivider(
                     modifier = Modifier.padding(vertical = 4.dp),
                     color = Color.Gray.copy(alpha = 0.3f)
                 )
 
-                val itemsList = firstCondition.concept
-                    .lowercase()
-                    .split(",")
-                    .map { it.trim().replace("\\s+".toRegex(), " ") }
-                    .filter { it.isNotEmpty() }
+                val matchedIndices = userAchievement?.matchedConditionIndices?.toSet() ?: emptySet()
+                val completedCount = matchedIndices.size
+                val totalCount = achievement.conditions.size
 
                 Row(
                     modifier = Modifier
@@ -185,7 +185,7 @@ fun AchievementItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Carros requeridos (${itemsList.size})",
+                        text = "Items requeridos ($completedCount / $totalCount)",
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -204,15 +204,77 @@ fun AchievementItem(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        itemsList.forEach { requiredName ->
-                            val hasItem = userCarNames.contains(requiredName)
+                        achievement.conditions.forEachIndexed { index, condition ->
+                            val isCompleted = index in matchedIndices
+                            val displayName = condition.concept.replaceFirstChar {
+                                if (it.isLowerCase()) it.titlecase() else it.toString()
+                            }
+
                             Text(
-                                text = "• $requiredName",
+                                text = if (isCompleted) "✅ $displayName" else "• $displayName",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = if (hasItem) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurface,
-                                textDecoration = if (hasItem) TextDecoration.LineThrough else null,
-                                fontWeight = if (hasItem) FontWeight.SemiBold else FontWeight.Medium
+                                color = if (isCompleted) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurface,
+                                textDecoration = if (isCompleted) TextDecoration.LineThrough else null,
+                                fontWeight = if (isCompleted) FontWeight.SemiBold else FontWeight.Medium
                             )
+                        }
+                    }
+                }
+            }
+            // Fallback: Show old format if single condition with comma-separated list
+            else if (achievement.conditions.size == 1) {
+                val firstCondition = achievement.conditions.firstOrNull()
+                if (firstCondition != null && firstCondition.concept.contains(",")) {
+                    Spacer(Modifier.height(8.dp))
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 4.dp),
+                        color = Color.Gray.copy(alpha = 0.3f)
+                    )
+
+                    val itemsList = firstCondition.concept
+                        .lowercase()
+                        .split(",")
+                        .map { it.trim().replace("\\s+".toRegex(), " ") }
+                        .filter { it.isNotEmpty() }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { isExpanded = !isExpanded }
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Carros requeridos (${itemsList.size})",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Icon(
+                            imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            contentDescription = if (isExpanded) "Colapsar" else "Expandir",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    if (isExpanded) {
+                        Spacer(Modifier.height(4.dp))
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            itemsList.forEach { requiredName ->
+                                val hasItem = userCarNames.contains(requiredName)
+                                Text(
+                                    text = "• $requiredName",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (hasItem) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurface,
+                                    textDecoration = if (hasItem) TextDecoration.LineThrough else null,
+                                    fontWeight = if (hasItem) FontWeight.SemiBold else FontWeight.Medium
+                                )
+                            }
                         }
                     }
                 }

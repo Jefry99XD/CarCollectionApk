@@ -13,7 +13,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlin.jvm.optionals.getOrNull
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class UserViewModel(
 ) : ViewModel() {
@@ -33,8 +34,6 @@ class UserViewModel(
     private val _seriesCount = MutableStateFlow(0)
     val seriesCount: StateFlow<Int> = _seriesCount
 
-    private val _friendsCount = MutableStateFlow(0)
-    val friendsCount: StateFlow<Int> = _friendsCount
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -68,7 +67,6 @@ class UserViewModel(
                 _tagCount.value = 0
                 _achievementCount.value = 0
                 _seriesCount.value = 0
-                _friendsCount.value = 0
                 _recentCars.value = emptyList()
             }
         }
@@ -93,12 +91,19 @@ class UserViewModel(
     }
 
     fun fetchUserProfile() {
-        viewModelScope.launch {
-            _isLoading.value = true
+        viewModelScope.launch(Dispatchers.IO) {
+            withContext(Dispatchers.Main) {
+                _isLoading.value = true
+            }
             val result = userMethods.getUserProfile()
-            _user.value = result.getOrNull()
-            _errorMessage.value = result.exceptionOrNull()?.message
-            _isLoading.value = false
+            withContext(Dispatchers.Main) {
+                _user.value = result.getOrNull()
+                _errorMessage.value = result.exceptionOrNull()?.message
+                _isLoading.value = false
+            }
+
+            // Verificar si necesita migración de XP
+            checkAndMigrateXP()
         }
     }
 
@@ -153,7 +158,6 @@ class UserViewModel(
             _tagCount.value = 0
             _achievementCount.value = 0
             _seriesCount.value = 0
-            _friendsCount.value = 0
             _recentCars.value = emptyList() // 🧹 limpiar también los carros recientes
             _errorMessage.value = null
         }
@@ -183,85 +187,82 @@ class UserViewModel(
 
 
     fun fetchUserStats() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 // Use UserMethods.getUserStats() for efficient single-call stats retrieval
                 val statsResult = userMethods.getUserStats()
                 if (statsResult.isSuccess) {
                     val stats = statsResult.getOrNull() ?: emptyMap()
-                    _carCount.value = stats["cars"] ?: 0
-                    _tagCount.value = stats["tags"] ?: 0
-                    _friendsCount.value = stats["friends"] ?: 0
-                    _seriesCount.value = stats["series"] ?: 0
+                    withContext(Dispatchers.Main) {
+                        _carCount.value = stats["cars"] ?: 0
+                        _tagCount.value = stats["tags"] ?: 0
+                        _seriesCount.value = stats["series"] ?: 0
 
-                    // Update user object with stats
-                    _user.value = _user.value?.updateStats(
-                        cars = _carCount.value,
-                        tags = _tagCount.value,
-                        series = _seriesCount.value
-                    )
+                        // Update user object with stats
+                        _user.value = _user.value?.updateStats(
+                            cars = _carCount.value,
+                            tags = _tagCount.value,
+                            series = _seriesCount.value
+                        )
+                    }
                 } else {
-                    // Fallback: calculate manually if getUserStats fails
-                    val carsResult = carMethods.getUserCars().getOrNull() ?: emptyList()
-                    val cars = carsResult.size
-                    val tags = tagsMethods.getAllTags().size
-
-                    // Calcular series únicas (filtrar null y blancos, y contar distintos)
-                    val uniqueSeries = carsResult
-                        .mapNotNull { it.serie }
-                        .filter { it.isNotBlank() }
-                        .distinct()
-                        .size
-
-                    _carCount.value = cars
-                    _tagCount.value = tags
-                    _seriesCount.value = uniqueSeries
-                    _friendsCount.value = 0 // No data available
-
-                    // Actualizar el objeto User con sus estadísticas incluyendo series
-                    _user.value = _user.value?.updateStats(cars, tags, uniqueSeries)
+                    // Fallback simplificado: solo mostrar 0
+                    withContext(Dispatchers.Main) {
+                        _carCount.value = 0
+                        _tagCount.value = 0
+                        _seriesCount.value = 0
+                    }
                 }
 
                 // Fetch achievement count separately
                 fetchAchievementCount()
             } catch (e: Exception) {
-                _carCount.value = 0
-                _tagCount.value = 0
-                _seriesCount.value = 0
-                _friendsCount.value = 0
-                _achievementCount.value = 0
+                withContext(Dispatchers.Main) {
+                    _carCount.value = 0
+                    _tagCount.value = 0
+                    _seriesCount.value = 0
+                    _achievementCount.value = 0
+                }
             }
         }
     }
 
     fun fetchAchievementCount() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 val achievements = achievementMethods.getAllAchievements()
                 // Count only unlocked achievements
                 val unlockedCount = achievements.count { (_, userAchievement) ->
                     userAchievement?.unlocked == true
                 }
-                _achievementCount.value = unlockedCount
+                withContext(Dispatchers.Main) {
+                    _achievementCount.value = unlockedCount
+                }
             } catch (e: Exception) {
-                _achievementCount.value = 0
+                withContext(Dispatchers.Main) {
+                    _achievementCount.value = 0
+                }
             }
         }
     }
 
     fun fetchRecentCars() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 val cars = carMethods.getRecentCars()
-                _recentCars.value = cars
+                withContext(Dispatchers.Main) {
+                    _recentCars.value = cars
+                }
             } catch (e: Exception) {
-                _recentCars.value = emptyList()
+                withContext(Dispatchers.Main) {
+                    _recentCars.value = emptyList()
+                }
             }
         }
     }
 
     fun setCarsCreateAt(){
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 carMethods.addMissingCreatedAtToAllCars()
             } catch (e: Exception) {
@@ -317,10 +318,10 @@ class UserViewModel(
     val publicUsers = _publicUsers.asStateFlow()
 
     fun fetchPublicUsers() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val result = userMethods.getAllPublicUsers()
 
-            val mapped = result.getOrNull()?.map { map ->
+            val mapped: List<User> = result.getOrNull()?.map { map ->
                 // Get counts from the map, handling different possible type conversions
                 val carsCount = when (val count = map["carsCount"]) {
                     is Long -> count.toInt()
@@ -336,24 +337,39 @@ class UserViewModel(
                     else -> 0
                 }
 
+                val level = when (val lvl = map["level"]) {
+                    is Long -> lvl.toInt()
+                    is Int -> lvl
+                    is Number -> lvl.toInt()
+                    else -> 1
+                }
+
+                val totalXP = when (val xp = map["totalXP"]) {
+                    is Long -> xp
+                    is Int -> xp.toLong()
+                    is Number -> xp.toLong()
+                    else -> 0L
+                }
+
                 // Create a list of dummy badges based on achievements count for display purposes
                 val badgesList = List(achievementsCount) { "Achievement_$it" }
 
-                User(
+                User().copy(
                     uid = map["id"] as? String ?: "",
                     username = map["username"] as? String ?: "Sin nombre",
                     photoUrl = map["photoUrl"] as? String ?: "",
-                    // email, bio no existen aquí así que se dejan default
+                    level = level,
+                    totalXP = totalXP,
+                    badges = badgesList,
                     totalCars = carsCount,
-                    totalTags = 0, // No existe en el backend
-                    totalFriends = 0,
-                    totalSeries = 0,
-                    badges = badgesList, // Use achievements count
-                    lastActive = System.currentTimeMillis()
+                    totalTags = 0,
+                    totalSeries = 0
                 )
-            } ?: emptyList()
+            } ?: emptyList<User>()
 
-            _publicUsers.value = mapped
+            withContext(Dispatchers.Main) {
+                _publicUsers.value = mapped
+            }
         }
     }
 
@@ -361,12 +377,109 @@ class UserViewModel(
     val publicUserCars = _publicUserCars.asStateFlow()
 
     fun fetchPublicUserCars(uid: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val result = userMethods.fetchPublicUserCars(uid)
-            _publicUserCars.value = result.getOrNull() ?: emptyList()
+            withContext(Dispatchers.Main) {
+                _publicUserCars.value = result.getOrNull() ?: emptyList()
+            }
         }
     }
 
+    // ════════════════════════════════════════════════════════════════
+    // SISTEMA DE NIVELES Y XP
+    // ════════════════════════════════════════════════════════════════
+
+    private val _levelUpEvent = MutableStateFlow<Int?>(null)
+    val levelUpEvent: StateFlow<Int?> = _levelUpEvent.asStateFlow()
+
+    private val _xpGainEvent = MutableStateFlow<Pair<Int, String>?>(null)
+    val xpGainEvent: StateFlow<Pair<Int, String>?> = _xpGainEvent.asStateFlow()
+
+    /**
+     * Verificar si el usuario necesita migración de XP y ejecutarla automáticamente
+     */
+    private fun checkAndMigrateXP() {
+        viewModelScope.launch {
+            try {
+                val needsMigration = userMethods.needsXPMigration().getOrNull() ?: false
+                if (needsMigration) {
+                    val result = userMethods.migrateUserXP()
+                    if (result.isSuccess) {
+                        _user.value = result.getOrNull()
+                        println("✅ XP migrated successfully for user")
+                    }
+                }
+            } catch (e: Exception) {
+                println("⚠️ Failed to check/migrate XP: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * Agregar XP al usuario actual (usado internamente cuando se agrega carro/logro)
+     */
+    suspend fun addXP(amount: Int, source: com.example.carcollection.featureuser.domain.XPSource, sourceId: String? = null): Result<User> {
+        return try {
+            val currentLevel = _user.value?.level ?: 1
+            val result = userMethods.addXP(amount, source, sourceId)
+
+            if (result.isSuccess) {
+                val updatedUser = result.getOrNull()
+                _user.value = updatedUser
+
+                // Emitir evento de ganancia de XP
+                _xpGainEvent.value = Pair(amount, source.name)
+
+                // Verificar si subió de nivel
+                val newLevel = updatedUser?.level ?: currentLevel
+                if (newLevel > currentLevel) {
+                    _levelUpEvent.value = newLevel
+                }
+
+                Result.success(updatedUser!!)
+            } else {
+                result
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Limpiar evento de subida de nivel (después de mostrarlo en UI)
+     */
+    fun clearLevelUpEvent() {
+        _levelUpEvent.value = null
+    }
+
+    /**
+     * Limpiar evento de ganancia de XP
+     */
+    fun clearXPGainEvent() {
+        _xpGainEvent.value = null
+    }
+
+    /**
+     * Ejecutar migración manual de XP (para botón en settings)
+     */
+    fun manualMigrateXP() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val result = userMethods.migrateUserXP()
+                if (result.isSuccess) {
+                    _user.value = result.getOrNull()
+                    _errorMessage.value = "XP migrada exitosamente"
+                } else {
+                    _errorMessage.value = result.exceptionOrNull()?.message
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = "Error al migrar XP: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
 
 
 }
