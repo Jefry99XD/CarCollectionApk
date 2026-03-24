@@ -61,14 +61,15 @@ class CarMethods {
                 // Invalidar caché después de agregar
                 invalidateCache()
 
-                // 🎮 Otorgar XP por agregar carro
+                // 🎮 Otorgar XP por agregar carro (basado en calidad)
                 try {
+                    val xpAmount = userMethods.calculateXPByCarQuality(car.quality)
                     userMethods.addXP(
-                        amount = XPSource.CAR_ADDED.xpAmount,
+                        amount = xpAmount,
                         source = XPSource.CAR_ADDED,
                         sourceId = documentReference.id
                     )
-                    println("✅ Granted ${XPSource.CAR_ADDED.xpAmount} XP for adding car")
+                    println("✅ Granted $xpAmount XP for adding car (quality: ${car.quality})")
                 } catch (xpError: Exception) {
                     println("⚠️ Failed to grant XP: ${xpError.message}")
                     // No fallar la operación completa si solo falla la XP

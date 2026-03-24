@@ -108,8 +108,9 @@ fun AppNavGraph(
 
         // Pantalla para agregar nuevo auto
         composable(NavRoutes.ADD_EDIT_CAR) {
+            val context = LocalContext.current
             val viewModel = viewModel<CarFormViewModel>(
-                factory = CarFormViewModelFactory(carMethods, tagsMethods)
+                factory = CarFormViewModelFactory(carMethods, tagsMethods, context)
             )
 
             // Precargar datos de biblioteca si existen
@@ -144,8 +145,9 @@ fun AppNavGraph(
             )
         ) { backStackEntry ->
             val carId = backStackEntry.arguments?.getString("carId")
+            val context = LocalContext.current
             val viewModel = viewModel<CarFormViewModel>(
-                factory = CarFormViewModelFactory(carMethods, tagsMethods)
+                factory = CarFormViewModelFactory(carMethods, tagsMethods, context)
             )
 
             LaunchedEffect(carId) {

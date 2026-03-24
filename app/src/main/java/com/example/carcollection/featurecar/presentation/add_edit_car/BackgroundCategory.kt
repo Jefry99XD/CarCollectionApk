@@ -6,6 +6,12 @@ data class BackgroundCategory(
 )
 
 data class BackgroundItem(
+    val id: String,
     val name: String,
-    val resource: String
+    val url: String,
+    val thumbnailUrl: String
+)
+
+data class BackgroundsResponse(
+    val categories: List<BackgroundCategory>
 )

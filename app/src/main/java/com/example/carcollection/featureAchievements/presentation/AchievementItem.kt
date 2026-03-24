@@ -42,6 +42,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.material3.HorizontalDivider
 import coil.compose.AsyncImage
 import com.example.carcollection.featureAchievements.domain.AchievementGlobal
+import com.example.carcollection.featureAchievements.domain.AchievementRarity
 import com.example.carcollection.featureAchievements.domain.UserAchievement
 
 
@@ -65,10 +66,12 @@ fun AchievementItem(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isUnlocked)
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
-            else
-                MaterialTheme.colorScheme.surface
+            containerColor = when (achievement.rarity) {
+                AchievementRarity.COMUN -> Color(0xFF90CAF9).copy(alpha = 0.3f) // Azul
+                AchievementRarity.RARO -> Color(0xFFBA68C8).copy(alpha = 0.3f)  // Morado
+                AchievementRarity.LEGENDARIO -> Color(0xFFFFD54F).copy(alpha = 0.3f) // Dorado
+                AchievementRarity.SPECIAL -> Color(0xFFFFC107).copy(alpha = 0.4f) // Dorado más brillante
+            }
         ),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {

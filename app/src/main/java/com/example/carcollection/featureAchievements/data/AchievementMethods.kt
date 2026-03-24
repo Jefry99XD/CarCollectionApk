@@ -39,7 +39,15 @@ class AchievementMethods {
 
     suspend fun getAllAchievements(): List<Pair<AchievementGlobal, UserAchievement?>> {
         val globalDocs = globalAchievementsCollection().get().await().documents
-        val userDocs = userAchievementsCollection().get().await().documents
+
+        // Intentar obtener logros del usuario, si falla (permisos), usar lista vacía
+        val userDocs = try {
+            userAchievementsCollection().get().await().documents
+        } catch (e: Exception) {
+            // Si no hay permisos o no existen logros, retornar lista vacía
+            emptyList()
+        }
+
         val userMap = userDocs.associateBy { it.id }
 
         return globalDocs.map { doc ->
@@ -51,12 +59,20 @@ class AchievementMethods {
 
     suspend fun getPublicUserAchievements(userId: String): List<Pair<AchievementGlobal, UserAchievement?>> {
         val globalDocs = globalAchievementsCollection().get().await().documents
-        val userDocs = db.collection("users")
-            .document(userId)
-            .collection("achievements")
-            .get()
-            .await()
-            .documents
+
+        // Intentar obtener logros del usuario, si falla (permisos), usar lista vacía
+        val userDocs = try {
+            db.collection("users")
+                .document(userId)
+                .collection("achievements")
+                .get()
+                .await()
+                .documents
+        } catch (e: Exception) {
+            // Si no hay permisos, retornar lista vacía
+            emptyList()
+        }
+
         val userMap = userDocs.associateBy { it.id }
 
         return globalDocs.map { doc ->
@@ -114,10 +130,16 @@ class AchievementMethods {
                         )
                     }
 
-                    // 🎮 Otorgar XP por desbloquear logro
+                    // 🎮 Otorgar XP por desbloquear logro (basado en rareza)
                     try {
+                        val xpAmount = when (global.rarity) {
+                            AchievementRarity.COMUN -> 200
+                            AchievementRarity.RARO -> 400
+                            AchievementRarity.LEGENDARIO -> 800
+                            AchievementRarity.SPECIAL -> 1200
+                        }
                         userMethods.addXP(
-                            amount = XPSource.ACHIEVEMENT_UNLOCKED.xpAmount,
+                            amount = xpAmount,
                             source = XPSource.ACHIEVEMENT_UNLOCKED,
                             sourceId = global.id
                         )
@@ -169,10 +191,29 @@ class AchievementMethods {
             if (countedIds.contains(carId)) continue
 
             // ✅ Early exit: si ya alcanzamos la meta, no seguir evaluando
-            val currentProgress = if (global.rules.conditionLogic == ConditionLogic.OR && global.conditions.isNotEmpty()) {
-                matchedConditionIndices.size
-            } else {
-                countedIds.size
+            val currentProgress = when {
+                global.rules.conditionLogic == ConditionLogic.OR && global.conditions.isNotEmpty() -> {
+                    // Para OR: contar solo las condiciones que tienen allowMultiplePerConcept=false
+                    // y sumar los carros que tienen allowMultiplePerConcept=true
+                    var singleCountConditions = 0
+                    var multiCountCars = 0
+
+                    for ((condIndex, condition) in global.conditions.withIndex()) {
+                        if (condition.allowMultiplePerConcept) {
+                            // Contar cuántos carros matchean esta condición
+                            multiCountCars += cars.count { c ->
+                                c.id in countedIds && carMatchesCondition(c, condition)
+                            }
+                        } else {
+                            // Contar si hay al menos un carro para esta condición
+                            if (condIndex in matchedConditionIndices) {
+                                singleCountConditions++
+                            }
+                        }
+                    }
+                    singleCountConditions + multiCountCars
+                }
+                else -> countedIds.size
             }
 
             if (currentProgress >= global.goal) {
@@ -187,8 +228,16 @@ class AchievementMethods {
                 }
 
                 if (matchedIndex >= 0) {
-                    matchedConditionIndices.add(matchedIndex)
-                    countedIds.add(carId)
+                    val condition = global.conditions[matchedIndex]
+
+                    if (condition.allowMultiplePerConcept) {
+                        // Si permite múltiples: contar este carro
+                        countedIds.add(carId)
+                    } else {
+                        // Si no permite múltiples: solo marcar la condición como encontrada
+                        matchedConditionIndices.add(matchedIndex)
+                        countedIds.add(carId) // Marcar el carro como contado para evitar re-procesar
+                    }
                 }
             } else {
                 // Para AND: mantener lógica original
@@ -198,13 +247,29 @@ class AchievementMethods {
             }
         }
 
-        // Calcular progreso según la lógica
-        val progress = if (global.rules.conditionLogic == ConditionLogic.OR && global.conditions.isNotEmpty()) {
-            // Para OR: contar cuántas condiciones diferentes se han matcheado
-            matchedConditionIndices.size
-        } else {
-            // Para AND o sin condiciones: contar IDs únicos
-            countedIds.size
+        // Calcular progreso final
+        val progress = when {
+            global.rules.conditionLogic == ConditionLogic.OR && global.conditions.isNotEmpty() -> {
+                // Para OR: contar condiciones con allowMultiplePerConcept=false + carros con allowMultiplePerConcept=true
+                var singleCountConditions = 0
+                var multiCountCars = 0
+
+                for ((condIndex, condition) in global.conditions.withIndex()) {
+                    if (condition.allowMultiplePerConcept) {
+                        // Contar cuántos carros matchean esta condición
+                        multiCountCars += cars.count { c ->
+                            c.id in countedIds && carMatchesCondition(c, condition)
+                        }
+                    } else {
+                        // Contar si hay al menos un carro para esta condición
+                        if (condIndex in matchedConditionIndices) {
+                            singleCountConditions++
+                        }
+                    }
+                }
+                singleCountConditions + multiCountCars
+            }
+            else -> countedIds.size
         }
 
         val unlocked = progress >= global.goal
@@ -332,9 +397,9 @@ class AchievementMethods {
 
         val valuesToMatch = mutableListOf<String>()
         if (condition.concept.isNotEmpty()) {
-            valuesToMatch.add(condition.concept.lowercase())
+            valuesToMatch.add(normalizeString(condition.concept))
         }
-        valuesToMatch.addAll(condition.aliases.map { it.lowercase() })
+        valuesToMatch.addAll(condition.aliases.map { normalizeString(it) })
 
         // Si no hay valores para matchear, matchea cualquier carro
         if (valuesToMatch.isEmpty()) {
@@ -356,7 +421,7 @@ class AchievementMethods {
     }
 
     private fun getCarFieldValue(car: Car, field: CarMatchField): String? {
-        return when (field) {
+        val rawValue = when (field) {
             CarMatchField.NAME -> car.name
             CarMatchField.BRAND -> car.brand
             CarMatchField.SERIE -> car.serie
@@ -365,7 +430,23 @@ class AchievementMethods {
             CarMatchField.COLOR -> car.color
             CarMatchField.YEAR -> car.year
             CarMatchField.TAGS -> car.tags.joinToString(" ")
-        }?.lowercase()
+        }
+        return rawValue?.let { normalizeString(it) }
+    }
+
+    /**
+     * Normaliza una string para búsqueda:
+     * - Convierte a minúsculas
+     * - Remueve espacios al inicio y final
+     * - Remueve caracteres especiales (manteniendo espacios internos)
+     * - Reemplaza múltiples espacios por uno solo
+     */
+    private fun normalizeString(input: String): String {
+        return input
+            .lowercase()
+            .trim()
+            .replace(Regex("[^a-z0-9\\s]"), "") // Remover caracteres especiales
+            .replace(Regex("\\s+"), " ") // Reemplazar múltiples espacios por uno
     }
 
     private fun matches(value: String, target: String, type: MatchType): Boolean {
@@ -429,5 +510,6 @@ class AchievementMethods {
             .toObject(AchievementGlobal::class.java)
             ?.copy(id = achievementId)
     }
+
 
 }

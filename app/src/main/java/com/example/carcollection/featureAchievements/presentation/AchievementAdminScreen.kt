@@ -8,8 +8,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,6 +37,7 @@ fun AchievementAdminScreen(
     var achievements by remember { mutableStateOf<List<AchievementGlobal>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var showDeleteDialog by remember { mutableStateOf<AchievementGlobal?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
 
     // Cargar logros
     LaunchedEffect(Unit) {
@@ -53,6 +56,18 @@ fun AchievementAdminScreen(
             } catch (e: Exception) {
                 e.printStackTrace()
                 isLoading = false
+            }
+        }
+    }
+
+    // Filtrar logros por búsqueda
+    val filteredAchievements = remember(achievements, searchQuery) {
+        if (searchQuery.isEmpty()) {
+            achievements
+        } else {
+            achievements.filter { achievement ->
+                achievement.title.contains(searchQuery, ignoreCase = true) ||
+                achievement.description.contains(searchQuery, ignoreCase = true)
             }
         }
     }
@@ -100,17 +115,75 @@ fun AchievementAdminScreen(
                     )
                 }
                 else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    Column(
+                        modifier = Modifier.fillMaxSize()
                     ) {
-                        items(achievements) { achievement ->
-                            AchievementAdminItem(
-                                achievement = achievement,
-                                onEdit = { onNavigateToEdit(achievement.id) },
-                                onDelete = { showDeleteDialog = achievement }
+                        // Buscador
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            placeholder = { Text("Buscar logros...") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = "Buscar"
+                                )
+                            },
+                            trailingIcon = {
+                                if (searchQuery.isNotEmpty()) {
+                                    IconButton(onClick = { searchQuery = "" }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Limpiar búsqueda"
+                                        )
+                                    }
+                                }
+                            },
+                            singleLine = true
+                        )
+
+                        // Contador de resultados
+                        if (searchQuery.isNotEmpty()) {
+                            Text(
+                                text = "Mostrando ${filteredAchievements.size} de ${achievements.size} logros",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                             )
+                        }
+
+                        // Lista de logros
+                        when {
+                            filteredAchievements.isEmpty() -> {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "No se encontraron logros",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Color.Gray
+                                    )
+                                }
+                            }
+                            else -> {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentPadding = PaddingValues(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    items(filteredAchievements) { achievement ->
+                                        AchievementAdminItem(
+                                            achievement = achievement,
+                                            onEdit = { onNavigateToEdit(achievement.id) },
+                                            onDelete = { showDeleteDialog = achievement }
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }

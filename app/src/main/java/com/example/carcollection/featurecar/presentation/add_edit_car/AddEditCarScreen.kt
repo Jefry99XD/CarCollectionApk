@@ -1,5 +1,6 @@
 package com.example.carcollection.featurecar.presentation.add_edit_car
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Image
@@ -50,6 +52,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -60,6 +63,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import coil.compose.AsyncImage
@@ -441,19 +446,77 @@ fun CarFormFields(viewModel: CarFormViewModel) {
     val yearSuggestions by viewModel.yearSuggestions.collectAsState()
     val typeSuggestions by viewModel.typeSuggestions.collectAsState()
     val colorSuggestions by viewModel.colorSuggestions.collectAsState()
-    // ✅ Usar constante QUALITY_OPTIONS (no recrear)
 
-    // ✅ Función ExposedDropdownField ahora es top-level (eliminada de aquí)
+    // ✅ Detectar orientación y tamaño de pantalla
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val screenWidthDp = configuration.screenWidthDp
+    val isTablet = screenWidthDp >= 600
 
-    ExposedDropdownField(
-        value = viewModel.brand.value,
-        onValueChange = { viewModel.onBrandChange(it) },
-        label = "Marca",
-        suggestions = brandSuggestions,
-        expanded = expandedBrand,
-        onExpandedChange = { expandedBrand = it }
-    )
+    // ✅ Determinar número de columnas para grid de campos
+    val columns = when {
+        isTablet && isLandscape -> 3
+        isTablet -> 2
+        isLandscape -> 2
+        else -> 1
+    }
 
+    // MARCA
+    if (columns == 1) {
+        ExposedDropdownField(
+            value = viewModel.brand.value,
+            onValueChange = { viewModel.onBrandChange(it) },
+            label = "Marca",
+            suggestions = brandSuggestions,
+            expanded = expandedBrand,
+            onExpandedChange = { expandedBrand = it }
+        )
+    } else {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(modifier = Modifier.weight(1f)) {
+                ExposedDropdownField(
+                    value = viewModel.brand.value,
+                    onValueChange = { viewModel.onBrandChange(it) },
+                    label = "Marca",
+                    suggestions = brandSuggestions,
+                    expanded = expandedBrand,
+                    onExpandedChange = { expandedBrand = it }
+                )
+            }
+            // SERIE
+            Box(modifier = Modifier.weight(1f)) {
+                ExposedDropdownField(
+                    value = viewModel.serie.value,
+                    onValueChange = { viewModel.onSerieChange(it) },
+                    label = "Serie",
+                    suggestions = serieSuggestions,
+                    expanded = expandedSerie,
+                    onExpandedChange = { expandedSerie = it }
+                )
+            }
+            if (columns >= 3) {
+                // AÑO (solo si hay 3+ columnas)
+                Box(modifier = Modifier.weight(1f)) {
+                    ExposedDropdownField(
+                        value = viewModel.year.value,
+                        onValueChange = { viewModel.onYearChange(it) },
+                        label = "Año",
+                        suggestions = yearSuggestions,
+                        expanded = expandedYear,
+                        onExpandedChange = { expandedYear = it },
+                        sortDescending = true
+                    )
+                }
+            }
+        }
+    }
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    // NOMBRE (siempre full width)
     OutlinedTextField(
         value = viewModel.name.value,
         onValueChange = { viewModel.onNameChange(it) },
@@ -462,51 +525,94 @@ fun CarFormFields(viewModel: CarFormViewModel) {
         modifier = Modifier.fillMaxWidth()
     )
 
-    ExposedDropdownField(
-        value = viewModel.serie.value,
-        onValueChange = { viewModel.onSerieChange(it) },
-        label = "Serie",
-        suggestions = serieSuggestions,
-        expanded = expandedSerie,
-        onExpandedChange = { expandedSerie = it }
-    )
+    Spacer(modifier = Modifier.height(8.dp))
 
-    ExposedDropdownField(
-        value = viewModel.year.value,
-        onValueChange = { viewModel.onYearChange(it) },
-        label = "Año",
-        suggestions = yearSuggestions,
-        expanded = expandedYear,
-        onExpandedChange = { expandedYear = it },
-        sortDescending = true
-    )
+    // Si no estamos en tablet/horizontal, mostrar año aquí
+    if (columns < 3) {
+        ExposedDropdownField(
+            value = viewModel.year.value,
+            onValueChange = { viewModel.onYearChange(it) },
+            label = "Año",
+            suggestions = yearSuggestions,
+            expanded = expandedYear,
+            onExpandedChange = { expandedYear = it },
+            sortDescending = true
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+    }
 
-    ExposedDropdownField(
-        value = viewModel.type.value,
-        onValueChange = { viewModel.onTypeChange(it) },
-        label = "Tipo",
-        suggestions = typeSuggestions,
-        expanded = expandedType,
-        onExpandedChange = { expandedType = it }
-    )
+    // TIPO y COLOR
+    if (columns == 1) {
+        ExposedDropdownField(
+            value = viewModel.type.value,
+            onValueChange = { viewModel.onTypeChange(it) },
+            label = "Tipo",
+            suggestions = typeSuggestions,
+            expanded = expandedType,
+            onExpandedChange = { expandedType = it }
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        ExposedDropdownField(
+            value = viewModel.color.value,
+            onValueChange = { viewModel.onColorChange(it) },
+            label = "Color",
+            suggestions = colorSuggestions,
+            expanded = expandedColor,
+            onExpandedChange = { expandedColor = it }
+        )
+    } else {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(modifier = Modifier.weight(1f)) {
+                ExposedDropdownField(
+                    value = viewModel.type.value,
+                    onValueChange = { viewModel.onTypeChange(it) },
+                    label = "Tipo",
+                    suggestions = typeSuggestions,
+                    expanded = expandedType,
+                    onExpandedChange = { expandedType = it }
+                )
+            }
+            Box(modifier = Modifier.weight(1f)) {
+                ExposedDropdownField(
+                    value = viewModel.color.value,
+                    onValueChange = { viewModel.onColorChange(it) },
+                    label = "Color",
+                    suggestions = colorSuggestions,
+                    expanded = expandedColor,
+                    onExpandedChange = { expandedColor = it }
+                )
+            }
+            if (columns >= 3) {
+                Box(modifier = Modifier.weight(1f)) {
+                    ExposedDropdownField(
+                        value = viewModel.quality.value,
+                        onValueChange = { viewModel.onQualityChange(it) },
+                        label = "Calidad",
+                        suggestions = QUALITY_OPTIONS,
+                        expanded = expandedQuality,
+                        onExpandedChange = { expandedQuality = it }
+                    )
+                }
+            }
+        }
+    }
 
-    ExposedDropdownField(
-        value = viewModel.color.value,
-        onValueChange = { viewModel.onColorChange(it) },
-        label = "Color",
-        suggestions = colorSuggestions,
-        expanded = expandedColor,
-        onExpandedChange = { expandedColor = it }
-    )
+    Spacer(modifier = Modifier.height(8.dp))
 
-    ExposedDropdownField(
-        value = viewModel.quality.value,
-        onValueChange = { viewModel.onQualityChange(it) },
-        label = "Calidad",
-        suggestions = QUALITY_OPTIONS,  // ✅ Usar constante
-        expanded = expandedQuality,
-        onExpandedChange = { expandedQuality = it }
-    )
+    // CALIDAD (si no está en la fila anterior)
+    if (columns < 3) {
+        ExposedDropdownField(
+            value = viewModel.quality.value,
+            onValueChange = { viewModel.onQualityChange(it) },
+            label = "Calidad",
+            suggestions = QUALITY_OPTIONS,
+            expanded = expandedQuality,
+            onExpandedChange = { expandedQuality = it }
+        )
+    }
 }
 
 // Función helper para calcular si un color es claro u oscuro
@@ -600,12 +706,80 @@ fun CarBackgroundSection(
     viewModel: CarFormViewModel,
     availableCategories: List<BackgroundCategory>
 ) {
+    var showBackgroundPicker by remember { mutableStateOf(false) }
 
-    BackgroundSelector(
-        availableCategories = availableCategories,
-        selectedBackground = viewModel.backgroundName.value,
-        onBackgroundSelected = { viewModel.onBackgroundNameChange(it) }
-    )
+    // Obtener nombre del fondo seleccionado
+    val selectedBackground = remember(viewModel.backgroundName.value, availableCategories) {
+        availableCategories
+            .flatMap { it.backgrounds }
+            .find { it.id == viewModel.backgroundName.value }
+    }
+
+    // Mostrar preview del fondo seleccionado
+    if (selectedBackground != null) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(150.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(8.dp)
+                    .clip(RoundedCornerShape(8.dp))
+            ) {
+                AsyncImage(
+                    model = selectedBackground.url,
+                    contentDescription = selectedBackground.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Fondo: ${selectedBackground.name}",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+    }
+
+    // Botón para abrir selector de fondos
+    Button(
+        onClick = { showBackgroundPicker = true },
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+    ) {
+        Icon(
+            imageVector = Icons.Default.Palette,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text("Cambiar Fondo")
+    }
+
+    // Diálogo de selección
+    if (showBackgroundPicker) {
+        BackgroundPickerDialog(
+            categories = availableCategories,
+            selectedBackgroundId = viewModel.backgroundName.value,
+            onBackgroundSelected = { viewModel.onBackgroundNameChange(it) },
+            onDismiss = { showBackgroundPicker = false }
+        )
+    }
 }
 
 

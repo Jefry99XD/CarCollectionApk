@@ -47,7 +47,6 @@ class UserViewModel(
 
     private val userMethods = UserMethods()
     private val carMethods = CarMethods()
-    private val tagsMethods = TagsMethods()
     private val achievementMethods = AchievementMethods()
 
     private val auth = FirebaseAuth.getInstance()

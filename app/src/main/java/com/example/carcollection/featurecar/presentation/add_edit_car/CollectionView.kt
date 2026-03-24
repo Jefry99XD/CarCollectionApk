@@ -2,7 +2,7 @@
 package com.example.carcollection.featurecar.presentation.add_edit_car
 
 import android.annotation.SuppressLint
-import android.util.Log
+import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,6 +38,8 @@ import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.FilterAltOff
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -73,7 +76,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -81,6 +87,12 @@ import com.example.carcollection.featurecar.domain.Car
 import com.example.carcollection.featurecar.domain.CarViewModel
 import com.example.carcollection.featuremenu.main.components.CarCard
 import com.example.carcollection.presentation.navigation.NavRoutes
+
+// ✅ Enum para opciones de ordenamiento
+enum class SortOption(val display: String) {
+    NAME("Nombre (A-Z)"),
+    DATE("Fecha de creación")
+}
 
 // ✅ Constante movida fuera del composable para evitar recreación
 private val ITEMS_PER_PAGE_OPTIONS = listOf(5, 10, 20, 50)
@@ -361,6 +373,8 @@ fun CollectionViewScreen(
 
     var itemsPerPage by remember { mutableIntStateOf(viewModel.savedItemsPerPage.value) }
     var currentPage by rememberSaveable { mutableIntStateOf(viewModel.savedPage.value) }
+    var sortBy by remember { mutableStateOf(SortOption.NAME) }
+    var sortAscending by remember { mutableStateOf(true) }
 
     // ✅ Usar derivedStateOf para optimizar cálculos que dependen de estados
     val totalPages by remember {
@@ -371,7 +385,12 @@ fun CollectionViewScreen(
 
     val paginatedCars by remember {
         derivedStateOf {
-            carsList.drop(currentPage * itemsPerPage).take(itemsPerPage)
+            val sorted = when (sortBy) {
+                SortOption.NAME -> carsList.sortedBy { it.name ?: "" }
+                SortOption.DATE -> carsList.sortedBy { it.createdAt ?: 0 }
+            }
+            val finalList = if (sortAscending) sorted else sorted.reversed()
+            finalList.drop(currentPage * itemsPerPage).take(itemsPerPage)
         }
     }
 
@@ -382,14 +401,23 @@ fun CollectionViewScreen(
         }
     }
 
-
-    val listState = rememberSaveable(saver = LazyListState.Saver) {
-        LazyListState()
-    }
-
     var carToDelete by remember { mutableStateOf<Car?>(null) }
 
     var expanded by rememberSaveable { mutableStateOf(false) }
+
+    // ✅ Detectar orientación del dispositivo
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val screenWidthDp = configuration.screenWidthDp
+    val isTablet = screenWidthDp >= 600
+
+    // ✅ Determinar número de columnas para grid
+    val gridColumns = when {
+        isTablet && isLandscape -> 3
+        isTablet -> 2
+        isLandscape -> 2
+        else -> 1 // Vista de lista en móvil vertical
+    }
 
     // ✅ Solo cargar datos si no están cargados (mejor rendimiento)
     val isLoading by viewModel.isLoading.collectAsState()
@@ -505,33 +533,7 @@ fun CollectionViewScreen(
                 .fillMaxSize()
                 .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = {
-                    viewModel.onSearchQueryChange(it)
-                    currentPage = 0
-                },
-                label = { Text("Buscar...") },
-                placeholder = { Text("Honda Civic...") },
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = {
-                    Icon(imageVector = Icons.Default.Search, contentDescription = null)
-                },
-                trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = {
-                            viewModel.onSearchQueryChange("")
-                            currentPage = 0
-                        }) {
-                            Icon(Icons.Default.Close, contentDescription = "Clear")
-                        }
-                    }
-                }
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // ✅ Solo renderizar FilterSection si está expandido
+            // ✅ Solo el filtro expandible queda fijo
             if (expanded) {
                 FilterSection(
                     viewModel = viewModel,
@@ -553,209 +555,450 @@ fun CollectionViewScreen(
                     selectedType = selectedType,
                     selectedQuality = selectedQuality
                 )
+                Spacer(modifier = Modifier.height(8.dp))
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Selector de items por página
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            "Mostrar:",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        DropdownMenuBox(
-                            selectedOption = itemsPerPage.toString(),
-                            options = ITEMS_PER_PAGE_OPTIONS.map { it.toString() },
-                            onOptionSelected = {
-                                itemsPerPage = it.toInt()
-                                viewModel.setItemsPerPage(itemsPerPage)
-                                currentPage = 0
-                            }
-                        )
-                    }
-
-                    // Controles de paginación
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        IconButton(
-                            onClick = { if (currentPage > 0) currentPage-- },
-                            enabled = currentPage > 0,
-                            colors = IconButtonDefaults.iconButtonColors(
-                                containerColor = if (currentPage > 0)
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                                else
-                                    MaterialTheme.colorScheme.surfaceVariant,
-                                contentColor = if (currentPage > 0)
-                                    MaterialTheme.colorScheme.primary
-                                else
-                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-                            ),
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Página anterior",
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-
-                        Surface(
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(
-                                text = "${currentPage + 1} / $totalPages",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                            )
-                        }
-
-                        IconButton(
-                            onClick = { if (currentPage < totalPages - 1) currentPage++ },
-                            enabled = currentPage < totalPages - 1,
-                            colors = IconButtonDefaults.iconButtonColors(
-                                containerColor = if (currentPage < totalPages - 1)
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                                else
-                                    MaterialTheme.colorScheme.surfaceVariant,
-                                contentColor = if (currentPage < totalPages - 1)
-                                    MaterialTheme.colorScheme.primary
-                                else
-                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-                            ),
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                contentDescription = "Página siguiente",
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            if (paginatedCars.isEmpty()){
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = null,
-                            modifier = Modifier.size(40.dp),
-                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Text(
-                        text = "No se encontraron autos",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Intenta ajustar los filtros o la búsqueda",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                    )
-                }
-            }
-            else{
+            // ✅ Vista responsiva: LazyColumn en móvil vertical, Grid en tablets/horizontal
+            if (gridColumns == 1) {
+                // 📱 MÓVIL VERTICAL - Lista tradicional
                 LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.weight(1f),
-                    state = listState
+                    contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
-                    itemsIndexed(paginatedCars, key = { index, car -> car.id ?: index.toString() }) { _, car ->
-                        // ✅ Eliminar AnimatedVisibility innecesaria (visible = true siempre)
-                        // animateItem() ya maneja las animaciones de LazyColumn
-                        CarCard(
-                            car = car,
-                            allTags = allTags,
-                            modifier = Modifier.animateItem(
-                                fadeInSpec = tween(300),
-                                fadeOutSpec = tween(300)
-                            ),
-                            onEdit = {
-                                viewModel.savedPage.value = currentPage
-                                onEditCar(car.id.toString())
+                    // 1️⃣ SEARCH BAR (scrolleable)
+                    item {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = {
+                                viewModel.onSearchQueryChange(it)
+                                currentPage = 0
                             },
-                            onDelete = { carToDelete = car },
-                            onClick = {
-                                car.id?.let { _ ->
-                                    navController.navigate("${NavRoutes.DETAIL}/${car.id}")
-                                } ?: run {
-                                    Log.w("CollectionView",
-                                        "Car id es null, no se puede navegar$car"
-                                    )
+                            label = { Text("Buscar...") },
+                            placeholder = { Text("Honda Civic...") },
+                            modifier = Modifier.fillMaxWidth(),
+                            leadingIcon = {
+                                Icon(imageVector = Icons.Default.Search, contentDescription = null)
+                            },
+                            trailingIcon = {
+                                if (searchQuery.isNotEmpty()) {
+                                    IconButton(onClick = {
+                                        viewModel.onSearchQueryChange("")
+                                        currentPage = 0
+                                    }) {
+                                        Icon(Icons.Default.Close, contentDescription = "Clear")
+                                    }
                                 }
                             }
                         )
                     }
+
+                    // 2️⃣ SORT OPTIONS (scrolleable)
                     item {
-                        Spacer(modifier = Modifier.height(80.dp))
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Selector de ordenamiento
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        "Orden:",
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    DropdownMenuBox(
+                                        selectedOption = sortBy.display,
+                                        options = SortOption.entries.map { it.display },
+                                        onOptionSelected = { selected ->
+                                            sortBy = SortOption.entries.find { it.display == selected } ?: SortOption.NAME
+                                            currentPage = 0
+                                        }
+                                    )
+                                }
+
+                                // Botón de dirección ascendente/descendente
+                                IconButton(
+                                    onClick = { sortAscending = !sortAscending },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = if (sortAscending) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                                        contentDescription = if (sortAscending) "Ascendente" else "Descendente",
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // 3️⃣ PAGINATION/ITEMS PER PAGE (scrolleable)
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Selector de items por página
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        "Mostrar:",
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    DropdownMenuBox(
+                                        selectedOption = itemsPerPage.toString(),
+                                        options = ITEMS_PER_PAGE_OPTIONS.map { it.toString() },
+                                        onOptionSelected = {
+                                            itemsPerPage = it.toInt()
+                                            viewModel.setItemsPerPage(itemsPerPage)
+                                            currentPage = 0
+                                        }
+                                    )
+                                }
+
+                                // Controles de paginación
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    IconButton(
+                                        onClick = { if (currentPage > 0) currentPage-- },
+                                        enabled = currentPage > 0,
+                                        colors = androidx.compose.material3.IconButtonDefaults.iconButtonColors(
+                                            contentColor = if (currentPage > 0)
+                                                MaterialTheme.colorScheme.primary
+                                            else
+                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                                        ),
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = "Página anterior",
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+
+                                    Text(
+                                        "${currentPage + 1} / $totalPages",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        modifier = Modifier.width(40.dp),
+                                        textAlign = TextAlign.Center
+                                    )
+
+                                    IconButton(
+                                        onClick = { if (currentPage < totalPages - 1) currentPage++ },
+                                        enabled = currentPage < totalPages - 1,
+                                        colors = androidx.compose.material3.IconButtonDefaults.iconButtonColors(
+                                            contentColor = if (currentPage < totalPages - 1)
+                                                MaterialTheme.colorScheme.primary
+                                            else
+                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                                        ),
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                            contentDescription = "Página siguiente",
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 4️⃣ CONTENIDO PAGINADO (carros)
+                    if (paginatedCars.isEmpty()) {
+                        item {
+                            EmptyCarListMessage(carsList)
+                        }
+                    } else {
+                        itemsIndexed(paginatedCars) { _, car ->
+                            CarItemRow(
+                                car = car,
+                                allTags = allTags,
+                                onDelete = { carToDelete = it },
+                                onEdit = {
+                                    viewModel.savedPage.value = currentPage
+                                    onEditCar(it.id ?: "")
+                                },
+                                onClick = {
+                                    it.id?.let { carId ->
+                                        navController.navigate("${NavRoutes.DETAIL}/$carId")
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            } else {
+                // 📱 TABLET/HORIZONTAL - Vista Grid (Todo scrollable)
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp)
+                ) {
+                    // 1️⃣ SEARCH BAR
+                    item {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = {
+                                viewModel.onSearchQueryChange(it)
+                                currentPage = 0
+                            },
+                            label = { Text("Buscar...") },
+                            placeholder = { Text("Honda Civic...") },
+                            modifier = Modifier.fillMaxWidth(),
+                            leadingIcon = {
+                                Icon(imageVector = Icons.Default.Search, contentDescription = null)
+                            },
+                            trailingIcon = {
+                                if (searchQuery.isNotEmpty()) {
+                                    IconButton(onClick = {
+                                        viewModel.onSearchQueryChange("")
+                                        currentPage = 0
+                                    }) {
+                                        Icon(Icons.Default.Close, contentDescription = "Clear")
+                                    }
+                                }
+                            }
+                        )
+                    }
+
+                    // 2️⃣ SORT OPTIONS y MOSTRAR en una fila
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Card(
+                                modifier = Modifier.weight(1f),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        "Orden:",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    DropdownMenuBox(
+                                        selectedOption = sortBy.display,
+                                        options = SortOption.entries.map { it.display },
+                                        onOptionSelected = { selected ->
+                                            sortBy = SortOption.entries.find { it.display == selected } ?: SortOption.NAME
+                                            currentPage = 0
+                                        }
+                                    )
+                                    IconButton(
+                                        onClick = { sortAscending = !sortAscending },
+                                        modifier = Modifier.size(28.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (sortAscending) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                                            contentDescription = if (sortAscending) "Ascendente" else "Descendente",
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
+
+                            Card(
+                                modifier = Modifier.weight(1f),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        "Mostrar:",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    DropdownMenuBox(
+                                        selectedOption = itemsPerPage.toString(),
+                                        options = ITEMS_PER_PAGE_OPTIONS.map { it.toString() },
+                                        onOptionSelected = {
+                                            itemsPerPage = it.toInt()
+                                            viewModel.setItemsPerPage(itemsPerPage)
+                                            currentPage = 0
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // 3️⃣ Grid responsivo con carros - Renderizar filas directamente
+                    if (paginatedCars.isNotEmpty()) {
+                        val groupedCars = paginatedCars.chunked(gridColumns)
+                        items(groupedCars.size) { index ->
+                            val rowCars = groupedCars[index]
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                rowCars.forEach { car ->
+                                    Box(
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        CarCard(
+                                            car = car,
+                                            allTags = allTags,
+                                            modifier = Modifier.fillMaxWidth(),
+                                            onDelete = { carToDelete = car },
+                                            onEdit = {
+                                                viewModel.savedPage.value = currentPage
+                                                onEditCar(car.id ?: "")
+                                            },
+                                            onClick = {
+                                                car.id?.let { carId ->
+                                                    navController.navigate("${NavRoutes.DETAIL}/$carId")
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+                                // Espacios en blanco para completar la fila si no hay suficientes carros
+                                repeat(gridColumns - rowCars.size) {
+                                    Box(modifier = Modifier.weight(1f))
+                                }
+                            }
+                        }
+                    } else {
+                        item {
+                            EmptyCarListMessage(carsList)
+                        }
+                    }
+
+                    // 4️⃣ Controles de paginación al final
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                IconButton(
+                                    onClick = { if (currentPage > 0) currentPage-- },
+                                    enabled = currentPage > 0,
+                                    colors = androidx.compose.material3.IconButtonDefaults.iconButtonColors(
+                                        contentColor = if (currentPage > 0)
+                                            MaterialTheme.colorScheme.primary
+                                        else
+                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                                    ),
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = "Página anterior",
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+
+                                Text(
+                                    "${currentPage + 1} / $totalPages",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    modifier = Modifier.width(50.dp),
+                                    textAlign = TextAlign.Center
+                                )
+
+                                IconButton(
+                                    onClick = { if (currentPage < totalPages - 1) currentPage++ },
+                                    enabled = currentPage < totalPages - 1,
+                                    colors = androidx.compose.material3.IconButtonDefaults.iconButtonColors(
+                                        contentColor = if (currentPage < totalPages - 1)
+                                            MaterialTheme.colorScheme.primary
+                                        else
+                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                                    ),
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                        contentDescription = "Página siguiente",
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
-            carToDelete?.let { car ->
-                AlertDialog(
-                    onDismissRequest = { carToDelete = null },
-                    title = { Text("Deseas borrarlo?") },
-                    text = { Text("Borrar ${car.name}?") },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            viewModel.deleteCar(car.id.toString())
-                            carToDelete = null
-                        }) {
-                            Text("Borrar")
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { carToDelete = null }) {
-                            Text("Cancelar")
-                        }
-                    }
-                )
-            }
-
-
-
-
         }
+    }
+
+    // ✅ Diálogo de confirmación para eliminar
+    carToDelete?.let { car ->
+        AlertDialog(
+            onDismissRequest = { carToDelete = null },
+            title = { Text("Deseas borrarlo?") },
+            text = { Text("Borrar ${car.name}?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteCar(car.id.toString())
+                    carToDelete = null
+                }) {
+                    Text("Borrar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { carToDelete = null }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }

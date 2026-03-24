@@ -69,7 +69,8 @@ dependencies {
     implementation(libs.androidx.drawerlayout)
     implementation(libs.androidx.fragment.ktx)
 
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0") // Keep your serialization version
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    implementation(libs.androidx.compose.foundation) // Keep your serialization version
     val roomVersion = "2.7.1" // Use the latest stable version
     implementation("androidx.room:room-runtime:$roomVersion")
     kapt("androidx.room:room-compiler:$roomVersion") // Use kapt

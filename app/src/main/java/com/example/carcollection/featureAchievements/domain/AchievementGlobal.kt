@@ -1,6 +1,16 @@
 package com.example.carcollection.featureAchievements.domain
 
 /**
+ * Rareza del logro que determina la cantidad de XP otorgada
+ */
+enum class AchievementRarity {
+    COMUN,      // XP estándar (200 XP por defecto)
+    RARO,       // XP media (400 XP)
+    LEGENDARIO, // XP alta (800 XP)
+    SPECIAL     // XP muy alta (1200 XP)
+}
+
+/**
  * Definición global de un logro.
  * Describe QUÉ se debe cumplir, no el progreso del usuario.
  */
@@ -12,6 +22,9 @@ data class AchievementGlobal(
 
     // Categoría lógica del logro
     val category: AchievementCategory = AchievementCategory.COLLECTION,
+
+    // Rareza del logro (determina XP otorgada)
+    val rarity: AchievementRarity = AchievementRarity.COMUN,
 
     // Condiciones que debe cumplir un carro
     // TODAS las condiciones deben cumplirse (AND)
@@ -60,7 +73,11 @@ data class AchievementCondition(
     val matchFields: List<CarMatchField> = emptyList(),
 
     // Tipo de comparación
-    val matchType: MatchType = MatchType.CONTAINS
+    val matchType: MatchType = MatchType.CONTAINS,
+
+    // Si TRUE: permite contar múltiples carros por concepto (ej: 10 Ferrari + 10 Lamborghini)
+    // Si FALSE: solo cuenta 1 carro por concepto (ej: 1 Ferrari + 1 Lamborghini)
+    val allowMultiplePerConcept: Boolean = false
 )
 
 /**

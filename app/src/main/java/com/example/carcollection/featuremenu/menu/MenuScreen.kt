@@ -1,5 +1,6 @@
 package com.example.carcollection.featuremenu.menu
 
+import android.content.res.Configuration
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
@@ -35,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -57,6 +60,40 @@ fun MenuScreen(
     val userName = currentUser?.username ?: "Usuario"
     val isAdmin = currentUser?.isAdmin ?: false
 
+    // ✅ Detectar orientación y tamaño de pantalla
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val screenWidthDp = configuration.screenWidthDp
+    val isTablet = screenWidthDp >= 600
+
+    // ✅ Determinar número de columnas para grid de botones
+    val columns = when {
+        isTablet && isLandscape -> 3
+        isTablet -> 2
+        isLandscape -> 2
+        else -> 1
+    }
+
+    // ✅ Crear lista de botones del menú
+    data class MenuItemData(
+        val text: String,
+        val icon: ImageVector,
+        val description: String,
+        val onClick: () -> Unit,
+        val isAdmin: Boolean = false,
+        val showForAdmin: Boolean = false
+    )
+
+    val menuItems = listOf(
+        MenuItemData("Colección", Icons.Filled.CarCrash, "Explora tus autos", onNavigateToCollection),
+        MenuItemData("Tags", Icons.Filled.Tag, "Organiza por etiquetas", onNavigateToTags),
+        MenuItemData("Consultas", Icons.Default.QueryStats, "Estadísticas y análisis", onNavigateToConsultas),
+        MenuItemData("Administrar Logros", Icons.Filled.AddCircle, "Crear, editar y eliminar logros", onNavigateToAddAchievement, isAdmin = true, showForAdmin = true)
+    )
+
+    // ✅ Filtrar items visibles (excluir admin si no es admin)
+    val visibleItems = menuItems.filter { !it.showForAdmin || (it.showForAdmin && isAdmin) }
+
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -66,7 +103,7 @@ fun MenuScreen(
                 .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            contentPadding = PaddingValues(vertical = 24.dp, )
+            contentPadding = PaddingValues(vertical = 24.dp)
         ) {
             // Header Card con saludo
             item {
@@ -88,42 +125,45 @@ fun MenuScreen(
                 )
             }
 
-            // Botones del menú con mejor diseño
-            item {
-                MenuButton(
-                    text = "Colección",
-                    icon = Icons.Filled.CarCrash,
-                    description = "Explora tus autos",
-                    onClick = onNavigateToCollection
-                )
-            }
-            item {
-                MenuButton(
-                    text = "Tags",
-                    icon = Icons.Filled.Tag,
-                    description = "Organiza por etiquetas",
-                    onClick = onNavigateToTags
-                )
-            }
-            item {
-                MenuButton(
-                    text = "Consultas",
-                    icon = Icons.Default.QueryStats,
-                    description = "Estadísticas y análisis",
-                    onClick = onNavigateToConsultas
-                )
-            }
-
-            // Solo mostrar el botón de Administrar Logros para administradores
-            if (isAdmin) {
-                item {
+            // ✅ Botones del menú en grid responsivo
+            if (columns == 1) {
+                // 📱 Móvil vertical: 1 botón por fila
+                items(visibleItems.size) { index ->
+                    val item = visibleItems[index]
                     MenuButton(
-                        text = "Administrar Logros",
-                        icon = Icons.Filled.AddCircle,
-                        description = "Crear, editar y eliminar logros",
-                        onClick = onNavigateToAddAchievement,
-                        isAdmin = true
+                        text = item.text,
+                        icon = item.icon,
+                        description = item.description,
+                        onClick = item.onClick,
+                        isAdmin = item.isAdmin
                     )
+                }
+            } else {
+                // 📊 Tablet/Horizontal: múltiples botones por fila
+                val groupedItems = visibleItems.chunked(columns)
+                items(groupedItems.size) { rowIndex ->
+                    val rowItems = groupedItems[rowIndex]
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        rowItems.forEach { item ->
+                            Box(modifier = Modifier.weight(1f)) {
+                                MenuButton(
+                                    text = item.text,
+                                    icon = item.icon,
+                                    description = item.description,
+                                    onClick = item.onClick,
+                                    isAdmin = item.isAdmin,
+                                    isCompact = true
+                                )
+                            }
+                        }
+                        // Espacios en blanco para completar la fila
+                        repeat(columns - rowItems.size) {
+                            Box(modifier = Modifier.weight(1f))
+                        }
+                    }
                 }
             }
 
@@ -226,7 +266,8 @@ fun MenuButton(
     icon: ImageVector,
     description: String = "",
     onClick: () -> Unit,
-    isAdmin: Boolean = false
+    isAdmin: Boolean = false,
+    isCompact: Boolean = false
 ) {
     Card(
         onClick = onClick,
@@ -250,61 +291,110 @@ fun MenuButton(
         ),
         shape = MaterialTheme.shapes.large
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start
-        ) {
-            Surface(
-                modifier = Modifier.size(56.dp),
-                shape = MaterialTheme.shapes.medium,
-                color = if (isAdmin)
-                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)
-                else
-                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f)
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = text,
-                        modifier = Modifier.size(28.dp),
-                        tint = if (isAdmin)
-                            MaterialTheme.colorScheme.onTertiaryContainer
-                        else
-                            MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
+        if (isCompact) {
+            // 📊 Modo compacto para tablets/horizontal - layout vertical
             Column(
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Surface(
+                    modifier = Modifier.size(48.dp),
+                    shape = MaterialTheme.shapes.medium,
+                    color = if (isAdmin)
+                        MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)
+                    else
+                        MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f)
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = text,
+                            modifier = Modifier.size(24.dp),
+                            tint = if (isAdmin)
+                                MaterialTheme.colorScheme.onTertiaryContainer
+                            else
+                                MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 Text(
                     text = text,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = if (isAdmin)
                         MaterialTheme.colorScheme.onTertiaryContainer
                     else
-                        MaterialTheme.colorScheme.onSecondaryContainer
+                        MaterialTheme.colorScheme.onSecondaryContainer,
+                    textAlign = TextAlign.Center
                 )
-                if (description.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(2.dp))
+            }
+        } else {
+            // 📱 Modo normal para móvil - layout horizontal
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
+            ) {
+                Surface(
+                    modifier = Modifier.size(56.dp),
+                    shape = MaterialTheme.shapes.medium,
+                    color = if (isAdmin)
+                        MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)
+                    else
+                        MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f)
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = text,
+                            modifier = Modifier.size(28.dp),
+                            tint = if (isAdmin)
+                                MaterialTheme.colorScheme.onTertiaryContainer
+                            else
+                                MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
                     Text(
-                        text = description,
-                        style = MaterialTheme.typography.bodySmall,
+                        text = text,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
                         color = if (isAdmin)
-                            MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+                            MaterialTheme.colorScheme.onTertiaryContainer
                         else
-                            MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                            MaterialTheme.colorScheme.onSecondaryContainer
                     )
+                    if (description.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (isAdmin)
+                                MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+                            else
+                                MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                        )
+                    }
                 }
             }
         }

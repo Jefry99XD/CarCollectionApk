@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.OnBackPressedCallback
 import androidx.compose.ui.platform.ComposeView
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
@@ -44,6 +45,20 @@ class MainActivity : ComponentActivity() {
             CarCollectionTheme {
                 val navController = rememberNavController()
                 val userViewModel = UserViewModel()
+
+                // ✅ Sincronizar back button del sistema con NavController
+                val backPressedCallback = object : OnBackPressedCallback(true) {
+                    override fun handleOnBackPressed() {
+                        if (!navController.popBackStack()) {
+                            // Si no hay stack anterior, permite que el sistema maneje el back
+                            isEnabled = false
+                            onBackPressedDispatcher.onBackPressed()
+                        }
+                    }
+                }
+
+                // Registrar el callback
+                this.onBackPressedDispatcher.addCallback(this, backPressedCallback)
 
                 TubaCollectionApp(
                     userViewModel, navController

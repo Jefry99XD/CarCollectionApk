@@ -2,6 +2,8 @@ package com.example.carcollection.featureuser.data
 
 import android.net.Uri
 import androidx.core.net.toUri
+import com.example.carcollection.featureAchievements.domain.AchievementGlobal
+import com.example.carcollection.featureAchievements.domain.AchievementRarity
 import com.example.carcollection.featurecar.domain.Car
 import com.example.carcollection.featureuser.domain.User
 import com.example.carcollection.featureuser.domain.XPActivity
@@ -499,6 +501,22 @@ class UserMethods {
     // ════════════════════════════════════════════════════════════════
 
     /**
+     * Calcular XP basado en la calidad del carro
+     * Escala desde 100 (Basico) hasta 2000 (máxima rareza)
+     */
+    fun calculateXPByCarQuality(quality: String?): Int {
+        return when (quality?.uppercase()) {
+            "BASICO" -> 100
+            "STANDARD" -> 150
+            "TH" -> 250        // Treasure Hunt
+            "STH" -> 500       // Super Treasure Hunt
+            "RLC" -> 1500      // Real Riders/Collector Edition
+            "SPECIAL" -> 2000  // Máxima rareza
+            else -> 100        // Default
+        }
+    }
+
+    /**
      * Agregar XP al usuario actual
      * @param amount Cantidad de XP a agregar
      * @param source Fuente de la XP (CAR_ADDED, ACHIEVEMENT_UNLOCKED)
@@ -610,6 +628,8 @@ class UserMethods {
     /**
      * Migración retroactiva: Calcular y asignar XP a usuarios existentes
      * basado en sus carros y logros actuales
+     *
+     * Calcula la diferencia y AGREGA solo lo faltante, no sobrescribe
      */
     suspend fun migrateUserXP(): Result<User> {
         val firebaseUser = auth.currentUser
@@ -618,36 +638,73 @@ class UserMethods {
         val userId = firebaseUser.uid
 
         return try {
-            // Obtener cantidad de carros
+            val userDocRef = db.collection("users").document(userId)
+            val userSnapshot = userDocRef.get().await()
+            val currentUser = userSnapshot.toObject(User::class.java)
+                ?: throw Exception("User not found")
+
+            // Obtener todos los carros con sus calidades
             val carsSnapshot = db.collection("users")
                 .document(userId)
                 .collection("carsCollection")
                 .get()
                 .await()
-            val carsCount = carsSnapshot.size()
 
-            // Obtener cantidad de logros desbloqueados
+            // Calcular XP total de carros basado en calidad
+            var xpFromCars = 0
+            for (carDoc in carsSnapshot.documents) {
+                val quality = carDoc.getString("quality")
+                val carXP = calculateXPByCarQuality(quality)
+                xpFromCars += carXP
+            }
+
+            // Obtener todos los logros desbloqueados con sus rarezas
             val achievementsSnapshot = db.collection("users")
                 .document(userId)
                 .collection("achievements")
                 .whereEqualTo("unlocked", true)
                 .get()
                 .await()
-            val achievementsCount = achievementsSnapshot.size()
 
-            // Calcular XP total
-            val xpFromCars = carsCount * XPSource.CAR_ADDED.xpAmount
-            val xpFromAchievements = achievementsCount * XPSource.ACHIEVEMENT_UNLOCKED.xpAmount
-            val totalXP = xpFromCars + xpFromAchievements
+            // Calcular XP total de logros basado en rareza
+            var xpFromAchievements = 0
+            for (achievementDoc in achievementsSnapshot.documents) {
+                val achievementId = achievementDoc.id
+                // Obtener el logro global para conocer su rareza
+                try {
+                    val globalAchievement = db.collection("achievements")
+                        .document(achievementId)
+                        .get()
+                        .await()
+                        .toObject(AchievementGlobal::class.java)
 
-            // Calcular nivel
-            val level = User.calculateLevelFromXP(totalXP.toLong())
+                    if (globalAchievement != null) {
+                        val xpAmount = when (globalAchievement.rarity) {
+                            AchievementRarity.COMUN -> 200
+                            AchievementRarity.RARO -> 400
+                            AchievementRarity.LEGENDARIO -> 800
+                            AchievementRarity.SPECIAL -> 1200
+                        }
+                        xpFromAchievements += xpAmount
+                    }
+                } catch (e: Exception) {
+                    // Si no encontramos el logro global, usar default
+                    xpFromAchievements += 200
+                }
+            }
+
+            // Calcular XP total que DEBERÍA tener
+            val calculatedTotalXP = xpFromCars + xpFromAchievements
+
+
+            // Nuevos totales: usar los calculados, no sumar
+            val newTotalXP = calculatedTotalXP.toLong()
+            val newLevel = User.calculateLevelFromXP(newTotalXP)
 
             // Actualizar usuario
-            val userDocRef = db.collection("users").document(userId)
             val updates = mapOf(
-                "totalXP" to totalXP.toLong(),
-                "level" to level,
+                "totalXP" to newTotalXP,
+                "level" to newLevel,
                 "xpFromCars" to xpFromCars.toLong(),
                 "xpFromAchievements" to xpFromAchievements.toLong()
             )
@@ -667,8 +724,9 @@ class UserMethods {
     }
 
     /**
-     * Verificar si el usuario necesita migración de XP
-     * (si totalXP == 0 pero tiene carros/logros)
+     * Verificar si el usuario necesita migración/recalculación de XP
+     * Ahora SIEMPRE recalcula la XP si tiene carros o logros, independiente de si ya tiene XP
+     * (para corregir cualquier discrepancia en el cálculo)
      */
     suspend fun needsXPMigration(): Result<Boolean> {
         val firebaseUser = auth.currentUser
@@ -684,10 +742,6 @@ class UserMethods {
                 return Result.success(false)
             }
 
-            // Si ya tiene XP, no necesita migración
-            if (user.totalXP > 0) {
-                return Result.success(false)
-            }
 
             // Verificar si tiene carros o logros
             val carsCount = db.collection("users")

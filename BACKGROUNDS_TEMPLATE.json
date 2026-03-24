@@ -1,0 +1,33 @@
+{
+  "categories": [
+    {
+      "category": "Tus Categoría de Fondos 1",
+      "backgrounds": [
+        {
+          "id": "tu_fondo_1",
+          "name": "Nombre del Fondo 1",
+          "url": "https://tudominio.com/path/imagen1.jpg",
+          "thumbnailUrl": "https://tudominio.com/path/imagen1_thumb.jpg"
+        },
+        {
+          "id": "tu_fondo_2",
+          "name": "Nombre del Fondo 2",
+          "url": "https://tudominio.com/path/imagen2.jpg",
+          "thumbnailUrl": "https://tudominio.com/path/imagen2_thumb.jpg"
+        }
+      ]
+    },
+    {
+      "category": "Tu Categoría de Fondos 2",
+      "backgrounds": [
+        {
+          "id": "otro_fondo_1",
+          "name": "Nombre del Otro Fondo",
+          "url": "https://tudominio.com/path/imagen3.jpg",
+          "thumbnailUrl": "https://tudominio.com/path/imagen3_thumb.jpg"
+        }
+      ]
+    }
+  ]
+}
+

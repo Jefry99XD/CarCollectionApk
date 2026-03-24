@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -61,6 +62,7 @@ fun AddAchievementForm(
     var goal by remember { mutableStateOf("") }
 
     var category by remember { mutableStateOf(AchievementCategory.COLLECTION) }
+    var rarity by remember { mutableStateOf(AchievementRarity.COMUN) }
     var hidden by remember { mutableStateOf(false) }
     var active by remember { mutableStateOf(true) }
     var conditionLogic by remember { mutableStateOf(ConditionLogic.AND) }
@@ -70,8 +72,12 @@ fun AddAchievementForm(
     var aliases by remember { mutableStateOf("") }
     var matchType by remember { mutableStateOf(MatchType.EXACT) }
     var selectedFields by remember { mutableStateOf(setOf<CarMatchField>()) }
+    var allowMultiplePerConcept by remember { mutableStateOf(false) }
 
     val conditions = remember { mutableStateListOf<AchievementCondition>() }
+
+    // Para editar condiciones
+    var editingConditionIndex by remember { mutableStateOf<Int?>(null) }
 
     var errorMessage by remember { mutableStateOf("") }
     var successMessage by remember { mutableStateOf("") }
@@ -90,6 +96,7 @@ fun AddAchievementForm(
                         iconUrl = achievement.iconUrl
                         goal = achievement.goal.toString()
                         category = achievement.category
+                        rarity = achievement.rarity
                         hidden = achievement.hidden
                         active = achievement.active
                         conditionLogic = achievement.rules.conditionLogic
@@ -175,6 +182,24 @@ fun AddAchievementForm(
                 options = AchievementCategory.entries.map { it.name },
                 onSelected = { selectedCategory ->
                     category = AchievementCategory.valueOf(selectedCategory)
+                }
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            /* ───── Rareza ───── */
+            Text("Rareza (Determina XP otorgada)", style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = "COMUN = 200 XP | RARO = 400 XP | LEGENDARIO = 800 XP | SPECIAL = 1200 XP",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            DropdownSelector(
+                selected = rarity.name,
+                options = AchievementRarity.entries.map { it.name },
+                onSelected = { selectedRarity ->
+                    rarity = AchievementRarity.valueOf(selectedRarity)
                 }
             )
 
@@ -334,31 +359,115 @@ fun AddAchievementForm(
                 }
             )
 
+            Spacer(Modifier.height(8.dp))
+
+            // Checkbox para permitir múltiples conceptos
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = allowMultiplePerConcept,
+                    onCheckedChange = { allowMultiplePerConcept = it }
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Contar múltiples por concepto",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        if (allowMultiplePerConcept)
+                            "✓ Contará todos los carros (Ej: 10 Ferrari + 10 Lamborghini = 20)"
+                        else
+                            "✗ Solo contará 1 por concepto (Ej: 1 Ferrari + 1 Lamborghini = 2)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
             Spacer(Modifier.height(10.dp))
 
-            Button(
-                onClick = {
-                    // Validate - concept can be empty for "any car" achievements
-                    if (selectedFields.isEmpty()) {
-                        errorMessage = "Selecciona al menos un campo a evaluar"
-                        return@Button
+            // Mostrar botón de cancelar si estamos editando
+            if (editingConditionIndex != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            editingConditionIndex = null
+                            concept = ""
+                            aliases = ""
+                            selectedFields = emptySet()
+                            matchType = MatchType.EXACT
+                            allowMultiplePerConcept = false
+                        }
+                    ) {
+                        Text("Cancelar edición")
                     }
+                    Button(
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            if (selectedFields.isEmpty()) {
+                                errorMessage = "Selecciona al menos un campo a evaluar"
+                                return@Button
+                            }
 
-                    conditions += AchievementCondition(
-                        concept = concept.trim(),
-                        aliases = aliases.split(",").map { it.trim() }.filter { it.isNotEmpty() },
-                        matchFields = selectedFields.toList(),
-                        matchType = matchType
-                    )
+                            val index = editingConditionIndex ?: return@Button
+                            conditions[index] = AchievementCondition(
+                                concept = concept.trim(),
+                                aliases = aliases.split(",").map { it.trim() }.filter { it.isNotEmpty() },
+                                matchFields = selectedFields.toList(),
+                                matchType = matchType,
+                                allowMultiplePerConcept = allowMultiplePerConcept
+                            )
 
-                    // Reset form
-                    concept = ""
-                    aliases = ""
-                    selectedFields = emptySet()
-                    errorMessage = ""
+                            editingConditionIndex = null
+                            concept = ""
+                            aliases = ""
+                            selectedFields = emptySet()
+                            matchType = MatchType.EXACT
+                            allowMultiplePerConcept = false
+                            errorMessage = ""
+                        }
+                    ) {
+                        Text("Actualizar condición")
+                    }
                 }
-            ) {
-                Text("Agregar condición")
+            } else {
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        // Validate - concept can be empty for "any car" achievements
+                        if (selectedFields.isEmpty()) {
+                            errorMessage = "Selecciona al menos un campo a evaluar"
+                            return@Button
+                        }
+
+                        conditions += AchievementCondition(
+                            concept = concept.trim(),
+                            aliases = aliases.split(",").map { it.trim() }.filter { it.isNotEmpty() },
+                            matchFields = selectedFields.toList(),
+                            matchType = matchType,
+                            allowMultiplePerConcept = allowMultiplePerConcept
+                        )
+
+                        // Reset form
+                        concept = ""
+                        aliases = ""
+                        selectedFields = emptySet()
+                        matchType = MatchType.EXACT
+                        allowMultiplePerConcept = false
+                        errorMessage = ""
+                    }
+                ) {
+                    Text("Agregar condición")
+                }
             }
 
             Spacer(Modifier.height(16.dp))
@@ -410,13 +519,40 @@ fun AddAchievementForm(
                                     text = "Tipo: ${condition.matchType.name}",
                                     style = MaterialTheme.typography.bodySmall
                                 )
+                                if (condition.allowMultiplePerConcept) {
+                                    Text(
+                                        text = "✓ Múltiples por concepto",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                             }
-                            IconButton(onClick = { conditions.removeAt(index) }) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Eliminar condición",
-                                    tint = MaterialTheme.colorScheme.error
-                                )
+                            Row {
+                                IconButton(
+                                    onClick = {
+                                        // Cargar condición en el formulario
+                                        concept = condition.concept
+                                        aliases = condition.aliases.joinToString(", ")
+                                        selectedFields = condition.matchFields.toSet()
+                                        matchType = condition.matchType
+                                        allowMultiplePerConcept = condition.allowMultiplePerConcept
+                                        editingConditionIndex = index
+                                        errorMessage = ""
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = "Editar condición",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                IconButton(onClick = { conditions.removeAt(index) }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Eliminar condición",
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
                             }
                         }
                     }
@@ -520,6 +656,7 @@ fun AddAchievementForm(
                             description = description,
                             iconUrl = iconUrl,
                             category = category,
+                            rarity = rarity,
                             conditions = if (category == AchievementCategory.USER) emptyList() else conditions.toList(),
                             goal = goalInt,
                             rules = AchievementRules(

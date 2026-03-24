@@ -64,7 +64,7 @@ fun AchievementList(
             }
 
             matchesSearch && matchesFilter
-        }
+        }.sortedBy { (achievement, _) -> achievement.title } // Ordenar alfabéticamente
     }
 
     when {

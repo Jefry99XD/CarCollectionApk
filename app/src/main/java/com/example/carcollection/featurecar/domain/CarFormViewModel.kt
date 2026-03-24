@@ -1,12 +1,13 @@
 package com.example.carcollection.featurecar.domain
 
+import android.content.Context
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.carcollection.featurecar.data.CarMethods
 import com.example.carcollection.featurecar.presentation.add_edit_car.BackgroundCategory
-import com.example.carcollection.featurecar.presentation.add_edit_car.loadBackgroundCategories
+import com.example.carcollection.featurecar.presentation.add_edit_car.loadBackgroundCategoriesFromJson
 import com.example.carcollection.featuretags.data.TagsMethods
 import com.example.carcollection.featuretags.domain.Tag
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +18,7 @@ import kotlinx.coroutines.launch
 class CarFormViewModel(
     private val carMethods: CarMethods,
     private val tagsMethods: TagsMethods,
+    private val context: Context
 ) : ViewModel() {
 
     // Form fields
@@ -36,7 +38,7 @@ class CarFormViewModel(
         private set
     var quality = mutableStateOf("")
         private set
-    var backgroundName = mutableStateOf("fondo")
+    var backgroundName = mutableStateOf("fondo_1")
         private set
 
     private var currentCarId: String? = null
@@ -59,8 +61,8 @@ class CarFormViewModel(
 
     init {
         viewModelScope.launch {
-            // Cargar backgrounds
-            _backgroundCategories.value = loadBackgroundCategories()
+            // Cargar backgrounds desde JSON
+            _backgroundCategories.value = loadBackgroundCategoriesFromJson(context)
 
             // Cargar tags
             availableTags.value = tagsMethods.getAllTags()
@@ -158,12 +160,13 @@ class CarFormViewModel(
 // ViewModelFactory for CarFormViewModel
 class CarFormViewModelFactory(
     private val carMethods: CarMethods,
-    private val tagsMethods: TagsMethods
+    private val tagsMethods: TagsMethods,
+    private val context: Context
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(CarFormViewModel::class.java)) {
-            return CarFormViewModel(carMethods, tagsMethods) as T
+            return CarFormViewModel(carMethods, tagsMethods, context) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
