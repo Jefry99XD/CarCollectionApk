@@ -45,7 +45,7 @@ class UserMethods {
                 .build()
 
             firebaseUser.updateProfile(profileUpdates).await()
-            println("Firebase Auth profile updated for UID: $uid")
+            SecureLogger.success("Firebase Auth profile updated for UID")
 
 
             // 3. Create the user document in Cloud Firestore
@@ -60,11 +60,11 @@ class UserMethods {
             )
 
             db.collection("users")
-                .document(uid) // Use the Auth UID as the document ID
-                .set(userFirestoreData) // Store the User data class directly
+                .document(uid)
+                .set(userFirestoreData)
                 .await()
 
-            println("User document for UID: $uid saved to Firestore.")
+            SecureLogger.success("User document saved to Firestore")
 
             Result.success(userFirestoreData) // Return the created User object
 
@@ -696,9 +696,10 @@ class UserMethods {
             // Calcular XP total que DEBERÍA tener
             val calculatedTotalXP = xpFromCars + xpFromAchievements
 
-
-            // Nuevos totales: usar los calculados, no sumar
-            val newTotalXP = calculatedTotalXP.toLong()
+            // 🔹 FIX: Usar maxOf para nunca perder XP
+            // Si XP calculada es mayor que la actual, usar calculada
+            // Si XP actual es mayor, mantener la actual (nunca bajar XP)
+            val newTotalXP = maxOf(currentUser.totalXP, calculatedTotalXP.toLong())
             val newLevel = User.calculateLevelFromXP(newTotalXP)
 
             // Actualizar usuario

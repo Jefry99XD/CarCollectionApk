@@ -7,8 +7,11 @@ import com.example.carcollection.featurecar.data.CarMethods
 import com.example.carcollection.featurecar.domain.Car
 import com.example.carcollection.featuretags.data.TagsMethods
 import com.example.carcollection.featureuser.data.UserMethods
+import com.example.carcollection.featureuser.data.SecureLogger
 import com.example.carcollection.featureuser.domain.User
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -50,6 +53,10 @@ class UserViewModel(
     private val achievementMethods = AchievementMethods()
 
     private val auth = FirebaseAuth.getInstance()
+    private val db = FirebaseFirestore.getInstance()
+
+    // 🔹 Listener para sincronización real-time del usuario
+    private var userProfileListener: ListenerRegistration? = null
 
     private val authStateListener = FirebaseAuth.AuthStateListener {
         viewModelScope.launch {
@@ -84,9 +91,42 @@ class UserViewModel(
         super.onCleared()
         try {
             auth.removeAuthStateListener(authStateListener)
+            // 🔹 Remover listener de Firestore cuando el ViewModel se destruye
+            userProfileListener?.remove()
+            userProfileListener = null
         } catch (e: Exception) {
             // ignore
         }
+    }
+
+    // 🔹 NUEVA FUNCIÓN: Sincronización real-time del perfil
+    fun startRealtimeSync() {
+        val currentUser = auth.currentUser ?: return
+        val userId = currentUser.uid
+
+        // Remover listener anterior si existe
+        userProfileListener?.remove()
+
+        // 🔹 Configurar listener de Firestore para cambios en tiempo real
+        userProfileListener = db.collection("users")
+            .document(userId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    _errorMessage.value = "Error en sincronización: ${error.message}"
+                    return@addSnapshotListener
+                }
+
+                if (snapshot != null && snapshot.exists()) {
+                    try {
+                        val updatedUser = snapshot.toObject(User::class.java)?.copy(uid = userId)
+                        viewModelScope.launch {
+                            _user.value = updatedUser
+                        }
+                    } catch (e: Exception) {
+                        _errorMessage.value = "Error al procesar datos: ${e.message}"
+                    }
+                }
+            }
     }
 
     fun fetchUserProfile() {
@@ -99,6 +139,9 @@ class UserViewModel(
                 _user.value = result.getOrNull()
                 _errorMessage.value = result.exceptionOrNull()?.message
                 _isLoading.value = false
+
+                // 🔹 Iniciar sincronización real-time después de cargar perfil
+                startRealtimeSync()
             }
 
             // Verificar si necesita migración de XP
@@ -405,11 +448,11 @@ class UserViewModel(
                     val result = userMethods.migrateUserXP()
                     if (result.isSuccess) {
                         _user.value = result.getOrNull()
-                        println("✅ XP migrated successfully for user")
+                        SecureLogger.success("XP migrated successfully")
                     }
                 }
             } catch (e: Exception) {
-                println("⚠️ Failed to check/migrate XP: ${e.message}")
+                SecureLogger.failure("Failed to check/migrate XP", e.message)
             }
         }
     }

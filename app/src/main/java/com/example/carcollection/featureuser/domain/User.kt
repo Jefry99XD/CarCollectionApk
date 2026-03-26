@@ -95,18 +95,34 @@ data class User(
 
     companion object {
         // Cálculo de XP necesaria para un nivel específico
+        // Usa BigDecimal para niveles altos para evitar pérdida de precisión
         fun calculateXPForLevel(level: Int): Long {
             return when {
                 level <= 0 -> 100L
-                level <= 20 -> (100 * Math.pow(1.25, level - 1.0)).toLong()
+                level <= 20 -> {
+                    // 🔹 Niveles bajos: usar Math.pow normal
+                    (100 * Math.pow(1.25, level - 1.0)).toLong()
+                }
                 level <= 50 -> {
-                    val xp20 = (100 * Math.pow(1.25, 19.0)).toLong()
-                    (xp20 * Math.pow(1.20, level - 20.0)).toLong()
+                    // 🔹 Niveles medios: usar BigDecimal
+                    val base = java.math.BigDecimal("100")
+                    val multiplier = java.math.BigDecimal("1.25")
+                    val xp20 = base * multiplier.pow(19)
+
+                    val xp20Value = xp20.toLong()
+                    val additionalMultiplier = java.math.BigDecimal("1.20")
+                    (xp20Value * additionalMultiplier.pow(level - 20).toLong())
                 }
                 else -> {
-                    val xp20 = (100 * Math.pow(1.25, 19.0)).toLong()
-                    val xp50 = (xp20 * Math.pow(1.20, 30.0)).toLong()
-                    (xp50 * Math.pow(1.15, level - 50.0)).toLong()
+                    // 🔹 Niveles altos: usar BigDecimal para máxima precisión
+                    val base = java.math.BigDecimal("100")
+                    val multiplier125 = java.math.BigDecimal("1.25")
+                    val multiplier120 = java.math.BigDecimal("1.20")
+                    val multiplier115 = java.math.BigDecimal("1.15")
+
+                    val xp20 = base * multiplier125.pow(19)
+                    val xp50 = xp20 * multiplier120.pow(30)
+                    (xp50 * multiplier115.pow(level - 50)).toLong()
                 }
             }
         }

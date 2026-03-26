@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,10 @@ import androidx.compose.material.icons.filled.FilterAltOff
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -86,16 +91,9 @@ import androidx.navigation.NavHostController
 import com.example.carcollection.featurecar.domain.Car
 import com.example.carcollection.featurecar.domain.CarViewModel
 import com.example.carcollection.featuremenu.main.components.CarCard
+import com.example.carcollection.featuretags.domain.Tag
 import com.example.carcollection.presentation.navigation.NavRoutes
-
-// ✅ Enum para opciones de ordenamiento
-enum class SortOption(val display: String) {
-    NAME("Nombre (A-Z)"),
-    DATE("Fecha de creación")
-}
-
-// ✅ Constante movida fuera del composable para evitar recreación
-private val ITEMS_PER_PAGE_OPTIONS = listOf(5, 10, 20, 50)
+import androidx.core.graphics.toColorInt
 
 @Composable
 fun DropdownMenuBox(
@@ -136,208 +134,6 @@ fun DropdownMenuBox(
     }
 }
 
-@Composable
-fun FilterSection(
-    viewModel: CarViewModel,
-    modifier: Modifier = Modifier,
-    expanded: Boolean,
-    activeFiltersCount: Int,
-    // ✅ Recibir listas como parámetros para evitar recolección duplicada
-    allBrands: List<String>,
-    allYears: List<String>,
-    allSeries: List<String>,
-    allTags: List<com.example.carcollection.featuretags.domain.Tag>,
-    allColors: List<String>,
-    allTypes: List<String>,
-    allQualities: List<String>,
-    // ✅ Recibir selecciones como parámetros
-    selectedBrand: String?,
-    selectedYear: String?,
-    selectedSeries: String?,
-    selectedTag: String?,
-    selectedColor: String?,
-    selectedType: String?,
-    selectedQuality: String?
-) {
-    // ✅ Ya no recolectamos estados aquí, vienen como parámetros
-
-    Column(modifier = modifier) {
-        AnimatedVisibility(
-            visible = expanded,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
-        ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    // Header de filtros
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.FilterAlt,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Text(
-                                "Filtros Activos",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                            if (activeFiltersCount > 0) {
-                                Badge(
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary
-                                ) {
-                                    Text(
-                                        text = activeFiltersCount.toString(),
-                                        style = MaterialTheme.typography.labelSmall
-                                    )
-                                }
-                            }
-                        }
-
-                        if (activeFiltersCount > 0) {
-                            TextButton(
-                                onClick = { viewModel.clearFilters() },
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Limpiar", style = MaterialTheme.typography.labelMedium)
-                            }
-                        }
-                    }
-
-                    // Grid de filtros
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Box(modifier = Modifier.weight(1f)) {
-                                DropdownMenuBox(
-                                    selectedOption = selectedBrand ?: "Marcas",
-                                    options = listOf("Marcas") + allBrands,
-                                    onOptionSelected = {
-                                        viewModel.onBrandSelected(if (it == "Marcas") null else it)
-                                    }
-                                )
-                            }
-                            Box(modifier = Modifier.weight(1f)) {
-                                DropdownMenuBox(
-                                    selectedOption = selectedYear ?: "Años",
-                                    options = listOf("Años") + allYears,
-                                    onOptionSelected = {
-                                        viewModel.onYearSelected(if (it == "Años") null else it)
-                                    }
-                                )
-                            }
-                        }
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Box(modifier = Modifier.weight(1f)) {
-                                DropdownMenuBox(
-                                    selectedOption = selectedSeries ?: "Serie",
-                                    options = listOf("Serie") + allSeries,
-                                    onOptionSelected = {
-                                        viewModel.onSeriesSelected(if (it == "Serie") null else it)
-                                    }
-                                )
-                            }
-                            if (allTags.isNotEmpty()) {
-                                Box(modifier = Modifier.weight(1f)) {
-                                    val tagNames = allTags.map { it.name }
-                                    DropdownMenuBox(
-                                        selectedOption = selectedTag ?: "Tag",
-                                        options = listOf("Tag") + tagNames,
-                                        onOptionSelected = {
-                                            viewModel.onTagSelected(if (it == "Tag") null else it)
-                                        }
-                                    )
-                                }
-                            } else {
-                                Spacer(modifier = Modifier.weight(1f))
-                            }
-                        }
-
-                        // Nueva fila para color y tipo
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Box(modifier = Modifier.weight(1f)) {
-                                DropdownMenuBox(
-                                    selectedOption = selectedColor ?: "Color",
-                                    options = listOf("Color") + allColors,
-                                    onOptionSelected = {
-                                        viewModel.onColorSelected(if (it == "Color") null else it)
-                                    }
-                                )
-                            }
-                            Box(modifier = Modifier.weight(1f)) {
-                                DropdownMenuBox(
-                                    selectedOption = selectedType ?: "Tipo",
-                                    options = listOf("Tipo") + allTypes,
-                                    onOptionSelected = {
-                                        viewModel.onTypeSelected(if (it == "Tipo") null else it)
-                                    }
-                                )
-                            }
-                        }
-
-                        // Nueva fila para calidad
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Box(modifier = Modifier.weight(1f)) {
-                                DropdownMenuBox(
-                                    selectedOption = selectedQuality ?: "Calidad",
-                                    options = listOf("Calidad") + allQualities,
-                                    onOptionSelected = {
-                                        viewModel.onQualitySelected(if (it == "Calidad") null else it)
-                                    }
-                                )
-                            }
-                            Spacer(modifier = Modifier.weight(1f))
-                        }
-                    }
-                }
-            }
-
-        }
-    }
-}
-
 @SuppressLint("UnrememberedMutableState")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -349,6 +145,9 @@ fun CollectionViewScreen(
     navController: NavHostController
 ) {
     val carsList by viewModel.filteredCars.collectAsState()
+    val paginatedCars by viewModel.paginatedCars.collectAsState()
+    val currentPage by viewModel.currentPage.collectAsState()
+    val totalPages by viewModel.totalPages.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -362,48 +161,34 @@ fun CollectionViewScreen(
     val allTypes by viewModel.allTypes.collectAsState()
     val allQualities by viewModel.allQualities.collectAsState()
 
-    // ✅ Recolectar estados de filtros una sola vez (fuera de TopAppBar)
-    val selectedBrand by viewModel.selectedBrand.collectAsState()
-    val selectedYear by viewModel.selectedYear.collectAsState()
-    val selectedSeries by viewModel.selectedSeries.collectAsState()
-    val selectedTag by viewModel.selectedTag.collectAsState()
-    val selectedColor by viewModel.selectedColor.collectAsState()
-    val selectedType by viewModel.selectedType.collectAsState()
-    val selectedQuality by viewModel.selectedQuality.collectAsState()
-
-    var itemsPerPage by remember { mutableIntStateOf(viewModel.savedItemsPerPage.value) }
-    var currentPage by rememberSaveable { mutableIntStateOf(viewModel.savedPage.value) }
-    var sortBy by remember { mutableStateOf(SortOption.NAME) }
-    var sortAscending by remember { mutableStateOf(true) }
-
-    // ✅ Usar derivedStateOf para optimizar cálculos que dependen de estados
-    val totalPages by remember {
-        derivedStateOf {
-            maxOf(1, (carsList.size + itemsPerPage - 1) / itemsPerPage)
-        }
-    }
-
-    val paginatedCars by remember {
-        derivedStateOf {
-            val sorted = when (sortBy) {
-                SortOption.NAME -> carsList.sortedBy { it.name ?: "" }
-                SortOption.DATE -> carsList.sortedBy { it.createdAt ?: 0 }
-            }
-            val finalList = if (sortAscending) sorted else sorted.reversed()
-            finalList.drop(currentPage * itemsPerPage).take(itemsPerPage)
-        }
-    }
+    val sortByState by viewModel.sortBy.collectAsState()
+    val sortAscendingState by viewModel.sortAscending.collectAsState()
 
     // ✅ Calcular activeFiltersCount de forma optimizada
     val activeFiltersCount by remember {
         derivedStateOf {
-            listOfNotNull(selectedBrand, selectedYear, selectedSeries, selectedTag, selectedColor, selectedType, selectedQuality).size
+            // Contar filtros activos basados en filterState
+            val filterState = viewModel.filterState.value
+            listOfNotNull(
+                filterState.brand,
+                filterState.year,
+                filterState.series,
+                filterState.tag,
+                filterState.color,
+                filterState.type,
+                filterState.quality
+            ).size
         }
     }
 
     var carToDelete by remember { mutableStateOf<Car?>(null) }
 
     var expanded by rememberSaveable { mutableStateOf(false) }
+
+    // 🔹 MASS TAG - Estados para selección múltiple
+    var isSelectionMode by remember { mutableStateOf(false) }
+    var selectedCarIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var showMassTagDialog by remember { mutableStateOf(false) }
 
     // ✅ Detectar orientación del dispositivo
     val configuration = LocalConfiguration.current
@@ -515,15 +300,46 @@ fun CollectionViewScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    viewModel.savedPage.value = currentPage
-                    onNavigateToAdd()
-                },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Agregar auto")
+            if (isSelectionMode) {
+                // 🔹 En modo selección: Botones para asignar tags o cancelar
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Botón cancelar
+                    FloatingActionButton(
+                        onClick = {
+                            isSelectionMode = false
+                            selectedCarIds = emptySet()
+                        },
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = "Cancelar selección")
+                    }
+
+                    // Botón asignar tags
+                    FloatingActionButton(
+                        onClick = {
+                            showMassTagDialog = true
+                        },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ) {
+                        Text("+ Tags (${selectedCarIds.size})", modifier = Modifier.padding(horizontal = 8.dp))
+                    }
+                }
+            } else {
+                // 🔹 Modo normal: Agregar nuevo carro
+                FloatingActionButton(
+                    onClick = {
+                        onNavigateToAdd()
+                    },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Agregar auto")
+                }
             }
         }
     ) { padding ->
@@ -533,28 +349,10 @@ fun CollectionViewScreen(
                 .fillMaxSize()
                 .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
-            // ✅ Solo el filtro expandible queda fijo
+            // ✅ Solo el filtro expandible queda fijo (si se desea agregar después)
+            // De momento no mostramos FilterSection expandible
             if (expanded) {
-                FilterSection(
-                    viewModel = viewModel,
-                    modifier = Modifier.fillMaxWidth(),
-                    expanded = expanded,
-                    activeFiltersCount = activeFiltersCount,
-                    allBrands = allBrands,
-                    allYears = allYears,
-                    allSeries = allSeries,
-                    allTags = allTags,
-                    allColors = allColors,
-                    allTypes = allTypes,
-                    allQualities = allQualities,
-                    selectedBrand = selectedBrand,
-                    selectedYear = selectedYear,
-                    selectedSeries = selectedSeries,
-                    selectedTag = selectedTag,
-                    selectedColor = selectedColor,
-                    selectedType = selectedType,
-                    selectedQuality = selectedQuality
-                )
+                // Filtro section simplificado aquí si es necesario
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
@@ -572,7 +370,6 @@ fun CollectionViewScreen(
                             value = searchQuery,
                             onValueChange = {
                                 viewModel.onSearchQueryChange(it)
-                                currentPage = 0
                             },
                             label = { Text("Buscar...") },
                             placeholder = { Text("Honda Civic...") },
@@ -584,7 +381,6 @@ fun CollectionViewScreen(
                                 if (searchQuery.isNotEmpty()) {
                                     IconButton(onClick = {
                                         viewModel.onSearchQueryChange("")
-                                        currentPage = 0
                                     }) {
                                         Icon(Icons.Default.Close, contentDescription = "Clear")
                                     }
@@ -621,23 +417,23 @@ fun CollectionViewScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                     DropdownMenuBox(
-                                        selectedOption = sortBy.display,
-                                        options = SortOption.entries.map { it.display },
+                                        selectedOption = if (sortByState == "date") "Fecha de creación" else "Nombre (A-Z)",
+                                        options = listOf("Nombre (A-Z)", "Fecha de creación"),
                                         onOptionSelected = { selected ->
-                                            sortBy = SortOption.entries.find { it.display == selected } ?: SortOption.NAME
-                                            currentPage = 0
+                                            val sortValue = if (selected == "Fecha de creación") "date" else "name"
+                                            viewModel.setSortBy(sortValue)
                                         }
                                     )
                                 }
 
                                 // Botón de dirección ascendente/descendente
                                 IconButton(
-                                    onClick = { sortAscending = !sortAscending },
+                                    onClick = { viewModel.setSortAscending(!sortAscendingState) },
                                     modifier = Modifier.size(32.dp)
                                 ) {
                                     Icon(
-                                        imageVector = if (sortAscending) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
-                                        contentDescription = if (sortAscending) "Ascendente" else "Descendente",
+                                        imageVector = if (sortAscendingState) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                                        contentDescription = if (sortAscendingState) "Ascendente" else "Descendente",
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
@@ -645,7 +441,138 @@ fun CollectionViewScreen(
                         }
                     }
 
-                    // 3️⃣ PAGINATION/ITEMS PER PAGE (scrolleable)
+                    // 2️⃣B FILTROS
+                    item {
+                        AnimatedVisibility(
+                            visible = activeFiltersCount > 0 || expanded,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically()
+                        ) {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    // Header
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            "Filtros",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                        if (activeFiltersCount > 0) {
+                                            TextButton(onClick = { viewModel.clearFilters() }) {
+                                                Text("Limpiar", style = MaterialTheme.typography.labelSmall)
+                                            }
+                                        }
+                                    }
+
+                                    // Fila 1: Brand, Year
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            DropdownMenuBox(
+                                                selectedOption = viewModel.filterState.value.brand ?: "Marca",
+                                                options = listOf("Marca") + allBrands,
+                                                onOptionSelected = {
+                                                    viewModel.onBrandSelected(if (it == "Marca") null else it)
+                                                }
+                                            )
+                                        }
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            DropdownMenuBox(
+                                                selectedOption = viewModel.filterState.value.year ?: "Año",
+                                                options = listOf("Año") + allYears,
+                                                onOptionSelected = {
+                                                    viewModel.onYearSelected(if (it == "Año") null else it)
+                                                }
+                                            )
+                                        }
+                                    }
+
+                                    // Fila 2: Series, Color
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            DropdownMenuBox(
+                                                selectedOption = viewModel.filterState.value.series ?: "Serie",
+                                                options = listOf("Serie") + allSeries,
+                                                onOptionSelected = {
+                                                    viewModel.onSeriesSelected(if (it == "Serie") null else it)
+                                                }
+                                            )
+                                        }
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            DropdownMenuBox(
+                                                selectedOption = viewModel.filterState.value.color ?: "Color",
+                                                options = listOf("Color") + allColors,
+                                                onOptionSelected = {
+                                                    viewModel.onColorSelected(if (it == "Color") null else it)
+                                                }
+                                            )
+                                        }
+                                    }
+
+                                    // Fila 3: Type, Quality
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            DropdownMenuBox(
+                                                selectedOption = viewModel.filterState.value.type ?: "Tipo",
+                                                options = listOf("Tipo") + allTypes,
+                                                onOptionSelected = {
+                                                    viewModel.onTypeSelected(if (it == "Tipo") null else it)
+                                                }
+                                            )
+                                        }
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            DropdownMenuBox(
+                                                selectedOption = viewModel.filterState.value.quality ?: "Calidad",
+                                                options = listOf("Calidad") + allQualities,
+                                                onOptionSelected = {
+                                                    viewModel.onQualitySelected(if (it == "Calidad") null else it)
+                                                }
+                                            )
+                                        }
+                                    }
+
+                                    // Fila 4: Tags
+                                    if (allTags.isNotEmpty()) {
+                                        Row(modifier = Modifier.fillMaxWidth()) {
+                                            Box(modifier = Modifier.weight(1f)) {
+                                                DropdownMenuBox(
+                                                    selectedOption = viewModel.filterState.value.tag ?: "Tag",
+                                                    options = listOf("Tag") + allTags.map { it.name },
+                                                    onOptionSelected = {
+                                                        viewModel.onTagSelected(if (it == "Tag") null else it)
+                                                    }
+                                                )
+                                            }
+                                            Box(modifier = Modifier.weight(1f))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                     item {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -658,78 +585,50 @@ fun CollectionViewScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp, vertical = 12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
+                                horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // Selector de items por página
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                IconButton(
+                                    onClick = { viewModel.prevPage() },
+                                    enabled = currentPage > 0,
+                                    colors = androidx.compose.material3.IconButtonDefaults.iconButtonColors(
+                                        contentColor = if (currentPage > 0)
+                                            MaterialTheme.colorScheme.primary
+                                        else
+                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                                    ),
+                                    modifier = Modifier.size(36.dp)
                                 ) {
-                                    Text(
-                                        "Mostrar:",
-                                        style = MaterialTheme.typography.labelLarge,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    DropdownMenuBox(
-                                        selectedOption = itemsPerPage.toString(),
-                                        options = ITEMS_PER_PAGE_OPTIONS.map { it.toString() },
-                                        onOptionSelected = {
-                                            itemsPerPage = it.toInt()
-                                            viewModel.setItemsPerPage(itemsPerPage)
-                                            currentPage = 0
-                                        }
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = "Página anterior",
+                                        modifier = Modifier.size(20.dp)
                                     )
                                 }
 
-                                // Controles de paginación
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                Text(
+                                    "${currentPage + 1} / $totalPages",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    modifier = Modifier.width(50.dp),
+                                    textAlign = TextAlign.Center
+                                )
+
+                                IconButton(
+                                    onClick = { viewModel.nextPage() },
+                                    enabled = currentPage < totalPages - 1,
+                                    colors = androidx.compose.material3.IconButtonDefaults.iconButtonColors(
+                                        contentColor = if (currentPage < totalPages - 1)
+                                            MaterialTheme.colorScheme.primary
+                                        else
+                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                                    ),
+                                    modifier = Modifier.size(36.dp)
                                 ) {
-                                    IconButton(
-                                        onClick = { if (currentPage > 0) currentPage-- },
-                                        enabled = currentPage > 0,
-                                        colors = androidx.compose.material3.IconButtonDefaults.iconButtonColors(
-                                            contentColor = if (currentPage > 0)
-                                                MaterialTheme.colorScheme.primary
-                                            else
-                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-                                        ),
-                                        modifier = Modifier.size(36.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                            contentDescription = "Página anterior",
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-
-                                    Text(
-                                        "${currentPage + 1} / $totalPages",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        modifier = Modifier.width(40.dp),
-                                        textAlign = TextAlign.Center
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                        contentDescription = "Página siguiente",
+                                        modifier = Modifier.size(20.dp)
                                     )
-
-                                    IconButton(
-                                        onClick = { if (currentPage < totalPages - 1) currentPage++ },
-                                        enabled = currentPage < totalPages - 1,
-                                        colors = androidx.compose.material3.IconButtonDefaults.iconButtonColors(
-                                            contentColor = if (currentPage < totalPages - 1)
-                                                MaterialTheme.colorScheme.primary
-                                            else
-                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-                                        ),
-                                        modifier = Modifier.size(36.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                            contentDescription = "Página siguiente",
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
                                 }
                             }
                         }
@@ -742,20 +641,80 @@ fun CollectionViewScreen(
                         }
                     } else {
                         itemsIndexed(paginatedCars) { _, car ->
-                            CarItemRow(
-                                car = car,
-                                allTags = allTags,
-                                onDelete = { carToDelete = it },
-                                onEdit = {
-                                    viewModel.savedPage.value = currentPage
-                                    onEditCar(it.id ?: "")
-                                },
-                                onClick = {
-                                    it.id?.let { carId ->
-                                        navController.navigate("${NavRoutes.DETAIL}/$carId")
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .pointerInput(Unit) {
+                                        detectTapGestures(
+                                            onLongPress = {
+                                                // 🔹 Long press: Solo si NO está en modo selección
+                                                if (!isSelectionMode) {
+                                                    isSelectionMode = true
+                                                    selectedCarIds = setOf(car.id ?: "")
+                                                }
+                                            },
+                                            onTap = {
+                                                // 🔹 Tap simple
+                                                if (isSelectionMode) {
+                                                    // En modo selección, tap agrega/quita
+                                                    selectedCarIds = if (selectedCarIds.contains(car.id)) {
+                                                        selectedCarIds - car.id.orEmpty()
+                                                    } else {
+                                                        selectedCarIds + car.id.orEmpty()
+                                                    }
+                                                } else {
+                                                    // Modo normal, navegar
+                                                    car.id?.let { carId ->
+                                                        navController.navigate("${NavRoutes.DETAIL}/$carId")
+                                                    }
+                                                }
+                                            }
+                                        )
                                     }
-                                }
-                            )
+                                    // 🔹 Resalte visual cuando está seleccionado
+                                    .then(
+                                        if (isSelectionMode && selectedCarIds.contains(car.id)) {
+                                            Modifier
+                                                .background(
+                                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                                    shape = RoundedCornerShape(12.dp)
+                                                )
+                                                .border(
+                                                    width = 3.dp,
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    shape = RoundedCornerShape(12.dp)
+                                                )
+                                                .padding(4.dp)
+                                        } else {
+                                            Modifier
+                                        }
+                                    )
+                            ) {
+                                CarCard(
+                                    car = car,
+                                    allTags = allTags,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    onDelete = { carToDelete = car },
+                                    onEdit = {
+                                        onEditCar(car.id ?: "")
+                                    },
+                                    onClick = {
+                                        if (isSelectionMode) {
+                                            // En modo selección, tap hace toggle
+                                            selectedCarIds = if (selectedCarIds.contains(car.id)) {
+                                                selectedCarIds - car.id.orEmpty()
+                                            } else {
+                                                selectedCarIds + car.id.orEmpty()
+                                            }
+                                        } else {
+                                            // Modo normal, navegar
+                                            car.id?.let { carId ->
+                                                navController.navigate("${NavRoutes.DETAIL}/$carId")
+                                            }
+                                        }
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -772,7 +731,6 @@ fun CollectionViewScreen(
                             value = searchQuery,
                             onValueChange = {
                                 viewModel.onSearchQueryChange(it)
-                                currentPage = 0
                             },
                             label = { Text("Buscar...") },
                             placeholder = { Text("Honda Civic...") },
@@ -784,7 +742,6 @@ fun CollectionViewScreen(
                                 if (searchQuery.isNotEmpty()) {
                                     IconButton(onClick = {
                                         viewModel.onSearchQueryChange("")
-                                        currentPage = 0
                                     }) {
                                         Icon(Icons.Default.Close, contentDescription = "Clear")
                                     }
@@ -793,80 +750,177 @@ fun CollectionViewScreen(
                         )
                     }
 
-                    // 2️⃣ SORT OPTIONS y MOSTRAR en una fila
+                    // 2️⃣ SORT OPTIONS
                     item {
-                        Row(
+                        Card(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                            ),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
-                            Card(
-                                modifier = Modifier.weight(1f),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                                ),
-                                shape = RoundedCornerShape(12.dp)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        "Orden:",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    DropdownMenuBox(
-                                        selectedOption = sortBy.display,
-                                        options = SortOption.entries.map { it.display },
-                                        onOptionSelected = { selected ->
-                                            sortBy = SortOption.entries.find { it.display == selected } ?: SortOption.NAME
-                                            currentPage = 0
-                                        }
-                                    )
-                                    IconButton(
-                                        onClick = { sortAscending = !sortAscending },
-                                        modifier = Modifier.size(28.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = if (sortAscending) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
-                                            contentDescription = if (sortAscending) "Ascendente" else "Descendente",
-                                            modifier = Modifier.size(16.dp)
-                                        )
+                                Text(
+                                    "Orden:",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                DropdownMenuBox(
+                                    selectedOption = if (sortByState == "date") "Fecha de creación" else "Nombre (A-Z)",
+                                    options = listOf("Nombre (A-Z)", "Fecha de creación"),
+                                    onOptionSelected = { selected ->
+                                        val sortValue = if (selected == "Fecha de creación") "date" else "name"
+                                        viewModel.setSortBy(sortValue)
                                     }
+                                )
+                                IconButton(
+                                    onClick = { viewModel.setSortAscending(!sortAscendingState) },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = if (sortAscendingState) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                                        contentDescription = if (sortAscendingState) "Ascendente" else "Descendente",
+                                        modifier = Modifier.size(16.dp)
+                                    )
                                 }
                             }
+                        }
+                    }
 
+                    // 2️⃣B FILTROS (Tablet)
+                    item {
+                        AnimatedVisibility(
+                            visible = activeFiltersCount > 0 || expanded,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically()
+                        ) {
                             Card(
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.fillMaxWidth(),
                                 colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
                                 ),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
-                                Row(
+                                Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                        .padding(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Text(
-                                        "Mostrar:",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    DropdownMenuBox(
-                                        selectedOption = itemsPerPage.toString(),
-                                        options = ITEMS_PER_PAGE_OPTIONS.map { it.toString() },
-                                        onOptionSelected = {
-                                            itemsPerPage = it.toInt()
-                                            viewModel.setItemsPerPage(itemsPerPage)
-                                            currentPage = 0
+                                    // Header
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            "Filtros",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                        if (activeFiltersCount > 0) {
+                                            TextButton(onClick = { viewModel.clearFilters() }) {
+                                                Text("Limpiar", style = MaterialTheme.typography.labelSmall)
+                                            }
                                         }
-                                    )
+                                    }
+
+                                    // Fila 1: Brand, Year
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            DropdownMenuBox(
+                                                selectedOption = viewModel.filterState.value.brand ?: "Marca",
+                                                options = listOf("Marca") + allBrands,
+                                                onOptionSelected = {
+                                                    viewModel.onBrandSelected(if (it == "Marca") null else it)
+                                                }
+                                            )
+                                        }
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            DropdownMenuBox(
+                                                selectedOption = viewModel.filterState.value.year ?: "Año",
+                                                options = listOf("Año") + allYears,
+                                                onOptionSelected = {
+                                                    viewModel.onYearSelected(if (it == "Año") null else it)
+                                                }
+                                            )
+                                        }
+                                    }
+
+                                    // Fila 2: Series, Color
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            DropdownMenuBox(
+                                                selectedOption = viewModel.filterState.value.series ?: "Serie",
+                                                options = listOf("Serie") + allSeries,
+                                                onOptionSelected = {
+                                                    viewModel.onSeriesSelected(if (it == "Serie") null else it)
+                                                }
+                                            )
+                                        }
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            DropdownMenuBox(
+                                                selectedOption = viewModel.filterState.value.color ?: "Color",
+                                                options = listOf("Color") + allColors,
+                                                onOptionSelected = {
+                                                    viewModel.onColorSelected(if (it == "Color") null else it)
+                                                }
+                                            )
+                                        }
+                                    }
+
+                                    // Fila 3: Type, Quality
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            DropdownMenuBox(
+                                                selectedOption = viewModel.filterState.value.type ?: "Tipo",
+                                                options = listOf("Tipo") + allTypes,
+                                                onOptionSelected = {
+                                                    viewModel.onTypeSelected(if (it == "Tipo") null else it)
+                                                }
+                                            )
+                                        }
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            DropdownMenuBox(
+                                                selectedOption = viewModel.filterState.value.quality ?: "Calidad",
+                                                options = listOf("Calidad") + allQualities,
+                                                onOptionSelected = {
+                                                    viewModel.onQualitySelected(if (it == "Calidad") null else it)
+                                                }
+                                            )
+                                        }
+                                    }
+
+                                    // Fila 4: Tags
+                                    if (allTags.isNotEmpty()) {
+                                        Row(modifier = Modifier.fillMaxWidth()) {
+                                            Box(modifier = Modifier.weight(1f)) {
+                                                DropdownMenuBox(
+                                                    selectedOption = viewModel.filterState.value.tag ?: "Tag",
+                                                    options = listOf("Tag") + allTags.map { it.name },
+                                                    onOptionSelected = {
+                                                        viewModel.onTagSelected(if (it == "Tag") null else it)
+                                                    }
+                                                )
+                                            }
+                                            Box(modifier = Modifier.weight(1f))
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -883,20 +937,76 @@ fun CollectionViewScreen(
                             ) {
                                 rowCars.forEach { car ->
                                     Box(
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .pointerInput(Unit) {
+                                                detectTapGestures(
+                                                    onLongPress = {
+                                                        // 🔹 Long press: Solo si NO está en modo selección
+                                                        if (!isSelectionMode) {
+                                                            isSelectionMode = true
+                                                            selectedCarIds = setOf(car.id ?: "")
+                                                        }
+                                                    },
+                                                    onTap = {
+                                                        // 🔹 Tap simple
+                                                        if (isSelectionMode) {
+                                                            // En modo selección, tap agrega/quita
+                                                            selectedCarIds = if (selectedCarIds.contains(car.id)) {
+                                                                selectedCarIds - car.id.orEmpty()
+                                                            } else {
+                                                                selectedCarIds + car.id.orEmpty()
+                                                            }
+                                                        } else {
+                                                            // Modo normal, navegar
+                                                            car.id?.let { carId ->
+                                                                navController.navigate("${NavRoutes.DETAIL}/$carId")
+                                                            }
+                                                        }
+                                                    }
+                                                )
+                                            }
                                     ) {
                                         CarCard(
                                             car = car,
                                             allTags = allTags,
-                                            modifier = Modifier.fillMaxWidth(),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                // 🔹 Resalte visual cuando está seleccionado (solo en grid)
+                                                .then(
+                                                    if (isSelectionMode && selectedCarIds.contains(car.id)) {
+                                                        Modifier
+                                                            .background(
+                                                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                                                shape = RoundedCornerShape(12.dp)
+                                                            )
+                                                            .border(
+                                                                width = 3.dp,
+                                                                color = MaterialTheme.colorScheme.primary,
+                                                                shape = RoundedCornerShape(12.dp)
+                                                            )
+                                                            .padding(4.dp)
+                                                    } else {
+                                                        Modifier
+                                                    }
+                                                ),
                                             onDelete = { carToDelete = car },
                                             onEdit = {
-                                                viewModel.savedPage.value = currentPage
                                                 onEditCar(car.id ?: "")
                                             },
                                             onClick = {
-                                                car.id?.let { carId ->
-                                                    navController.navigate("${NavRoutes.DETAIL}/$carId")
+                                                if (isSelectionMode) {
+                                                    // En modo selección, tap hace toggle
+                                                    selectedCarIds = if (selectedCarIds.contains(car.id)) {
+                                                        selectedCarIds - car.id.orEmpty()
+                                                    } else {
+                                                        selectedCarIds + car.id.orEmpty()
+                                                    }
+                                                } else {
+                                                    // Modo normal, navegar
+                                                    car.id?.let { carId ->
+                                                        navController.navigate("${NavRoutes.DETAIL}/$carId")
+                                                    }
                                                 }
                                             }
                                         )
@@ -931,7 +1041,7 @@ fun CollectionViewScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 IconButton(
-                                    onClick = { if (currentPage > 0) currentPage-- },
+                                    onClick = { viewModel.prevPage() },
                                     enabled = currentPage > 0,
                                     colors = androidx.compose.material3.IconButtonDefaults.iconButtonColors(
                                         contentColor = if (currentPage > 0)
@@ -956,7 +1066,7 @@ fun CollectionViewScreen(
                                 )
 
                                 IconButton(
-                                    onClick = { if (currentPage < totalPages - 1) currentPage++ },
+                                    onClick = { viewModel.nextPage() },
                                     enabled = currentPage < totalPages - 1,
                                     colors = androidx.compose.material3.IconButtonDefaults.iconButtonColors(
                                         contentColor = if (currentPage < totalPages - 1)
@@ -1001,4 +1111,34 @@ fun CollectionViewScreen(
             }
         )
     }
+
+    // 🔹 Diálogo de Mass Tag
+    if (showMassTagDialog) {
+        MassAddTagDialog(
+            selectedCarsCount = selectedCarIds.size,
+            allTags = allTags,
+            onConfirm = { tagsToAdd ->
+                // Asignar tags a todos los carros seleccionados
+                selectedCarIds.forEach { carId ->
+                    val car = paginatedCars.find { it.id == carId }
+                    if (car != null) {
+                        val updatedTags = (car.tags.toMutableList() + tagsToAdd).distinct()
+                        viewModel.updateCarTags(carId, updatedTags)
+                    }
+                }
+
+                // Resetear selección
+                isSelectionMode = false
+                selectedCarIds = emptySet()
+                showMassTagDialog = false
+            },
+            onDismiss = {
+                showMassTagDialog = false
+            }
+        )
+    }
 }
+
+// 🔹 Función removida: CarItemRowWithSelection
+// Ahora usamos CarCard con long press en lugar de una componente separada
+

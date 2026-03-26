@@ -33,10 +33,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.carcollection.featurecar.domain.Car
 import com.example.carcollection.featuretags.domain.Tag
 
@@ -86,7 +88,11 @@ fun CarDetailModernView(
                     contentAlignment = Alignment.Center
                 ) {
                     AsyncImage(
-                        model = car.photoUrl ?: "",
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(car.photoUrl ?: "")
+                            .size(600, 600)  // 🔹 Redimensionar para optimización
+                            .crossfade(300)
+                            .build(),
                         contentDescription = "${car.brand.orEmpty()} ${car.name.orEmpty()}",
                         modifier = Modifier
                             .fillMaxSize()

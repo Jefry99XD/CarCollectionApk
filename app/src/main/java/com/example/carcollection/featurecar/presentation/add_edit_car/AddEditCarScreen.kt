@@ -65,9 +65,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.carcollection.featurecar.domain.CarFormViewModel
 import com.example.carcollection.featurecar.presentation.add_edit_car.carDetailScreen.LogoSelectorDialog
 import com.example.carcollection.presentation.common.ConfirmBackButton
@@ -363,12 +365,17 @@ fun CarImagePickerSection(viewModel: CarFormViewModel) {
             shape = RoundedCornerShape(12.dp)
         ) {
             AsyncImage(
-                model = viewModel.photoUrl.value,
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(viewModel.photoUrl.value)
+                    .size(400, 400)  // 🔹 Redimensionar para optimización de memoria
+                    .crossfade(300)
+                    .build(),
                 contentDescription = "Vista previa de imagen",
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
                     .padding(8.dp),
+                contentScale = ContentScale.Fit
             )
         }
     }
