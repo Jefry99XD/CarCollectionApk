@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -30,6 +29,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -37,15 +38,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.carcollection.R
 import com.example.carcollection.featurecar.domain.Car
 import com.example.carcollection.featurecar.presentation.add_edit_car.getBackgroundUrlById
 import com.example.carcollection.featuretags.domain.Tag
-import kotlinx.coroutines.launch
 import android.content.res.Configuration
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.padding
 
 // Función helper para calcular si un color es claro u oscuro
 private fun Color.isLightColor(): Boolean {
@@ -73,11 +77,11 @@ fun CarDetailBlisterView(
     val isTablet = screenWidthDp >= 600
 
     val primaryTag = car.tags.firstOrNull()
-    val primaryTagColor = allTags.find { it.name == primaryTag }?.color ?: "#CCCCCC"
+    val primaryTagColor = allTags.find { it.name == primaryTag }?.color ?: "#CC0000"
     val parsedColor = try {
         Color(primaryTagColor.toColorInt())
     } catch (_: Exception) {
-        Color.Gray
+        Color(0xFFCC0000)
     }
 
     val context = LocalContext.current
@@ -89,193 +93,472 @@ fun CarDetailBlisterView(
 
     // 🔹 VERTICAL (Teléfono vertical o tablet vertical)
     if (!isLandscape) {
-        Card(
-            modifier = Modifier
-                .padding(horizontal = 8.dp, vertical = 8.dp)
-                .fillMaxSize(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.Transparent)
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                // Fondo
-                if (backgroundUrl.value.isNotEmpty()) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(backgroundUrl.value)
-                            .crossfade(300)
-                            .build(),
-                        contentDescription = "Fondo del carro",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.FillBounds
-                    )
-                } else {
+        BlisterViewVertical(car, allTags, onImageClick, backgroundUrl.value, parsedColor, primaryTag)
+    }
+    // 🔹 HORIZONTAL (Teléfono horizontal)
+    else {
+        BlisterViewHorizontal(car, allTags, onImageClick, backgroundUrl.value, parsedColor, primaryTag)
+    }
+}
+
+// 🔹 VISTA VERTICAL - Blister estilo Hot Wheels con mejoras 3D
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun BlisterViewVertical(
+    car: Car,
+    allTags: List<Tag>,
+    onImageClick: () -> Unit,
+    backgroundUrl: String,
+    primaryColor: Color,
+    primaryTag: String?
+) {
+    val context = LocalContext.current
+
+    // Marco principal con sombra elevada 3D
+    Box(
+        modifier = Modifier
+            .padding(horizontal = 8.dp, vertical = 8.dp)
+            .fillMaxSize()
+            .shadow(
+                elevation = 16.dp,
+                shape = RoundedCornerShape(20.dp),
+                ambientColor = Color.Black.copy(0.25f),
+                spotColor = Color.Black.copy(0.4f)
+            )
+            .background(
+                color = Color.White,
+                shape = RoundedCornerShape(20.dp)
+            )
+            .border(
+                width = 2.dp,
+                color = Color(0xFFD4AF37), // Oro plateado tipo Hot Wheels
+                shape = RoundedCornerShape(20.dp)
+            )
+    ) {
+        // Fondo de imagen si existe
+        if (backgroundUrl.isNotEmpty()) {
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(backgroundUrl)
+                    .crossfade(300)
+                    .build(),
+                contentDescription = "Fondo del carro",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(18.dp)),
+                contentScale = ContentScale.Crop,
+                alpha = 0.6f
+            )
+        }
+
+        Column(modifier = Modifier.fillMaxSize()) {
+            // 🎨 ENCABEZADO - Logo y nombre de serie
+            BlisterHeader(car, primaryColor)
+
+            Divider(modifier = Modifier.fillMaxWidth(), thickness = 2.dp, color = Color(0xFFD4AF37))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                // LADO PRINCIPAL - Carro y detalles
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    // Foto del carro con efecto de vidriera
                     Box(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                    )
-                }
-
-                Row(modifier = Modifier.fillMaxSize()) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .fillMaxWidth(0.85f)
+                            .height(220.dp)
+                            .background(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(
+                                        Color.White.copy(alpha = 0.6f),
+                                        Color.Transparent
+                                    )
+                                ),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .border(
+                                width = 1.5.dp,
+                                color = Color(0xFFE8E8E8),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .padding(8.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Foto del carro
                         AsyncImage(
                             model = ImageRequest.Builder(context)
                                 .data(car.photoUrl ?: "")
-                                .size(400, 400)
                                 .crossfade(300)
                                 .build(),
                             contentDescription = "${car.brand.orEmpty()} ${car.name.orEmpty()}",
                             modifier = Modifier
-                                .fillMaxWidth(0.8f)
-                                .height(200.dp)
-                                .clip(CircleShape)
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(12.dp))
                                 .clickable { onImageClick() },
                             contentScale = ContentScale.Fit
                         )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Información principal
-                        BlisterInfoBox(car, allTags)
                     }
 
-                    // Franja de tag derecha
-                    TagSideBar(primaryTag, parsedColor)
-                }
-            }
-        }
-    }
-    // 🔹 HORIZONTAL (Teléfono horizontal)
-    else {
-        Card(
-            modifier = Modifier
-                .padding(8.dp)
-                .fillMaxSize(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.Transparent)
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                // Fondo
-                if (backgroundUrl.value.isNotEmpty()) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(backgroundUrl.value)
-                            .crossfade(300)
-                            .build(),
-                        contentDescription = "Fondo del carro",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.FillBounds
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Información del carro
+                    BlisterCarInfo(car)
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Tags
+                    TagsFlowRow(car, allTags)
                 }
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Foto a la izquierda
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(car.photoUrl ?: "")
-                            .size(300, 300)
-                            .crossfade(300)
-                            .build(),
-                        contentDescription = "${car.brand.orEmpty()} ${car.name.orEmpty()}",
-                        modifier = Modifier
-                            .fillMaxHeight(0.9f)
-                            .width(200.dp)
-                            .clip(CircleShape)
-                            .clickable { onImageClick() },
-                        contentScale = ContentScale.Fit
-                    )
-
-                    // Información y tags en el centro
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .padding(end = 16.dp)
-                            .verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.Top,
-                        horizontalAlignment = Alignment.Start
-                    ) {
-                        BlisterInfoBoxHorizontal(car, allTags)
-                    }
-
-                    // Franja de tag a la derecha (más estrecha en horizontal)
-                    TagSideBar(primaryTag, parsedColor, width = 32.dp)
-                }
+                // FRANJA LATERAL - Color primario con efecto diagonal
+                BlisterSidePanel(primaryColor, primaryTag)
             }
         }
     }
 }
 
-// 🔹 Componente: Información del carro en caja (vertical)
+// 🔹 VISTA HORIZONTAL - Blister compacto
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun BlisterInfoBox(car: Car, allTags: List<Tag>) {
+private fun BlisterViewHorizontal(
+    car: Car,
+    allTags: List<Tag>,
+    onImageClick: () -> Unit,
+    backgroundUrl: String,
+    primaryColor: Color,
+    primaryTag: String?
+) {
+    val context = LocalContext.current
+
     Box(
         modifier = Modifier
-            .fillMaxWidth(0.9f)
-            .background(
-                color = Color.Black.copy(alpha = 0.6f),
-                shape = RoundedCornerShape(12.dp)
+            .padding(8.dp)
+            .fillMaxSize()
+            .shadow(
+                elevation = 16.dp,
+                shape = RoundedCornerShape(20.dp),
+                ambientColor = Color.Black.copy(0.25f),
+                spotColor = Color.Black.copy(0.4f)
             )
-            .padding(16.dp)
+            .background(
+                color = Color.White,
+                shape = RoundedCornerShape(20.dp)
+            )
+            .border(
+                width = 2.dp,
+                color = Color(0xFFD4AF37),
+                shape = RoundedCornerShape(20.dp)
+            )
     ) {
+        // Fondo de imagen si existe
+        if (backgroundUrl.isNotEmpty()) {
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(backgroundUrl)
+                    .crossfade(300)
+                    .build(),
+                contentDescription = "Fondo del carro",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(18.dp)),
+                contentScale = ContentScale.Crop,
+                alpha = 0.6f
+            )
+        }
+
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+            // Imagen a la izquierda
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight(0.95f)
+                    .width(180.dp)
+                    .background(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0.3f),
+                                Color.Transparent
+                            )
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .border(
+                        width = 1.5.dp,
+                        color = Color(0xFFE8E8E8),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .padding(6.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    car.name.orEmpty(),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    "${car.brand.orEmpty()} · ${car.year.orEmpty()}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White
-                )
-                Text(
-                    car.color.orEmpty(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White
-                )
-                Text(
-                    car.type.orEmpty(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White
-                )
-                Text(
-                    car.serie.orEmpty(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(car.photoUrl ?: "")
+                        .crossfade(300)
+                        .build(),
+                    contentDescription = "${car.brand.orEmpty()} ${car.name.orEmpty()}",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { onImageClick() },
+                    contentScale = ContentScale.Fit
                 )
             }
 
-            TagsColumn(car, allTags)
+            // Información compacta
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.Top,
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(
+                    car.name.orEmpty(),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+                Text(
+                    "${car.brand.orEmpty()} · ${car.year.orEmpty()}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Column {
+                        Text("Color", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                        Text(car.color.orEmpty(), style = MaterialTheme.typography.bodySmall)
+                    }
+                    Column {
+                        Text("Tipo", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                        Text(car.type.orEmpty(), style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                TagsFlowRow(car, allTags)
+            }
+
+            // Franja lateral compacta
+            BlisterSidePanel(primaryColor, primaryTag, width = 28.dp)
         }
     }
+}
+
+// ...existing code...
+
+// 🔹 ENCABEZADO DEL BLISTER - Logo y nombre de serie
+@Composable
+private fun BlisterHeader(car: Car, primaryColor: Color) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                brush = Brush.horizontalGradient(
+                    colors = listOf(
+                        primaryColor.copy(alpha = 0.15f),
+                        Color.Transparent
+                    )
+                )
+            )
+            .padding(12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Logo de la app
+        Box(
+            modifier = Modifier
+                .width(40.dp)
+                .height(40.dp)
+                .background(Color.White, shape = CircleShape)
+                .border(1.5.dp, primaryColor, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            AsyncImage(
+                model = ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                    .data(R.drawable.logo)
+                    .crossfade(300)
+                    .build(),
+                contentDescription = "Logo",
+                modifier = Modifier
+                    .fillMaxSize(0.8f),
+                contentScale = ContentScale.Fit
+            )
+        }
+
+        // Información de serie
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                car.serie.orEmpty().uppercase().take(20),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = primaryColor,
+                maxLines = 1
+            )
+            Text(
+                "${car.brand.orEmpty()} · ${car.year.orEmpty()}",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.Gray
+            )
+        }
+
+        // Número de colección (simulado)
+        Box(
+            modifier = Modifier
+                .background(primaryColor.copy(alpha = 0.2f), RoundedCornerShape(6.dp))
+                .padding(6.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                "#${car.hashCode() % 1000}",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = primaryColor
+            )
+        }
+    }
+}
+
+// 🔹 INFORMACIÓN DEL CARRO
+@Composable
+private fun BlisterCarInfo(car: Car) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            car.name.orEmpty(),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black,
+            textAlign = TextAlign.Center
+        )
+
+        Text(
+            car.brand.orEmpty(),
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.Gray
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Grid de propiedades
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
+                .padding(8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                PropertyBadge("Año", car.year.orEmpty())
+                PropertyBadge("Color", car.color.orEmpty())
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                PropertyBadge("Tipo", car.type.orEmpty())
+                PropertyBadge("Serie", car.serie.orEmpty().take(12))
+            }
+        }
+    }
+}
+
+// 🔹 BADGE DE PROPIEDAD
+@Composable
+private fun PropertyBadge(label: String, value: String) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth(0.45f)
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.Gray,
+            fontSize = 10.sp
+        )
+        Text(
+            value.take(15),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = Color.Black,
+            fontSize = 11.sp,
+            maxLines = 1
+        )
+    }
+}
+
+// 🔹 FRANJA LATERAL DEL BLISTER
+@Composable
+private fun BlisterSidePanel(
+    primaryColor: Color,
+    primaryTag: String?,
+    width: Dp = 48.dp
+) {
+    Box(
+        modifier = Modifier
+            .width(width)
+            .fillMaxHeight()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        primaryColor,
+                        primaryColor.copy(alpha = 0.8f)
+                    )
+                )
+            )
+            .border(
+                width = 1.dp,
+                color = primaryColor.copy(alpha = 0.5f)
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        // Texto vertical del tag
+        Text(
+            text = (primaryTag ?: "TAG")
+                .uppercase()
+                .take(3),
+            color = Color.White,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 12.sp,
+            textAlign = TextAlign.Center,
+            maxLines = 1
+        )
+    }
+}
+
+// 🔹 DIVIDER PERSONALIZADO
+@Composable
+private fun Divider(modifier: Modifier = Modifier, thickness: Dp = 1.dp, color: Color = Color.Gray) {
+    Box(
+        modifier = modifier
+            .height(thickness)
+            .background(color)
+    )
 }
 
 // 🔹 Componente: Información del carro horizontal
@@ -407,21 +690,36 @@ private fun TagChip(tagName: String, allTags: List<Tag>) {
     }
 }
 
-// 🔹 Componente: Franja lateral de tag
+// 🔹 Componente: Franja lateral de tag (antigua)
 @Composable
 private fun TagSideBar(primaryTag: String?, parsedColor: Color, width: Dp = 48.dp) {
     Box(
         modifier = Modifier
             .width(width)
             .fillMaxHeight()
-            .background(parsedColor),
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        parsedColor,
+                        parsedColor.copy(alpha = 0.8f)
+                    )
+                )
+            )
+            .border(
+                width = 1.dp,
+                color = parsedColor.copy(alpha = 0.5f)
+            ),
         contentAlignment = Alignment.Center
     ) {
-        AutoSizeText(
-            text = primaryTag?.map { "$it\n" }?.joinToString("") ?: "",
-            fontWeight = FontWeight.Bold,
+        Text(
+            text = (primaryTag ?: "TAG")
+                .uppercase()
+                .take(3),
+            color = Color.White,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 12.sp,
             textAlign = TextAlign.Center,
-            backgroundColor = parsedColor
+            maxLines = 1
         )
     }
 }
