@@ -1,74 +1,123 @@
 {
   "categories": [
     {
-      "category": "Fondos Urbanos",
+      "category": "Fondos",
       "backgrounds": [
         {
-          "id": "fondo_urban_1",
-          "name": "Ciudad Nocturna",
-          "url": "https://example.com/backgrounds/urban/city_night.jpg",
-          "thumbnailUrl": "https://example.com/backgrounds/urban/city_night_thumb.jpg"
+          "id": "fondo_1",
+          "name": "Fondo 01",
+          "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/01.png",
+          "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/01.png"
         },
         {
-          "id": "fondo_urban_2",
-          "name": "Carretera Rápida",
-          "url": "https://example.com/backgrounds/urban/highway_fast.jpg",
-          "thumbnailUrl": "https://example.com/backgrounds/urban/highway_fast_thumb.jpg"
+          "id": "fondo_2",
+          "name": "Fondo 02",
+          "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/02.png",
+          "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/02.png"
         },
         {
-          "id": "fondo_urban_3",
-          "name": "Estacionamiento",
-          "url": "https://example.com/backgrounds/urban/parking.jpg",
-          "thumbnailUrl": "https://example.com/backgrounds/urban/parking_thumb.jpg"
-        }
-      ]
-    },
-    {
-      "category": "Fondos Naturales",
-      "backgrounds": [
-        {
-          "id": "fondo_nature_1",
-          "name": "Playa Tropical",
-          "url": "https://example.com/backgrounds/nature/beach_tropical.jpg",
-          "thumbnailUrl": "https://example.com/backgrounds/nature/beach_tropical_thumb.jpg"
+          "id": "fondo_3",
+          "name": "Fondo 03",
+          "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/03.png",
+          "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/03.png"
         },
         {
-          "id": "fondo_nature_2",
-          "name": "Montaña Nevada",
-          "url": "https://example.com/backgrounds/nature/mountain_snow.jpg",
-          "thumbnailUrl": "https://example.com/backgrounds/nature/mountain_snow_thumb.jpg"
+          "id": "fondo_4",
+          "name": "Fondo 04",
+          "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/04.png",
+          "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/04.png"
         },
         {
-          "id": "fondo_nature_3",
-          "name": "Bosque Profundo",
-          "url": "https://example.com/backgrounds/nature/forest_deep.jpg",
-          "thumbnailUrl": "https://example.com/backgrounds/nature/forest_deep_thumb.jpg"
-        }
-      ]
-    },
-    {
-      "category": "Fondos Deportivos",
-      "backgrounds": [
-        {
-          "id": "fondo_sport_1",
-          "name": "Pista de Carreras",
-          "url": "https://example.com/backgrounds/sport/race_track.jpg",
-          "thumbnailUrl": "https://example.com/backgrounds/sport/race_track_thumb.jpg"
+          "id": "fondo_5",
+          "name": "Fondo F2",
+          "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/f2.jpg",
+          "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/f2.jpg"
         },
         {
-          "id": "fondo_sport_2",
-          "name": "Deriva en la Noche",
-          "url": "https://example.com/backgrounds/sport/drift_night.jpg",
-          "thumbnailUrl": "https://example.com/backgrounds/sport/drift_night_thumb.jpg"
+          "id": "fondo_6",
+          "name": "Fondo",
+          "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo.jpg",
+          "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo.jpg"
         },
         {
-          "id": "fondo_sport_3",
-          "name": "Drag Racing",
-          "url": "https://example.com/backgrounds/sport/drag_racing.jpg",
-          "thumbnailUrl": "https://example.com/backgrounds/sport/drag_racing_thumb.jpg"
+          "id": "fondo_7",
+          "name": "Fondo 10",
+          "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo10.png",
+          "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo10.png"
+        },
+        {
+          "id": "fondo_8",
+          "name": "Fondo 15",
+          "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo15.jpeg",
+          "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo15.jpeg"
+        },
+        {
+          "id": "fondo_9",
+          "name": "Fondo 2",
+          "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo2.png",
+          "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo2.png"
+        },
+        {
+          "id": "fondo_10",
+          "name": "Fondo 20",
+          "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo20.jpeg",
+          "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo20.jpeg"
+        },
+        {
+          "id": "fondo_11",
+          "name": "Fondo 23",
+          "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo23.jpg",
+          "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo23.jpg"
+        },
+        {
+          "id": "fondo_12",
+          "name": "Fondo 24",
+          "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo24.jpeg",
+          "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo24.jpeg"
+        },
+        {
+          "id": "fondo_13",
+          "name": "Fondo 26",
+          "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo26.jpg",
+          "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo26.jpg"
+        },
+        {
+          "id": "fondo_14",
+          "name": "Fondo 3",
+          "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo3.jpg",
+          "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo3.jpg"
+        },
+        {
+          "id": "fondo_15",
+          "name": "Fondo 4",
+          "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo4.jpg",
+          "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo4.jpg"
+        },
+        {
+          "id": "fondo_16",
+          "name": "Fondo 5",
+          "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo5.jpg",
+          "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo5.jpg"
+        },
+        {
+          "id": "fondo_17",
+          "name": "Fondo 6",
+          "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo6.jpg",
+          "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo6.jpg"
+        },
+        {
+          "id": "fondo_18",
+          "name": "Fondo 7",
+          "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo7.png",
+          "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo7.png"
+        },
+        {
+          "id": "fondo_19",
+          "name": "Fondo 8",
+          "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo8.png",
+          "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo8.png"
         }
       ]
     }
   ]
 }
-

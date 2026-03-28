@@ -103,19 +103,29 @@ private fun ExposedDropdownField(
             }
     }
 
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = onExpandedChange) {
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { newExpanded ->
+            onExpandedChange(newExpanded)
+        }
+    ) {
         OutlinedTextField(
             value = value,
-            onValueChange = onValueChange,
+            onValueChange = { newValue ->
+                onValueChange(newValue)
+                if (newValue.isNotEmpty() && !expanded) {
+                    onExpandedChange(true)
+                }
+            },
             label = { Text(label) },
             modifier = Modifier
-                .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
+                .menuAnchor(MenuAnchorType.PrimaryEditable, enabled = true)
                 .fillMaxWidth(),
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }
         )
 
-        // ✅ Solo mostrar menu si está expandido
-        if (expanded) {
+        // ✅ Solo mostrar menu si está expandido y hay sugerencias
+        if (expanded && sortedSuggestions.isNotEmpty()) {
             ExposedDropdownMenu(
                 expanded = true,
                 onDismissRequest = { onExpandedChange(false) }
