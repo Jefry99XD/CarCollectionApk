@@ -119,6 +119,13 @@ class CarFormViewModel(
     // Save or update car
     fun saveCar(onComplete: (() -> Unit)? = null) {
         viewModelScope.launch {
+            // ✅ Convertir backgroundName (ID) a backgroundUrl (URL completo)
+            val backgroundUrl = _backgroundCategories.value
+                .flatMap { it.backgrounds }
+                .find { it.id == backgroundName.value }
+                ?.url
+                ?: "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/01.png"  // Default
+
             val car = Car(
                 id = currentCarId,
                 brand = brand.value,
@@ -130,6 +137,7 @@ class CarFormViewModel(
                 type = type.value,
                 quality = quality.value,
                 backgroundName = backgroundName.value,
+                backgroundUrl = backgroundUrl,  // ✅ Guardar URL completo
                 tags = selectedTags.value
             )
 

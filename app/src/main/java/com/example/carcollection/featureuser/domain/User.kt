@@ -41,10 +41,14 @@ data class User(
     // ─── Derechos de administrador ───
     val adminRights: Boolean = false, // Solo puede ser modificado en Firebase
 
+    // ─── Flags de migración ───
+    val backgroundsMigrated: Boolean = false, // Flag para migración de fondos (backgroundName → backgroundUrl)
+    val backgroundsMigratedAt: Long? = null,  // Timestamp de cuándo se hizo la migración
+
     // ─── Última actividad ───
     val lastActive: Long = System.currentTimeMillis(),
 ) {
-    constructor() : this("", null, null, null, null, 0L, 0, 0, 0, 1, 0L, 0L, 0L, emptyList(), false, 0L)
+    constructor() : this("", null, null, null, null, 0L, 0, 0, 0, 1, 0L, 0L, 0L, emptyList(), false, false, null, 0L)
 
     // Propiedad computada: días desde que se unió
     @get:Exclude

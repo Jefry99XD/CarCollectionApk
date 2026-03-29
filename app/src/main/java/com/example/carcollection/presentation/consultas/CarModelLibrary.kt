@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.background
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -32,7 +34,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -41,6 +43,8 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.Icon
+import androidx.compose.ui.window.Dialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -52,10 +56,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.carcollection.featurecar.domain.Car
@@ -286,6 +292,9 @@ fun VariationDetailCard(
     wishlist: List<Car>,
     onAddToCollection: (String, String?, String?, String?, String?) -> Unit
 ) {
+    // Estado para controlar la visibilidad del dialog de imagen
+    var showImageDialog by remember { mutableStateOf(false) }
+
     // Verificar si esta variación ya está en la wishlist
     val isInWishlist = remember(wishlist, carName, variation) {
         wishlist.any { car ->
@@ -372,7 +381,7 @@ fun VariationDetailCard(
                 }
             }
 
-            // Imagen de la variación
+            // Imagen de la variación - CLICKEABLE para ampliar
             variation.url?.let { imageUrl ->
                 AsyncImage(
                     model = imageUrl,
@@ -381,6 +390,7 @@ fun VariationDetailCard(
                         .fillMaxWidth()
                         .size(120.dp)
                         .clip(RoundedCornerShape(8.dp))
+                        .clickable { showImageDialog = true }
                 )
             }
 
@@ -458,6 +468,109 @@ fun VariationDetailCard(
                         modifier = Modifier.padding(top = 4.dp),
                         maxLines = 3
                     )
+                }
+            }
+        }
+    }
+
+    // 🖼️ DIALOG PARA MOSTRAR IMAGEN AMPLIADA
+    if (showImageDialog && variation.url != null) {
+        Dialog(
+            onDismissRequest = { showImageDialog = false },
+            properties = DialogProperties(
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true,
+                usePlatformDefaultWidth = false
+            )
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable { showImageDialog = false },
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .background(Color.White, RoundedCornerShape(16.dp))
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Header con título y botón cerrar
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "${carName ?: "Carro"}",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(onClick = { showImageDialog = false }) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Cerrar"
+                            )
+                        }
+                    }
+
+                    // Subtítulo con información
+                    Text(
+                        text = "${variation.year} • ${variation.color}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+
+                    // Imagen ampliada
+                    AsyncImage(
+                        model = variation.url,
+                        contentDescription = "${variation.color} - ${variation.year}",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(350.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Fit
+                    )
+
+                    // Información detallada
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        variation.series?.let {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("Serie:", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                                Text(it, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+
+                        variation.wheelType?.takeIf { it.isNotBlank() }?.let {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("Ruedas:", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                                Text(it, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+
+                        variation.toyNumber?.takeIf { it.isNotBlank() }?.let {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("Toy #:", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                                Text(it, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+
+                        variation.country?.takeIf { it.isNotBlank() }?.let {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("País:", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                                Text(it, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
                 }
             }
         }

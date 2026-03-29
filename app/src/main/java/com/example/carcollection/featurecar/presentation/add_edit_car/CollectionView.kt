@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.FilterAltOff
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.ui.input.pointer.pointerInput
@@ -185,6 +186,9 @@ fun CollectionViewScreen(
 
     var expanded by rememberSaveable { mutableStateOf(false) }
 
+    // ✅ NUEVO: Estado para forzar refresh cuando vuelve de editar/agregar
+    var forceRefresh by remember { mutableStateOf(false) }
+
     // 🔹 MASS TAG - Estados para selección múltiple
     var isSelectionMode by remember { mutableStateOf(false) }
     var selectedCarIds by remember { mutableStateOf<Set<String>>(emptySet()) }
@@ -207,18 +211,25 @@ fun CollectionViewScreen(
     // ✅ Solo cargar datos si no están cargados (mejor rendimiento)
     val isLoading by viewModel.isLoading.collectAsState()
 
-    LaunchedEffect(Unit) {
-        // Solo cargar si la lista está vacía
-        if (carsList.isEmpty() && !isLoading) {
-            viewModel.loadUserCars()
-            viewModel.loadTags()
-        }
+    // ✅ MEJORADO: Detectar cuando se vuelve a la pantalla y recargar datos
+    LaunchedEffect(forceRefresh) {
+        viewModel.loadUserCars()
+        viewModel.loadTags()
+        forceRefresh = false  // Resetear el flag
     }
 
+    // ✅ Función para refrescar manualmente
+    val refreshData = {
+        forceRefresh = true
+    }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        topBar = {
+    // ✅ NUEVO: Envolver en Box para agregar overlay de carga
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Scaffold(
+            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+            topBar = {
             TopAppBar(
                 title = {
                     Row(
@@ -267,6 +278,21 @@ fun CollectionViewScreen(
                     }
                 },
                 actions = {
+                    // ✅ NUEVO: Botón de refresh
+                    IconButton(
+                        onClick = { refreshData() },
+                        enabled = !isLoading
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Recargar",
+                            tint = if (isLoading)
+                                MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f)
+                            else
+                                MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+
                     // ✅ Usar valores ya recolectados fuera del TopAppBar
                     BadgedBox(
                         badge = {
@@ -435,6 +461,23 @@ fun CollectionViewScreen(
                                         imageVector = if (sortAscendingState) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
                                         contentDescription = if (sortAscendingState) "Ascendente" else "Descendente",
                                         modifier = Modifier.size(20.dp)
+                                    )
+                                }
+
+                                // ✅ NUEVO: Botón de recarga manual
+                                IconButton(
+                                    onClick = { refreshData() },
+                                    enabled = !isLoading,
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Refresh,
+                                        contentDescription = "Recargar colección",
+                                        modifier = Modifier.size(20.dp),
+                                        tint = if (isLoading)
+                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                        else
+                                            MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
@@ -789,6 +832,23 @@ fun CollectionViewScreen(
                                         modifier = Modifier.size(16.dp)
                                     )
                                 }
+
+                                // ✅ NUEVO: Botón de recarga manual para Tablet
+                                IconButton(
+                                    onClick = { refreshData() },
+                                    enabled = !isLoading,
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Refresh,
+                                        contentDescription = "Recargar colección",
+                                        modifier = Modifier.size(16.dp),
+                                        tint = if (isLoading)
+                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                        else
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                     }
@@ -1088,6 +1148,47 @@ fun CollectionViewScreen(
                 }
             }
         }
+    }
+
+    // ✅ NUEVO: Indicador de carga overlay
+    if (isLoading) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                modifier = Modifier
+                    .size(120.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        modifier = Modifier.size(48.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 4.dp
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        "Cargando...",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
     }
 
     // ✅ Diálogo de confirmación para eliminar

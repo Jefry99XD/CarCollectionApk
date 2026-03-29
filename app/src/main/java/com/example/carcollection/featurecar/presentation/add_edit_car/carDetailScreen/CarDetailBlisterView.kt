@@ -44,7 +44,6 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.carcollection.R
 import com.example.carcollection.featurecar.domain.Car
-import com.example.carcollection.featurecar.presentation.add_edit_car.getBackgroundUrlById
 import com.example.carcollection.featuretags.domain.Tag
 import android.content.res.Configuration
 import androidx.compose.ui.platform.LocalConfiguration
@@ -84,20 +83,16 @@ fun CarDetailBlisterView(
         Color(0xFFCC0000)
     }
 
-    val context = LocalContext.current
-    val backgroundUrl = remember { mutableStateOf("") }
-
-    LaunchedEffect(car.backgroundName) {
-        backgroundUrl.value = getBackgroundUrlById(context, car.backgroundName.orEmpty())
-    }
+    // ✅ USAR backgroundUrl DIRECTAMENTE (viene de Firestore con URL completo)
+    val backgroundUrl = car.backgroundUrl.orEmpty()
 
     // 🔹 VERTICAL (Teléfono vertical o tablet vertical)
     if (!isLandscape) {
-        BlisterViewVertical(car, allTags, onImageClick, backgroundUrl.value, parsedColor, primaryTag)
+        BlisterViewVertical(car, allTags, onImageClick, backgroundUrl, parsedColor, primaryTag)
     }
     // 🔹 HORIZONTAL (Teléfono horizontal)
     else {
-        BlisterViewHorizontal(car, allTags, onImageClick, backgroundUrl.value, parsedColor, primaryTag)
+        BlisterViewHorizontal(car, allTags, onImageClick, backgroundUrl, parsedColor, primaryTag)
     }
 }
 
@@ -147,7 +142,7 @@ private fun BlisterViewVertical(
                     .fillMaxSize()
                     .clip(RoundedCornerShape(18.dp)),
                 contentScale = ContentScale.Crop,
-                alpha = 0.6f
+                alpha = 0.9f
             )
         }
 
@@ -269,7 +264,7 @@ private fun BlisterViewHorizontal(
                     .fillMaxSize()
                     .clip(RoundedCornerShape(18.dp)),
                 contentScale = ContentScale.Crop,
-                alpha = 0.6f
+                alpha = 0.9f
             )
         }
 
@@ -321,21 +316,37 @@ private fun BlisterViewHorizontal(
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight()
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(rememberScrollState())
+                    .padding(8.dp),
                 verticalArrangement = Arrangement.Top,
                 horizontalAlignment = Alignment.Start
             ) {
-                Text(
-                    car.name.orEmpty(),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
-                Text(
-                    "${car.brand.orEmpty()} · ${car.year.orEmpty()}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
-                )
+                // Nombre con fondo semi-transparente
+                Box(
+                    modifier = Modifier
+                        .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(6.dp))
+                        .padding(8.dp)
+                ) {
+                    Text(
+                        car.name.orEmpty(),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+
+                // Marca/Año con fondo semi-transparente
+                Box(
+                    modifier = Modifier
+                        .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(6.dp))
+                        .padding(8.dp)
+                ) {
+                    Text(
+                        "${car.brand.orEmpty()} · ${car.year.orEmpty()}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(6.dp))
 
@@ -417,7 +428,8 @@ private fun BlisterHeader(car: Car, primaryColor: Color) {
             Text(
                 "${car.brand.orEmpty()} · ${car.year.orEmpty()}",
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray
+                color = Color.Black,
+                fontWeight = FontWeight.SemiBold
             )
         }
 
@@ -445,19 +457,34 @@ private fun BlisterCarInfo(car: Car) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Text(
-            car.name.orEmpty(),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black,
-            textAlign = TextAlign.Center
-        )
+        // Nombre del carro con fondo semi-transparente
+        Box(
+            modifier = Modifier
+                .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+        ) {
+            Text(
+                car.name.orEmpty(),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                textAlign = TextAlign.Center
+            )
+        }
 
-        Text(
-            car.brand.orEmpty(),
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.Gray
-        )
+        // Marca con fondo semi-transparente
+        Box(
+            modifier = Modifier
+                .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+        ) {
+            Text(
+                car.brand.orEmpty(),
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White,
+                textAlign = TextAlign.Center
+            )
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 

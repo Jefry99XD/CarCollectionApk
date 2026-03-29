@@ -3,6 +3,7 @@ package com.example.carcollection.featureuser.publicUser
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -39,10 +41,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.carcollection.featurecar.domain.Car
 import com.example.carcollection.featureuser.UserViewModel
 
@@ -57,6 +63,10 @@ fun PublicUserCarList(
     val cars by viewModel.publicUserCars.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
     var sortDescending by remember { mutableStateOf(true) }
+
+    // ✅ NUEVO: Estado para diálogo de imagen
+    var showImageDialog by remember { mutableStateOf(false) }
+    var selectedImageUrl by remember { mutableStateOf("") }
 
     // Cargar autos si no existen todavía
     LaunchedEffect(uid) {
@@ -160,7 +170,73 @@ fun PublicUserCarList(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(filteredCars) { car ->
-                    PublicCarCard(car = car, onClick = { onCarClick(car) })
+                    PublicCarCard(
+                        car = car,
+                        onClick = { onCarClick(car) },
+                        onImageClick = {
+                            selectedImageUrl = car.photoUrl ?: ""
+                            showImageDialog = true
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    // ✅ NUEVO: Diálogo para mostrar la imagen completa del carro
+    if (showImageDialog && selectedImageUrl.isNotEmpty()) {
+        Dialog(
+            onDismissRequest = { showImageDialog = false },
+            properties = DialogProperties(
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true,
+                usePlatformDefaultWidth = false
+            )
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.8f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .background(Color(0xFF1E1E1E), shape = RoundedCornerShape(16.dp))
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Botón cerrar
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        IconButton(
+                            onClick = { showImageDialog = false },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Cerrar",
+                                tint = Color.White
+                            )
+                        }
+                    }
+
+                    // Imagen del carro
+                    val context = LocalContext.current
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(selectedImageUrl)
+                            .crossfade(300)
+                            .build(),
+                        contentDescription = "Carro",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(400.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Fit
+                    )
                 }
             }
         }
@@ -170,7 +246,8 @@ fun PublicUserCarList(
 @Composable
 fun PublicCarCard(
     car: Car,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
+    onImageClick: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier
@@ -190,7 +267,8 @@ fun PublicCarCard(
                 contentDescription = car.name,
                 modifier = Modifier
                     .size(80.dp)
-                    .clip(RoundedCornerShape(12.dp)),
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onImageClick() },
                 contentScale = ContentScale.Fit
             )
 

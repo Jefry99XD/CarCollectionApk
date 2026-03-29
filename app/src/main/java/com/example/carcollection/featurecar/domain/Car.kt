@@ -15,6 +15,7 @@ data class Car(
     val quality: String? = null, // Calidad del carro (Basico, TH, STH, etc.)
     val tags: List<String> = emptyList(), // Lista de tags
     val backgroundName: String? = null,
+    val backgroundUrl: String? = null,  // URL del fondo (nuevo campo para migración)
 
     val createdAt: Long? = null // Timestamp de creación
 ) {
@@ -31,6 +32,7 @@ data class Car(
         quality = null,
         tags = emptyList<String>(),
         backgroundName = null,
+        backgroundUrl = null,
         createdAt = null
     )
 }

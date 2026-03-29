@@ -541,4 +541,163 @@ class CarMethods {
         }
     }
 
+    /**
+     * FUNCIÓN DE MIGRACIÓN: Migra carros con backgroundName antiguo a backgroundUrl
+     * Se ejecuta una sola vez por usuario (verificada por backgroundsMigrated flag en User)
+     *
+     * Mapa de correspondencia (nombres antiguos -> IDs en JSON):
+     * Fondo 1 -> fondo_1, Fondo 2 -> fondo_9, Fondo 3 -> fondo_14, etc.
+     */
+    suspend fun migrateBackgrounds(): Result<String> {
+        val firebaseUser = auth.currentUser
+        return if (firebaseUser != null) {
+            try {
+                val userId = firebaseUser.uid
+                val userDocRef = db.collection("users").document(userId)
+
+                // ✅ PASO 1: Verificar si ya se hizo la migración
+                val userSnapshot = userDocRef.get().await()
+                val backgroundsMigrated = userSnapshot.getBoolean("backgroundsMigrated") ?: false
+
+                if (backgroundsMigrated) {
+                    println("ℹ️ Backgrounds already migrated for user $userId (skipping)")
+                    return Result.success("Already migrated")
+                }
+
+                // ✅ PASO 2: Proceder con migración
+                val carsCollectionRef = db.collection("users")
+                    .document(userId)
+                    .collection("carsCollection")
+
+                // Mapa de nombres antiguos a IDs JSON
+                val backgroundMapping = mapOf(
+                    "Fondo 1" to "fondo_1",
+                    "Fondo 01" to "fondo_1",
+                    "Fondo 2" to "fondo_9",
+                    "Fondo 02" to "fondo_2",
+                    "Fondo 3" to "fondo_14",
+                    "Fondo 03" to "fondo_3",
+                    "Fondo 4" to "fondo_15",
+                    "Fondo 04" to "fondo_4",
+                    "Fondo 5" to "fondo_16",
+                    "Fondo 6" to "fondo_17",
+                    "Fondo 7" to "fondo_18",
+                    "Fondo 8" to "fondo_19",
+                    "Fondo 10" to "fondo_7",
+                    "Fondo 15" to "fondo_8",
+                    "Fondo 20" to "fondo_10",
+                    "Fondo 23" to "fondo_11",
+                    "Fondo 24" to "fondo_12",
+                    "Fondo 26" to "fondo_13",
+                    "Fondo F2" to "fondo_5",
+                    "Fondo" to "fondo_6"
+                )
+
+                // Mapa de IDs JSON a URLs (basado en backgrounds.json)
+                val idToUrlMapping = mapOf(
+                    "fondo_1" to "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/01.png",
+                    "fondo_2" to "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/02.png",
+                    "fondo_3" to "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/03.png",
+                    "fondo_4" to "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/04.png",
+                    "fondo_5" to "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/f2.jpg",
+                    "fondo_6" to "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo.jpg",
+                    "fondo_7" to "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo10.png",
+                    "fondo_8" to "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo15.jpeg",
+                    "fondo_9" to "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo2.png",
+                    "fondo_10" to "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo20.jpeg",
+                    "fondo_11" to "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo23.jpg",
+                    "fondo_12" to "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo24.jpeg",
+                    "fondo_13" to "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo26.jpg",
+                    "fondo_14" to "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo3.jpg",
+                    "fondo_15" to "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo4.jpg",
+                    "fondo_16" to "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo5.jpg",
+                    "fondo_17" to "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo6.jpg",
+                    "fondo_18" to "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo7.png",
+                    "fondo_19" to "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo8.png"
+                )
+
+                // 🔹 URL default (fondo_1 - el primero del JSON)
+                val defaultBackgroundUrl = "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/01.png"
+
+                // Obtener todos los carros del usuario
+                val snapshot = carsCollectionRef.get().await()
+                var migratedCount = 0
+                var unmappedCount = 0
+                var emptyBackgroundCount = 0
+
+                // Batch update para migraciones
+                val writeBatch = db.batch()
+
+                for (doc in snapshot.documents) {
+                    val backgroundName = doc.getString("backgroundName")
+                    val backgroundUrl = doc.getString("backgroundUrl")
+                    var shouldUpdate = false
+                    var newBackgroundUrl = backgroundUrl
+
+                    // ✅ CASO 1: Si tiene backgroundName antiguo, migrar a URL
+                    if (!backgroundName.isNullOrBlank()) {
+                        val mappedId = backgroundMapping[backgroundName]
+                        newBackgroundUrl = if (mappedId != null) {
+                            idToUrlMapping[mappedId] ?: defaultBackgroundUrl  // Fallback a default si falta en map
+                        } else {
+                            // Si no se encuentra en el mapa, usar fondo default
+                            println("⚠️ Unknown background name: '$backgroundName' for car ${doc.id}, using default")
+                            unmappedCount++
+                            defaultBackgroundUrl
+                        }
+                        shouldUpdate = true
+                        migratedCount++
+                    }
+                    // ✅ CASO 2: Si NO tiene backgroundUrl o está vacío/null, asignar default
+                    else if (backgroundUrl.isNullOrBlank()) {
+                        println("⚠️ Car ${doc.id} has no background, assigning default")
+                        newBackgroundUrl = defaultBackgroundUrl
+                        shouldUpdate = true
+                        emptyBackgroundCount++
+                    }
+
+                    // Actualizar documento si es necesario
+                    if (shouldUpdate) {
+                        writeBatch.update(
+                            doc.reference,
+                            mapOf(
+                                "backgroundUrl" to newBackgroundUrl,
+                                "backgroundName" to null  // Limpiar nombre antiguo si existe
+                            )
+                        )
+                    }
+                }
+
+                // ✅ PASO 3: Ejecutar batch update
+                val totalUpdated = migratedCount + emptyBackgroundCount
+                if (totalUpdated > 0) {
+                    writeBatch.commit().await()
+                    invalidateCache()
+                    println("✅ Updated $totalUpdated cars - $migratedCount migrated, $emptyBackgroundCount assigned default")
+                    if (unmappedCount > 0) {
+                        println("⚠️ $unmappedCount cars had unknown background names and were assigned default")
+                    }
+                } else {
+                    println("ℹ️ All cars have valid backgrounds, no migration needed")
+                }
+
+                // ✅ PASO 4: Marcar en usuario que migración fue completada
+                userDocRef.update(
+                    mapOf(
+                        "backgroundsMigrated" to true,
+                        "backgroundsMigratedAt" to System.currentTimeMillis()
+                    )
+                ).await()
+
+                println("✅ Background migration flag updated for user $userId")
+                Result.success("Processed $totalUpdated cars (migrated: $migratedCount, assigned default: $emptyBackgroundCount, unmapped: $unmappedCount)")
+
+            } catch (e: Exception) {
+                Result.failure(Exception("Background migration failed: ${e.message}"))
+            }
+        } else {
+            Result.failure(Exception("No user logged in"))
+        }
+    }
+
 }

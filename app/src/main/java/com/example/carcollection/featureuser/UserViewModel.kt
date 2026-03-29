@@ -454,6 +454,27 @@ class UserViewModel(
             } catch (e: Exception) {
                 SecureLogger.failure("Failed to check/migrate XP", e.message)
             }
+
+            // ✅ Ejecutar migración de fondos después de XP
+            migrateCarBackgrounds()
+        }
+    }
+
+    /**
+     * MIGRACIÓN DE FONDOS: Reemplazar backgroundName por backgroundUrl
+     * Se ejecuta solo una vez por usuario (verificada por flag en SharedPreferences)
+     */
+    private fun migrateCarBackgrounds() {
+        viewModelScope.launch {
+            try {
+                val carMethods = com.example.carcollection.featurecar.data.CarMethods()
+                val result = carMethods.migrateBackgrounds()
+                if (result.isSuccess) {
+                    SecureLogger.success("Background migration completed: ${result.getOrNull()}")
+                }
+            } catch (e: Exception) {
+                SecureLogger.failure("Failed to migrate backgrounds", e.message)
+            }
         }
     }
 

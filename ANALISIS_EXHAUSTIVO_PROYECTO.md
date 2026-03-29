@@ -89,21 +89,7 @@
 
 | # | Feature | Descripción | Prioridad | Esfuerzo | Impacto |
 |---|---------|-------------|-----------|----------|---------|
-| 1 | Historial de Cambios | Seguimiento de cambios en cada carro | 🟠 Media | 🟠 Alto | 🟡 Bajo |
-| 2 | Comparación de Carros | Comparar specs de 2+ carros | 🟠 Media | 🟠 Alto | 🟠 Medio |
-| 3 | Duplicar Carro | Quick duplicate de configuración existente | 🟠 Media | 🟡 Bajo | 🟡 Bajo |
-| 4 | Notas Privadas | Campo de notas/comentarios privados | 🟠 Media | 🟡 Medio | 🟡 Bajo |
-| 5 | Calificación Personal | Rating 1-5 estrellas del usuario | 🟠 Media | 🟡 Bajo | 🟡 Bajo |
-
-#### 🎯 NUEVAS FUNCIONALIDADES
-
-| # | Feature | Descripción | Prioridad | Esfuerzo | Impacto |
-|---|---------|-------------|-----------|----------|---------|
-| 1 | Marketplace | Comprar/vender carros entre usuarios | 🟡 Baja | 🔴 Muy Alto | 🟢 Alto |
-| 2 | Préstamo de Carros | Sistema de lending entre coleccionistas | 🟡 Baja | 🔴 Muy Alto | 🟠 Medio |
-| 3 | Subastas | Subasta entre usuarios | 🟡 Baja | 🔴 Muy Alto | 🟠 Medio |
-| 4 | Trades/Intercambios | Proponer intercambios entre usuarios | 🟡 Baja | 🟠 Alto | 🟠 Medio |
-| 5 | AR Viewer | Vista en realidad aumentada de carros | 🟡 Baja | 🔴 Muy Alto | 🟢 Alto |
+| 1 | Notas Privadas | Campo de notas/comentarios privados | 🟠 Media | 🟡 Medio | 🟡 Bajo |
 
 ---
 
@@ -150,11 +136,7 @@
 
 | # | Feature | Descripción | Prioridad | Esfuerzo | Impacto |
 |---|---------|-------------|-----------|----------|---------|
-| 1 | Social Feed | Feed de actividad de amigos | 🟡 Baja | 🟠 Alto | 🟢 Alto |
-| 2 | Follow/Followers | Sistema de seguimiento entre usuarios | 🟡 Baja | 🟡 Medio | 🟠 Medio |
-| 3 | Direct Messages | Chat entre usuarios | 🟡 Baja | 🟠 Alto | 🟠 Medio |
-| 4 | Reputación/Rating | Sistema de ratings de usuario | 🟡 Baja | 🟠 Alto | 🟠 Medio |
-| 5 | Badges por Eventos | Badges temporales por eventos especiales | 🟡 Baja | 🟠 Alto | 🟡 Bajo |
+| 1 | Exportar Datos | Descargar datos personales (CSV, PDF) | 🟠 Media | 🟠 Alto | 🟡 Bajo |
 
 ---
 
@@ -191,21 +173,7 @@
 
 | # | Feature | Descripción | Prioridad | Esfuerzo | Impacto |
 |---|---------|-------------|-----------|----------|---------|
-| 1 | Logros Semanales | Desafíos que se resetean cada semana | 🟠 Media | 🟠 Alto | 🟠 Medio |
-| 2 | Logros por Temporada | Logros limitados por temporada | 🟠 Media | 🟠 Alto | 🟠 Medio |
-| 3 | Rewards Dinámicas | Recompensas variables según progreso | 🟠 Media | 🟠 Alto | 🟡 Bajo |
-| 4 | Leaderboard | Ranking de logros por usuario | 🟠 Media | 🟡 Medio | 🟠 Medio |
-| 5 | Notificaciones | Alertas cuando se está cerca de desbloquear | 🟠 Media | 🟡 Medio | 🟠 Medio |
-
-#### 🎯 NUEVAS FUNCIONALIDADES
-
-| # | Feature | Descripción | Prioridad | Esfuerzo | Impacto |
-|---|---------|-------------|-----------|----------|---------|
-| 1 | Achievement Collections | Coleccionar sets de logros temáticos | 🟡 Baja | 🟠 Alto | 🟠 Medio |
-| 2 | Secret Achievements | Logros ocultos sin descripción | 🟡 Baja | 🟡 Medio | 🟡 Bajo |
-| 3 | Progression Tree | Árbol de progresión de logros | 🟡 Baja | 🟠 Alto | 🟠 Medio |
-| 4 | Milestone Rewards | Recompensas especiales cada 10 logros | 🟡 Baja | 🟡 Medio | 🟡 Bajo |
-| 5 | Community Challenges | Desafíos globales con premios | 🟡 Baja | 🟠 Alto | 🟠 Medio |
+| 1 | Leaderboard | Ranking de logros por usuario | 🟠 Media | 🟡 Medio | 🟠 Medio |
 
 ---
 
