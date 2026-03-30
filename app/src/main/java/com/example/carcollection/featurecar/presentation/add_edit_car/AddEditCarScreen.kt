@@ -488,6 +488,15 @@ fun CarFormFields(viewModel: CarFormViewModel) {
             expanded = expandedBrand,
             onExpandedChange = { expandedBrand = it }
         )
+        Spacer(modifier = Modifier.height(8.dp))
+        ExposedDropdownField(
+            value = viewModel.serie.value,
+            onValueChange = { viewModel.onSerieChange(it) },
+            label = "Serie",
+            suggestions = serieSuggestions,
+            expanded = expandedSerie,
+            onExpandedChange = { expandedSerie = it }
+        )
     } else {
         Row(
             modifier = Modifier.fillMaxWidth(),
