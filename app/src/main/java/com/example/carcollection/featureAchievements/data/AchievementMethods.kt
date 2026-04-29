@@ -174,7 +174,15 @@ class AchievementMethods {
             return evaluateLevelAchievement(global, previous, currentUser)
         }
 
+        // 🎯 LOGRO ESPECIAL: CAR OF THE DAY
+        if (global.id == "car_of_the_day") {
+            return evaluateCarOfTheDayAchievement(global, previous, cars)
+        }
+
         val countedIds = previous.countedCarIds.toMutableSet()
+        val currentCarIds = cars.mapNotNull { it.id }.toSet()
+        val validCountedIds = previous.countedCarIds.filter { it in currentCarIds }.toMutableSet()
+        val countedIds = validCountedIds
 
         // TIME BASED
         if (global.rules.timeWindow != null) {
@@ -330,7 +338,7 @@ class AchievementMethods {
     }
 
     // ─────────────────────────────────────────────────────────────
-    // LOGROS POR TIEMPO (DÍA / MES)
+    // LOGROS POR TIEMPO (24h / 30 días / 365 días)
     // ─────────────────────────────────────────────────────────────
 
     @SuppressLint("NewApi")
@@ -341,30 +349,130 @@ class AchievementMethods {
         cars: List<Car>
     ): UserAchievement {
 
-        val formatter = when (global.rules.timeWindow) {
-            TimeWindow.DAY -> DateTimeFormatter.ofPattern("yyyy-MM-dd")
-            TimeWindow.MONTH -> DateTimeFormatter.ofPattern("yyyy-MM")
+        // Determinar el rango de tiempo en milisegundos según timeWindow
+        val timeRangeMs = when (global.rules.timeWindow) {
+            TimeWindow.DAY -> 24 * 60 * 60 * 1000L      // 24 horas
+            TimeWindow.MONTH -> 30 * 24 * 60 * 60 * 1000L // 30 días
+            TimeWindow.YEAR -> 365 * 24 * 60 * 60 * 1000L // 365 días
             else -> return previous
         }
 
-        val grouped = cars.groupBy { car ->
-            formatter.format(
-                Instant.ofEpochMilli(car.createdAt ?: 0)
-                    .atZone(ZoneId.systemDefault())
-            )
+        val currentTime = System.currentTimeMillis()
+
+        // Contar carros agregados dentro del rango de tiempo
+        val carsInTimeRange = cars.count { car ->
+            val createdAt = car.createdAt ?: return@count false
+            val age = currentTime - createdAt
+            age <= timeRangeMs
         }
 
-        val max = grouped.maxOfOrNull { it.value.size } ?: 0
-        val unlocked = max >= global.goal
+        val unlocked = carsInTimeRange >= global.goal
 
         return previous.copy(
-            progress = max,
+            progress = carsInTimeRange,
             unlocked = unlocked,
             unlockedAt = if (unlocked && previous.unlockedAt == null)
                 System.currentTimeMillis() else previous.unlockedAt,
             lastEvaluatedAt = System.currentTimeMillis()
         )
     }
+
+    // ─────────────────────────────────────────────────────────────
+    // LOGRO ESPECIAL: CAR OF THE DAY
+    // ─────────────────────────────────────────────────────────────
+
+    @SuppressLint("NewApi")
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun evaluateCarOfTheDayAchievement(
+        global: AchievementGlobal,
+        previous: UserAchievement,
+        cars: List<Car>
+    ): UserAchievement? {
+        // Obtener el carro del día
+        val carOfTheDay = getCarOfTheDayData()
+
+        if (carOfTheDay == null) {
+            return null // No hay carro del día
+        }
+
+        // Verificar si el usuario tiene un carro que coincida
+        val hasCarOfTheDay = cars.any { car ->
+            car.name?.equals(carOfTheDay.name, ignoreCase = true) == true &&
+            car.serie?.equals(carOfTheDay.series, ignoreCase = true) == true
+        }
+
+        if (!hasCarOfTheDay) {
+            return null // Usuario no tiene el carro del día
+        }
+
+        // Incrementar contador (progress = número de veces que ha tenido el carro del día)
+        val newProgress = previous.progress + 1
+
+        return previous.copy(
+            progress = newProgress,
+            unlocked = true,
+            unlockedAt = if (previous.unlockedAt == null) System.currentTimeMillis() else previous.unlockedAt,
+            lastEvaluatedAt = System.currentTimeMillis()
+        )
+    }
+
+    // Helper para obtener el carro del día
+    private fun getCarOfTheDayData(): CarOfTheDayInfo? {
+        return try {
+            val context = android.app.Application().applicationContext
+            val inputStream = context.assets.open("diecast_images.json")
+            val json = inputStream.bufferedReader().use { it.readText() }
+
+            val gson = com.google.gson.Gson()
+            val carLibraryEntries = try {
+                val typeArray = object : com.google.gson.reflect.TypeToken<List<com.example.carcollection.featurecar.presentation.add_edit_car.CarLibraryEntry>>() {}.type
+                gson.fromJson<List<com.example.carcollection.featurecar.presentation.add_edit_car.CarLibraryEntry>>(json, typeArray)
+            } catch (_: Exception) {
+                try {
+                    val typeSingle = object : com.google.gson.reflect.TypeToken<com.example.carcollection.featurecar.presentation.add_edit_car.CarLibraryEntry>() {}.type
+                    val singleEntry = gson.fromJson<com.example.carcollection.featurecar.presentation.add_edit_car.CarLibraryEntry>(json, typeSingle)
+                    listOf(singleEntry)
+                } catch (e2: Exception) {
+                    return null
+                }
+            }
+
+            // Calcular índice basado en la fecha de hoy
+            val calendar = java.util.Calendar.getInstance()
+            val dayOfYear = calendar.get(java.util.Calendar.DAY_OF_YEAR)
+            val year = calendar.get(java.util.Calendar.YEAR)
+            val seed = (year * 1000L + dayOfYear).hashCode().toLong()
+
+            val allVariations = mutableListOf<Pair<com.example.carcollection.featurecar.presentation.add_edit_car.CarLibraryEntry, com.example.carcollection.featurecar.presentation.add_edit_car.CarVariation>>()
+            for (entry in carLibraryEntries) {
+                if (entry.variations != null) {
+                    for (variation in entry.variations) {
+                        allVariations.add(entry to variation)
+                    }
+                }
+            }
+
+            if (allVariations.isEmpty()) {
+                return null
+            }
+
+            val index = (kotlin.math.abs(seed) % allVariations.size).toInt()
+            val (carEntry, variation) = allVariations[index]
+
+            CarOfTheDayInfo(
+                name = carEntry.name ?: "Modelo desconocido",
+                series = variation.series ?: "N/A"
+            )
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    // Data class para Car of the Day info
+    private data class CarOfTheDayInfo(
+        val name: String,
+        val series: String
+    )
 
     // ─────────────────────────────────────────────────────────────
     // MATCHING DE CONDICIONES
@@ -469,6 +577,11 @@ class AchievementMethods {
             .document(achievement.id)
             .set(achievement)
             .await()
+
+        // Si es un logro exclusivo, otorgar inmediatamente a los usuarios
+        if (achievement.isExclusive && achievement.exclusiveUserIds.isNotEmpty()) {
+            grantExclusiveAchievements(achievement)
+        }
     }
 
     suspend fun deleteGlobalAchievement(
@@ -511,5 +624,64 @@ class AchievementMethods {
             ?.copy(id = achievementId)
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // OTORGAR LOGROS EXCLUSIVOS
+    // ─────────────────────────────────────────────────────────────
+
+    private suspend fun grantExclusiveAchievements(achievement: AchievementGlobal) {
+        // Crear el UserAchievement desbloqueado inmediatamente
+        val unlockedAchievement = UserAchievement(
+            achievementId = achievement.id,
+            progress = achievement.goal,
+            goal = achievement.goal,
+            unlocked = true,
+            unlockedAt = System.currentTimeMillis(),
+            countedCarIds = emptyList(),
+            matchedConditionIndices = emptyList(),
+            lastEvaluatedAt = System.currentTimeMillis()
+        )
+
+        // Otorgar a cada usuario en la lista exclusiva
+        for (userId in achievement.exclusiveUserIds) {
+            try {
+                db.collection("users")
+                    .document(userId)
+                    .collection("achievements")
+                    .document(achievement.id)
+                    .set(unlockedAchievement)
+                    .await()
+
+                // Otorgar XP al usuario
+                try {
+                    val xpAmount = when (achievement.rarity) {
+                        AchievementRarity.COMUN -> 200
+                        AchievementRarity.RARO -> 400
+                        AchievementRarity.LEGENDARIO -> 800
+                        AchievementRarity.SPECIAL -> 1200
+                    }
+
+                    db.collection("users")
+                        .document(userId)
+                        .get()
+                        .await()
+                        .reference
+                        .update(
+                            "xp", com.google.firebase.firestore.FieldValue.increment(xpAmount.toLong())
+                        )
+                        .await()
+                } catch (_: Exception) {
+                    // Si falla la XP, no fallar la operación completa
+                }
+
+            } catch (e: Exception) {
+                // Log error pero continuar con otros usuarios
+                android.util.Log.e(
+                    "AchievementMethods",
+                    "Error al otorgar logro exclusivo $achievement.id a usuario $userId",
+                    e
+                )
+            }
+        }
+    }
 
 }

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.carcollection.featureAchievements.data.AchievementMethods
 import com.example.carcollection.featureAchievements.domain.AchievementGlobal
 import com.example.carcollection.featureAchievements.domain.UserAchievement
+import com.example.carcollection.featureuser.data.UserMethods
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -12,6 +13,7 @@ import kotlinx.coroutines.launch
 class AchievementViewModel : ViewModel() {
 
     private val methods = AchievementMethods()
+    private val userMethods = UserMethods()
 
     private val _achievements =
         MutableStateFlow<List<Pair<AchievementGlobal, UserAchievement?>>>(emptyList())
@@ -135,6 +137,18 @@ class AchievementViewModel : ViewModel() {
             } finally {
                 _isLoading.value = false
             }
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    // Obtener lista de usuarios para dropdown
+    // ─────────────────────────────────────────────
+    suspend fun getAllUsers(): List<Pair<String, String>> {
+        return try {
+            userMethods.getAllUsers().getOrNull() ?: emptyList()
+        } catch (e: Exception) {
+            _errorMessage.value = e.message
+            emptyList()
         }
     }
 }

@@ -40,20 +40,26 @@ data class AchievementGlobal(
     val hidden: Boolean = false,
     val active: Boolean = true,
 
+    // ── LOGROS EXCLUSIVOS ──
+    // Si es true: logro privado/exclusivo
+    // Si es false: logro público disponible para todos
+    val isExclusive: Boolean = false,
+
+    // Lista de IDs de usuarios a quienes se les da este logro exclusivo
+    // Solo aplica si isExclusive == true
+    val exclusiveUserIds: List<String> = emptyList(),
+
     val createdAt: Long = System.currentTimeMillis()
 )
 
 /**
  * Categoría descriptiva del logro.
- * No depende directamente de un campo del carro.
+ * Determina la lógica de evaluación principal.
  */
 enum class AchievementCategory {
-    COLLECTION,     // Conteo general de carros
-    BRAND,          // Marca específica
-    FANTASY,        // Fantasía / Fantasy
-    PREMIUM,        // Calidad premium
-    TIME_BASED,     // Día / Mes
-    MIXED,          // Condiciones compuestas
+    COLLECTION,     // Logros basados en carros (usa condiciones)
+    TIME_BASED,     // Logros basados en tiempo (fecha de agregación)
+    STREAK_BASED,   // Logros de racha (X carros en X días consecutivos)
     USER            // Logros de nivel/progreso del usuario
 }
 
@@ -116,7 +122,10 @@ data class AchievementRules(
     // Un carro solo puede contar una vez por logro
     val uniquePerCar: Boolean = true,
 
-    // Ventana de tiempo para logros por actividad
+    // Ventana de tiempo para logros TIME_BASED
+    // DAY: Agrega X carros en 1 día
+    // MONTH: Agrega X carros en 1 mes
+    // YEAR: Agrega X carros en 1 año
     val timeWindow: TimeWindow? = null,
 
     // Lógica de evaluación de condiciones
@@ -126,11 +135,13 @@ data class AchievementRules(
 )
 
 /**
- * Ventana de tiempo usada en logros basados en fecha.
+ * Ventana de tiempo usada en logros TIME_BASED.
+ * Define el rango de fecha sobre el cual evaluar.
  */
 enum class TimeWindow {
-    DAY,
-    MONTH
+    DAY,    // Carros agregados en 1 día (últimas 24 horas)
+    MONTH,  // Carros agregados en 1 mes (últimos 30 días)
+    YEAR    // Carros agregados en 1 año (últimos 365 días)
 }
 
 /**

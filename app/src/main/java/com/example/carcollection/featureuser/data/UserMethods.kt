@@ -770,5 +770,23 @@ class UserMethods {
         }
     }
 
+    /**
+     * Obtener lista de todos los usuarios para seleccionar en dropdowns
+     * Retorna pares de (uid, username/email)
+     */
+    suspend fun getAllUsers(): Result<List<Pair<String, String>>> {
+        return try {
+            val usersSnapshot = db.collection("users").get().await()
+            val users = usersSnapshot.documents.mapNotNull { doc ->
+                val user = doc.toObject(User::class.java)
+                val uid = doc.id
+                val displayName = user?.username ?: user?.email ?: uid
+                uid to displayName
+            }
+            Result.success(users.sortedBy { it.second })
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to fetch users: ${e.message}"))
+        }
+    }
 
 }

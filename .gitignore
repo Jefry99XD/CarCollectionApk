@@ -38,6 +38,13 @@ navigation.json
 *.swp
 
 # ==============================
+# Credenciales y claves
+# ==============================
+keys.json
+google-services.json
+serviceAccountKey.json
+
+# ==============================
 # APKs y releases
 # ==============================
 

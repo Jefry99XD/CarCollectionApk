@@ -44,6 +44,38 @@ import coil.compose.AsyncImage
 import com.example.carcollection.featureAchievements.domain.AchievementGlobal
 import com.example.carcollection.featureAchievements.domain.AchievementRarity
 import com.example.carcollection.featureAchievements.domain.UserAchievement
+import com.example.carcollection.featureAchievements.domain.AchievementCondition
+import com.example.carcollection.featurecar.domain.Car
+
+// Helper function para contar carros que coinciden con una condición
+private fun countCarsMatchingCondition(
+    cars: List<Car>,
+    concept: String
+): Int {
+    if (concept.isBlank()) return cars.size
+
+    return cars.count { car ->
+        car.name?.lowercase()?.contains(concept.lowercase()) == true ||
+        car.brand?.lowercase()?.contains(concept.lowercase()) == true ||
+        car.serie?.lowercase()?.contains(concept.lowercase()) == true ||
+        car.type?.lowercase()?.contains(concept.lowercase()) == true ||
+        car.quality?.lowercase()?.contains(concept.lowercase()) == true
+    }
+}
+
+// Helper function para verificar si un carro coincide con una condición
+private fun carMatchesConditionForDisplay(
+    car: Car,
+    condition: AchievementCondition
+): Boolean {
+    if (condition.concept.isBlank()) return true
+
+    return car.name?.lowercase()?.contains(condition.concept.lowercase()) == true ||
+            car.brand?.lowercase()?.contains(condition.concept.lowercase()) == true ||
+            car.serie?.lowercase()?.contains(condition.concept.lowercase()) == true ||
+            car.type?.lowercase()?.contains(condition.concept.lowercase()) == true ||
+            car.quality?.lowercase()?.contains(condition.concept.lowercase()) == true
+}
 
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -52,6 +84,7 @@ fun AchievementItem(
     achievement: AchievementGlobal,
     userAchievement: UserAchievement?,
     modifier: Modifier = Modifier,
+    userCars: List<Car> = emptyList(),
     userCarNames: Set<String> = emptySet()
 ) {
     val isUnlocked = userAchievement?.unlocked == true
@@ -159,6 +192,33 @@ fun AchievementItem(
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
                             color = MaterialTheme.colorScheme.primary
                         )
+                        // Mostrar información adicional según el tipo de logro
+                        if (achievement.id == "car_of_the_day") {
+                            // Para Car of the Day, mostrar cuántas veces ha coincidido
+                            Text(
+                                text = "🎯 Obtenido $progress veces",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else if (goal == 1 && userAchievement.countedCarIds.isNotEmpty()) {
+                            // Para logros de 1 carro, mostrar cuál es
+                            val carId = userAchievement.countedCarIds.firstOrNull()
+                            val car = userCars.find { it.id == carId }
+                            if (car != null) {
+                                Text(
+                                    text = "🚗 ${car.name ?: "Desconocido"}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        } else if (progress > 0 && goal > 1) {
+                            // Para logros multi-carro, mostrar el total de carros que cumplen
+                            Text(
+                                text = "🚗 $progress carros totales",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
@@ -176,7 +236,20 @@ fun AchievementItem(
                 )
 
                 val matchedIndices = userAchievement?.matchedConditionIndices?.toSet() ?: emptySet()
-                val completedCount = matchedIndices.size
+
+                // Contar condiciones completadas (tanto single como multiple)
+                val completedCount = achievement.conditions.count { condition ->
+                    if (condition.allowMultiplePerConcept) {
+                        // Para condiciones múltiples: contar si hay al menos 1 carro que cuenta
+                        userAchievement?.countedCarIds?.any { carId ->
+                            val car = userCars.find { it.id == carId }
+                            car?.let { carMatchesConditionForDisplay(it, condition) } == true
+                        } ?: false
+                    } else {
+                        // Para condiciones únicas: usar matchedConditionIndices
+                        achievement.conditions.indexOf(condition) in matchedIndices
+                    }
+                }
                 val totalCount = achievement.conditions.size
 
                 Row(
@@ -208,18 +281,39 @@ fun AchievementItem(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         achievement.conditions.forEachIndexed { index, condition ->
-                            val isCompleted = index in matchedIndices
+                            // Determinar si la condición está completada
+                            val isCompleted = if (condition.allowMultiplePerConcept) {
+                                // Para condiciones múltiples: verificar si hay al menos 1 carro que cuenta para esta condición
+                                userAchievement?.countedCarIds?.any { carId ->
+                                    val car = userCars.find { it.id == carId }
+                                    car?.let { carMatchesConditionForDisplay(it, condition) } == true
+                                } ?: false
+                            } else {
+                                // Para condiciones únicas: usar matchedConditionIndices
+                                index in matchedIndices
+                            }
+
                             val displayName = condition.concept.replaceFirstChar {
                                 if (it.isLowerCase()) it.titlecase() else it.toString()
                             }
 
-                            Text(
-                                text = if (isCompleted) "✅ $displayName" else "• $displayName",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (isCompleted) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurface,
-                                textDecoration = if (isCompleted) TextDecoration.LineThrough else null,
-                                fontWeight = if (isCompleted) FontWeight.SemiBold else FontWeight.Medium
-                            )
+                            // Contar carros que coinciden con esta condición
+                            val carCount = if (condition.concept.isNotEmpty()) {
+                                countCarsMatchingCondition(userCars, condition.concept)
+                            } else {
+                                userCars.size
+                            }
+
+                            // Solo mostrar si hay al menos 1 carro
+                            if (carCount > 0) {
+                                Text(
+                                    text = if (isCompleted) "✅ $displayName ($carCount)" else "• $displayName ($carCount)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (isCompleted) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurface,
+                                    textDecoration = if (isCompleted) TextDecoration.LineThrough else null,
+                                    fontWeight = if (isCompleted) FontWeight.SemiBold else FontWeight.Medium
+                                )
+                            }
                         }
                     }
                 }

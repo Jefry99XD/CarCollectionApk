@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.example.carcollection.featureAchievements.domain.AchievementGlobal
 import com.example.carcollection.featureAchievements.domain.UserAchievement
+import com.example.carcollection.featurecar.domain.Car
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,6 +32,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Arrangement
@@ -43,11 +45,15 @@ fun AchievementList(
     errorMessage: String?,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
+    userCars: List<Car> = emptyList(),
     userCarNames: Set<String> = emptySet()
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var showOnlyUnlocked by remember { mutableStateOf(false) }
     var showOnlyLocked by remember { mutableStateOf(false) }
+    var currentPage by remember { mutableStateOf(0) }
+
+    val itemsPerPage = 10
 
     // Filter achievements based on search and filters
     val filteredAchievements = remember(achievements, searchQuery, showOnlyUnlocked, showOnlyLocked) {
@@ -65,6 +71,17 @@ fun AchievementList(
 
             matchesSearch && matchesFilter
         }.sortedBy { (achievement, _) -> achievement.title } // Ordenar alfabéticamente
+    }
+
+    // Calcular página
+    val totalPages = (filteredAchievements.size + itemsPerPage - 1) / itemsPerPage
+    val paginatedAchievements = filteredAchievements.drop(currentPage * itemsPerPage).take(itemsPerPage)
+
+    // Resetear página si está fuera de rango
+    LaunchedEffect(filteredAchievements.size) {
+        if (currentPage >= totalPages && totalPages > 0) {
+            currentPage = totalPages - 1
+        }
     }
 
     when {
@@ -163,7 +180,7 @@ fun AchievementList(
 
                 // Achievement count
                 Text(
-                    text = "Mostrando ${filteredAchievements.size} de ${achievements.size} logros",
+                    text = "Mostrando ${minOf((currentPage + 1) * itemsPerPage, filteredAchievements.size)} de ${filteredAchievements.size} logros",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
@@ -184,21 +201,54 @@ fun AchievementList(
                 } else {
                     LazyColumn(
                         modifier = Modifier
-                            .fillMaxSize()
+                            .weight(1f)
+                            .fillMaxWidth()
                             .padding(horizontal = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         item { Spacer(Modifier.height(4.dp)) }
 
-                        items(filteredAchievements) { (achievement, progress) ->
+                        items(paginatedAchievements) { (achievement, progress) ->
                             AchievementItem(
                                 achievement = achievement,
                                 userAchievement = progress,
+                                userCars = userCars,
                                 userCarNames = userCarNames
                             )
                         }
 
                         item { Spacer(Modifier.height(8.dp)) }
+                    }
+
+                    // Pagination Controls (Bottom)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Button(
+                            onClick = { if (currentPage > 0) currentPage-- },
+                            enabled = currentPage > 0,
+                            modifier = Modifier.padding(end = 8.dp)
+                        ) {
+                            Text("← Anterior")
+                        }
+
+                        Text(
+                            text = "Página ${currentPage + 1}/$totalPages",
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+
+                        Button(
+                            onClick = { if (currentPage < totalPages - 1) currentPage++ },
+                            enabled = currentPage < totalPages - 1,
+                            modifier = Modifier.padding(start = 8.dp)
+                        ) {
+                            Text("Siguiente →")
+                        }
                     }
                 }
             }

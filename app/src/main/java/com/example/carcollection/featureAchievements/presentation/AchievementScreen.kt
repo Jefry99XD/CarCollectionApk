@@ -73,6 +73,7 @@ fun AchievementScreen(
             errorMessage = errorMessage,
             onRetry = { achievementViewModel.fetchAchievements() },
             modifier = Modifier.padding(innerPadding),
+            userCars = userCars,
             userCarNames = userCarNames
         )
     }
