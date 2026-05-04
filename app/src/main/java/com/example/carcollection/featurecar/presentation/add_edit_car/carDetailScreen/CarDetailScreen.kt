@@ -8,6 +8,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.ViewDay
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -38,10 +40,13 @@ import com.example.carcollection.featuretags.domain.Tag
 fun CarDetailScreen(
     car: Car?,
     allTags: List<Tag>,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    isFavorite: Boolean = false,
+    onToggleFavorite: () -> Unit = {}
 ) {
     var showImageDialog by remember { mutableStateOf(false) }
     var isModernView by remember { mutableStateOf(false) }
+    var localIsFavorite by remember(isFavorite) { mutableStateOf(isFavorite) }
 
     // Mostrar loading si el carro aún no se cargó
     if (car == null) {
@@ -61,6 +66,18 @@ fun CarDetailScreen(
                     }
                 },
                 actions = {
+                    // Botón de favoritos
+                    IconButton(onClick = {
+                        localIsFavorite = !localIsFavorite
+                        onToggleFavorite()
+                    }) {
+                        Icon(
+                            imageVector = if (localIsFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = "Favorito",
+                            tint = if (localIsFavorite) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
                     // Botón para cambiar vista
                     IconButton(onClick = { isModernView = !isModernView }) {
                         Icon(

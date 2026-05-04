@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.example.carcollection.featurecar.domain.CarViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,6 +42,8 @@ fun AchievementScreen(
             }
             .toSet()
     }
+
+    val currentUserId = remember { FirebaseAuth.getInstance().currentUser?.uid }
 
     // Cargar carros y logros al inicio (asegura datos frescos)
     LaunchedEffect(Unit) {
@@ -74,7 +77,9 @@ fun AchievementScreen(
             onRetry = { achievementViewModel.fetchAchievements() },
             modifier = Modifier.padding(innerPadding),
             userCars = userCars,
-            userCarNames = userCarNames
+            userCarNames = userCarNames,
+            currentUserId = currentUserId,
+            profileUsername = null  // perfil propio
         )
     }
 }

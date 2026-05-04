@@ -1,5 +1,7 @@
 package com.example.carcollection.featureAchievements.domain
 
+import com.google.firebase.firestore.PropertyName
+
 /**
  * Rareza del logro que determina la cantidad de XP otorgada
  */
@@ -49,6 +51,7 @@ data class AchievementGlobal(
     // Solo aplica si isExclusive == true
     val exclusiveUserIds: List<String> = emptyList(),
 
+    @PropertyName("createdAt")
     val createdAt: Long = System.currentTimeMillis()
 )
 
@@ -60,7 +63,8 @@ enum class AchievementCategory {
     COLLECTION,     // Logros basados en carros (usa condiciones)
     TIME_BASED,     // Logros basados en tiempo (fecha de agregación)
     STREAK_BASED,   // Logros de racha (X carros en X días consecutivos)
-    USER            // Logros de nivel/progreso del usuario
+    USER,           // Logros de nivel/progreso del usuario
+    EXCLUSIVE       // Logros exclusivos para usuarios específicos (sin condiciones ni meta)
 }
 
 /**

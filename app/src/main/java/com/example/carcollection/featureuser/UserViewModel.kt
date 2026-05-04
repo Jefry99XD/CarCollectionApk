@@ -67,13 +67,15 @@ class UserViewModel(
                 fetchUserStats()
                 fetchRecentCars()
             } else {
-                // 🚪 usuario salió: limpiar estado
+                // 🚪 usuario salió: limpiar estado y detener listener real-time
+                stopRealtimeSync()
                 _user.value = null
                 _carCount.value = 0
                 _tagCount.value = 0
                 _achievementCount.value = 0
                 _seriesCount.value = 0
                 _recentCars.value = emptyList()
+                _favoriteCars.value = emptyList()
             }
         }
     }
@@ -92,11 +94,16 @@ class UserViewModel(
         try {
             auth.removeAuthStateListener(authStateListener)
             // 🔹 Remover listener de Firestore cuando el ViewModel se destruye
-            userProfileListener?.remove()
-            userProfileListener = null
+            stopRealtimeSync()
         } catch (e: Exception) {
             // ignore
         }
+    }
+
+    // 🔹 Detener sincronización real-time (llámalo explícitamente en logout)
+    fun stopRealtimeSync() {
+        userProfileListener?.remove()
+        userProfileListener = null
     }
 
     // 🔹 NUEVA FUNCIÓN: Sincronización real-time del perfil
@@ -162,7 +169,7 @@ class UserViewModel(
             val result = userMethods.loginUser(email, password)
             result.onSuccess {
                 // 🔄 Recargar todo lo del nuevo usuario
-                fetchUserProfile()
+                fetchUserProfile()  // fetchUserProfile ya llama startRealtimeSync()
                 fetchUserStats()
                 fetchRecentCars()
 
@@ -194,13 +201,16 @@ class UserViewModel(
 
     fun logoutUser() {
         viewModelScope.launch {
+            // 🔹 Detener listener real-time ANTES de cerrar sesión
+            stopRealtimeSync()
             userMethods.logoutUser()
             _user.value = null
             _carCount.value = 0
             _tagCount.value = 0
             _achievementCount.value = 0
             _seriesCount.value = 0
-            _recentCars.value = emptyList() // 🧹 limpiar también los carros recientes
+            _recentCars.value = emptyList()
+            _favoriteCars.value = emptyList()
             _errorMessage.value = null
         }
     }
@@ -321,11 +331,14 @@ class UserViewModel(
     private val _publicRecentCars = MutableStateFlow<List<Car>>(emptyList())
     val publicRecentCars: StateFlow<List<Car>> = _publicRecentCars
 
+    private val _publicFavoriteCars = MutableStateFlow<List<Car>>(emptyList())
+    val publicFavoriteCars: StateFlow<List<Car>> = _publicFavoriteCars
 
     fun clearPublicUserData() {
         _publicUser.value = null
         _publicStats.value = null
         _publicRecentCars.value = emptyList()
+        _publicFavoriteCars.value = emptyList()
     }
 
     fun fetchPublicUserProfile(uid: String) {
@@ -355,6 +368,24 @@ class UserViewModel(
 
         }
     }
+
+    fun fetchPublicFavoriteCars(uid: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val favoriteIds = userMethods.getPublicUserFavoriteCars(uid).getOrNull() ?: emptyList()
+                // ✅ Usa getCarsByIdsForUser para leer de la colección del usuario público (no del actual)
+                val favoriteCars = carMethods.getCarsByIdsForUser(uid, favoriteIds)
+                withContext(Dispatchers.Main) {
+                    _publicFavoriteCars.value = favoriteCars
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    _publicFavoriteCars.value = emptyList()
+                }
+            }
+        }
+    }
+
 
     private val _publicUsers = MutableStateFlow<List<User>>(emptyList())
     val publicUsers = _publicUsers.asStateFlow()
@@ -423,6 +454,61 @@ class UserViewModel(
             val result = userMethods.fetchPublicUserCars(uid)
             withContext(Dispatchers.Main) {
                 _publicUserCars.value = result.getOrNull() ?: emptyList()
+            }
+        }
+    }
+
+    private val _favoriteCars = MutableStateFlow<List<Car>>(emptyList())
+    val favoriteCars: StateFlow<List<Car>> = _favoriteCars.asStateFlow()
+
+
+    // ════════════════════════════════════════════════════════════════
+    // CARROS FAVORITOS
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * Agregar o remover un carro de favoritos
+     */
+    fun toggleFavoriteCar(carId: String) {
+        viewModelScope.launch {
+            val result = userMethods.toggleFavoriteCar(carId)
+            if (result.isSuccess) {
+                val updatedUser = result.getOrNull()
+                _user.value = updatedUser
+                fetchFavoriteCars()
+            }
+        }
+    }
+
+    /**
+     * Verificar si un carro está en favoritos
+     */
+    fun isCarFavorite(carId: String): Boolean {
+        return _user.value?.favoriteCars?.contains(carId) == true
+    }
+
+    /**
+     * Obtener cantidad de carros favoritos
+     */
+    fun getFavoriteCarsCount(): Int {
+        return _user.value?.favoriteCars?.size ?: 0
+    }
+
+    /**
+     * Cargar los datos completos de los carros favoritos
+     */
+    fun fetchFavoriteCars() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val favoriteCarIds = _user.value?.favoriteCars ?: emptyList()
+                val cars = carMethods.getCarsByIds(favoriteCarIds)
+                withContext(Dispatchers.Main) {
+                    _favoriteCars.value = cars
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    _favoriteCars.value = emptyList()
+                }
             }
         }
     }
@@ -543,6 +629,5 @@ class UserViewModel(
             }
         }
     }
-
 
 }

@@ -11,14 +11,29 @@ import com.example.carcollection.featureuser.domain.User
 import com.example.carcollection.featureuser.domain.XPSource
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.Timestamp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 class AchievementMethods {
+
+    // ─────────────────────────────────────────────────────────────
+    // CACHE DE LOGROS GLOBALES
+    // Los logros globales cambian muy rara vez (solo cuando un admin los edita).
+    // Cachearlos en memoria evita fetch repetido a Firestore en cada evaluación.
+    // ─────────────────────────────────────────────────────────────
+    companion object {
+        @Volatile private var cachedGlobalAchievements: List<AchievementGlobal>? = null
+        @Volatile private var cacheTimestamp: Long = 0L
+        private const val CACHE_TTL_MS = 5 * 60 * 1000L // 5 minutos
+
+        /** Invalida el cache. Llamar tras cualquier escritura en achievements. */
+        fun invalidateCache() {
+            cachedGlobalAchievements = null
+            cacheTimestamp = 0L
+        }
+    }
 
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
@@ -33,32 +48,102 @@ class AchievementMethods {
     private fun globalAchievementsCollection() =
         db.collection("achievements")
 
+    /**
+     * Helper para deserializar AchievementGlobal desde DocumentSnapshot.
+     * Maneja correctamente los Timestamps de Firebase.
+     */
+    private fun deserializeAchievementGlobal(
+        doc: com.google.firebase.firestore.DocumentSnapshot,
+        docId: String? = null
+    ): AchievementGlobal? {
+        return try {
+            // Obtener datos crudos
+            val data = doc.data ?: return null
+
+            // Convertir Timestamp a Long si es necesario
+            val adjustedData = data.toMutableMap()
+            val createdAtValue = adjustedData["createdAt"]
+
+            adjustedData["createdAt"] = when (createdAtValue) {
+                is Timestamp -> createdAtValue.toDate().time
+                is Long -> createdAtValue
+                is Number -> createdAtValue.toLong()
+                else -> System.currentTimeMillis()
+            }
+
+            // Deserializar con datos ajustados
+            val gson = com.google.gson.Gson()
+            val json = gson.toJson(adjustedData)
+            val achievement = gson.fromJson(json, AchievementGlobal::class.java)
+
+            // Asegurar que el ID sea correcto
+            achievement.copy(id = docId ?: doc.id)
+        } catch (e: Exception) {
+            android.util.Log.e("AchievementMethods", "Error deserializing ${doc.id}: ${e.message}", e)
+            null
+        }
+    }
+
     // ─────────────────────────────────────────────────────────────
     // OBTENER LOGROS (GLOBAL + USUARIO)
     // ─────────────────────────────────────────────────────────────
 
+    /**
+     * Retorna la lista de logros globales desde cache si es válido,
+     * o hace fetch a Firestore y actualiza el cache.
+     */
+    private suspend fun getCachedGlobalAchievements(): List<AchievementGlobal> {
+        val now = System.currentTimeMillis()
+        val cached = cachedGlobalAchievements
+        if (cached != null && (now - cacheTimestamp) < CACHE_TTL_MS) {
+            return cached
+        }
+        // Fetch fresh desde Firestore
+        val fresh = globalAchievementsCollection()
+            .get()
+            .await()
+            .documents
+            .mapNotNull { deserializeAchievementGlobal(it) }
+
+        cachedGlobalAchievements = fresh
+        cacheTimestamp = now
+        return fresh
+    }
+
     suspend fun getAllAchievements(): List<Pair<AchievementGlobal, UserAchievement?>> {
-        val globalDocs = globalAchievementsCollection().get().await().documents
+        // ✅ Usar cache para logros globales (evita fetch repetido a Firestore)
+        val globalList = getCachedGlobalAchievements()
+        val currentUserId = auth.currentUser?.uid ?: ""
 
         // Intentar obtener logros del usuario, si falla (permisos), usar lista vacía
         val userDocs = try {
             userAchievementsCollection().get().await().documents
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // Si no hay permisos o no existen logros, retornar lista vacía
             emptyList()
         }
 
         val userMap = userDocs.associateBy { it.id }
 
-        return globalDocs.map { doc ->
-            val global = doc.toObject(AchievementGlobal::class.java)!!.copy(id = doc.id)
-            val user = userMap[doc.id]?.toObject(UserAchievement::class.java)
-            global to user
-        }
+        return globalList
+            // Filtrar logros exclusivos: solo mostrar si el usuario actual está en la lista.
+            // Doble chequeo: isExclusive Y category == EXCLUSIVE para no depender solo de un campo.
+            .filter { global ->
+                val isExclusive = global.isExclusive || global.category == AchievementCategory.EXCLUSIVE
+                !isExclusive || global.exclusiveUserIds.contains(currentUserId)
+            }
+            .map { global ->
+                val user = userMap[global.id]?.toObject(UserAchievement::class.java)
+                global to user
+            }
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // FUNCIÓN PRINCIPAL (NUEVO MOTOR)
+
     suspend fun getPublicUserAchievements(userId: String): List<Pair<AchievementGlobal, UserAchievement?>> {
-        val globalDocs = globalAchievementsCollection().get().await().documents
+        // ✅ Usar cache para la parte global
+        val globalList = getCachedGlobalAchievements()
 
         // Intentar obtener logros del usuario, si falla (permisos), usar lista vacía
         val userDocs = try {
@@ -68,40 +153,83 @@ class AchievementMethods {
                 .get()
                 .await()
                 .documents
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // Si no hay permisos, retornar lista vacía
             emptyList()
         }
 
         val userMap = userDocs.associateBy { it.id }
 
-        return globalDocs.map { doc ->
-            val global = doc.toObject(AchievementGlobal::class.java)!!.copy(id = doc.id)
-            val user = userMap[doc.id]?.toObject(UserAchievement::class.java)
-            global to user
-        }
+        return globalList
+            // Para un perfil público: solo mostrar exclusivos si el usuario target está en la lista.
+            // Doble chequeo: isExclusive Y category == EXCLUSIVE.
+            .filter { global ->
+                val isExclusive = global.isExclusive || global.category == AchievementCategory.EXCLUSIVE
+                !isExclusive || global.exclusiveUserIds.contains(userId)
+            }
+            .map { global ->
+                val user = userMap[global.id]?.toObject(UserAchievement::class.java)
+                global to user
+            }
     }
-
-    // ─────────────────────────────────────────────────────────────
-    // FUNCIÓN PRINCIPAL (NUEVO MOTOR)
     // ─────────────────────────────────────────────────────────────
 
     @SuppressLint("NewApi")
-    suspend fun evaluateAchievements(userCars: List<Car>, currentUser: User? = null) {
+    suspend fun evaluateAchievements(
+        userCars: List<Car>,
+        currentUser: User? = null,
+        categories: Set<AchievementCategory>? = null // null = evaluar todas las categorías
+    ) {
         // Check API level at runtime
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            evaluateAchievementsInternal(userCars, currentUser)
+            evaluateAchievementsInternal(userCars, currentUser, categories)
+        }
+    }
+
+    /**
+     * Evaluación incremental: solo evalúa COLLECTION, TIME_BASED y EXCLUSIVE.
+     * Usar cuando el trigger es un evento de carro (agregar/eliminar).
+     * Evita re-evaluar logros de nivel (USER) innecesariamente.
+     */
+    @SuppressLint("NewApi")
+    suspend fun evaluateAchievementsForCarEvent(
+        userCars: List<Car>,
+        currentUser: User? = null
+    ) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            evaluateAchievementsInternal(
+                userCars,
+                currentUser,
+                categories = setOf(
+                    AchievementCategory.COLLECTION,
+                    AchievementCategory.TIME_BASED
+                    // EXCLUSIVE omitido: nunca se evalúa automáticamente
+                )
+            )
         }
     }
 
     @SuppressLint("NewApi")
     @RequiresApi(Build.VERSION_CODES.O)
-    private suspend fun evaluateAchievementsInternal(userCars: List<Car>, currentUser: User?) = withContext(Dispatchers.Default) {
+    private suspend fun evaluateAchievementsInternal(
+        userCars: List<Car>,
+        currentUser: User?,
+        categories: Set<AchievementCategory>? = null
+    ) = withContext(Dispatchers.Default) {
 
         val achievements = getAllAchievements()
 
         // Early exit si no hay logros activos
-        val activeAchievements = achievements.filter { it.first.active && it.second?.unlocked != true }
+        val activeAchievements = achievements.filter { (global, userState) ->
+            global.active &&
+            // Los exclusivos NUNCA se evalúan automáticamente — se otorgan solo por admin.
+            // Doble chequeo (isExclusive + category) por si Gson desserializa isExclusive incorrectamente.
+            !global.isExclusive &&
+            global.category != AchievementCategory.EXCLUSIVE &&
+            userState?.unlocked != true &&
+            // ✅ EVALUACIÓN INCREMENTAL: filtrar por categoría si se especifica
+            (categories == null || matchesEvaluationCategory(global, categories))
+        }
         if (activeAchievements.isEmpty()) {
             return@withContext
         }
@@ -164,6 +292,11 @@ class AchievementMethods {
         currentUser: User?
     ): UserAchievement? {
 
+        // 🛡️ Última línea de defensa: los exclusivos nunca se evalúan aquí (solo se otorgan por admin).
+        if (global.isExclusive || global.category == AchievementCategory.EXCLUSIVE) {
+            return null
+        }
+
         val previous = userState ?: UserAchievement(
             achievementId = global.id,
             goal = global.goal
@@ -176,13 +309,11 @@ class AchievementMethods {
 
         // 🎯 LOGRO ESPECIAL: CAR OF THE DAY
         if (global.id == "car_of_the_day") {
-            return evaluateCarOfTheDayAchievement(global, previous, cars)
+            return evaluateCarOfTheDayAchievement(previous, cars)
         }
 
-        val countedIds = previous.countedCarIds.toMutableSet()
         val currentCarIds = cars.mapNotNull { it.id }.toSet()
-        val validCountedIds = previous.countedCarIds.filter { it in currentCarIds }.toMutableSet()
-        val countedIds = validCountedIds
+        val countedIds = previous.countedCarIds.filter { it in currentCarIds }.toMutableSet()
 
         // TIME BASED
         if (global.rules.timeWindow != null) {
@@ -384,16 +515,11 @@ class AchievementMethods {
     @SuppressLint("NewApi")
     @RequiresApi(Build.VERSION_CODES.O)
     private fun evaluateCarOfTheDayAchievement(
-        global: AchievementGlobal,
         previous: UserAchievement,
         cars: List<Car>
     ): UserAchievement? {
         // Obtener el carro del día
-        val carOfTheDay = getCarOfTheDayData()
-
-        if (carOfTheDay == null) {
-            return null // No hay carro del día
-        }
+        val carOfTheDay = getCarOfTheDayData() ?: return null // No hay carro del día
 
         // Verificar si el usuario tiene un carro que coincida
         val hasCarOfTheDay = cars.any { car ->
@@ -411,7 +537,7 @@ class AchievementMethods {
         return previous.copy(
             progress = newProgress,
             unlocked = true,
-            unlockedAt = if (previous.unlockedAt == null) System.currentTimeMillis() else previous.unlockedAt,
+            unlockedAt = previous.unlockedAt ?: System.currentTimeMillis(),
             lastEvaluatedAt = System.currentTimeMillis()
         )
     }
@@ -426,13 +552,13 @@ class AchievementMethods {
             val gson = com.google.gson.Gson()
             val carLibraryEntries = try {
                 val typeArray = object : com.google.gson.reflect.TypeToken<List<com.example.carcollection.featurecar.presentation.add_edit_car.CarLibraryEntry>>() {}.type
-                gson.fromJson<List<com.example.carcollection.featurecar.presentation.add_edit_car.CarLibraryEntry>>(json, typeArray)
+                gson.fromJson(json, typeArray)
             } catch (_: Exception) {
                 try {
                     val typeSingle = object : com.google.gson.reflect.TypeToken<com.example.carcollection.featurecar.presentation.add_edit_car.CarLibraryEntry>() {}.type
                     val singleEntry = gson.fromJson<com.example.carcollection.featurecar.presentation.add_edit_car.CarLibraryEntry>(json, typeSingle)
                     listOf(singleEntry)
-                } catch (e2: Exception) {
+                } catch (_: Exception) {
                     return null
                 }
             }
@@ -463,7 +589,7 @@ class AchievementMethods {
                 name = carEntry.name ?: "Modelo desconocido",
                 series = variation.series ?: "N/A"
             )
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -477,6 +603,24 @@ class AchievementMethods {
     // ─────────────────────────────────────────────────────────────
     // MATCHING DE CONDICIONES
     // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Determina si un logro pertenece a alguna de las categorías de evaluación.
+     * Algunos logros tienen categoría inferida por convención (level_, car_of_the_day).
+     */
+    private fun matchesEvaluationCategory(
+        global: AchievementGlobal,
+        categories: Set<AchievementCategory>
+    ): Boolean {
+        // level_* son logros de nivel → categoría USER
+        if (global.id.startsWith("level_")) return AchievementCategory.USER in categories
+        // car_of_the_day → categoría COLLECTION
+        if (global.id == "car_of_the_day") return AchievementCategory.COLLECTION in categories
+        // TIME_BASED se detecta por el campo timeWindow
+        if (global.rules.timeWindow != null) return AchievementCategory.TIME_BASED in categories
+        // Para el resto, usar la categoría almacenada en el logro
+        return global.category in categories
+    }
 
     private fun carMatchesConditions(
         car: Car,
@@ -578,6 +722,9 @@ class AchievementMethods {
             .set(achievement)
             .await()
 
+        // ✅ Invalidar cache tras escritura
+        invalidateCache()
+
         // Si es un logro exclusivo, otorgar inmediatamente a los usuarios
         if (achievement.isExclusive && achievement.exclusiveUserIds.isNotEmpty()) {
             grantExclusiveAchievements(achievement)
@@ -596,18 +743,25 @@ class AchievementMethods {
             .document(achievementId)
             .delete()
             .await()
+
+        // ✅ Invalidar cache tras borrado
+        invalidateCache()
     }
 
     suspend fun getAllGlobalAchievements(): List<AchievementGlobal> {
-        return FirebaseFirestore.getInstance()
+        // ✅ Siempre fetch fresco para la pantalla de admin; actualiza el cache a la vez
+        val fresh = FirebaseFirestore.getInstance()
             .collection("achievements")
             .get()
             .await()
             .documents
             .mapNotNull { doc ->
-                doc.toObject(AchievementGlobal::class.java)
-                    ?.copy(id = doc.id)
+                deserializeAchievementGlobal(doc)
             }
+        // Actualizar cache con los datos frescos
+        cachedGlobalAchievements = fresh
+        cacheTimestamp = System.currentTimeMillis()
+        return fresh
     }
 
     suspend fun getAchievementById(achievementId: String): AchievementGlobal? {
@@ -615,18 +769,54 @@ class AchievementMethods {
             "achievementId no puede estar vacío"
         }
 
-        return FirebaseFirestore.getInstance()
-            .collection("achievements")
-            .document(achievementId)
-            .get()
-            .await()
-            .toObject(AchievementGlobal::class.java)
-            ?.copy(id = achievementId)
+        return try {
+            val doc = FirebaseFirestore.getInstance()
+                .collection("achievements")
+                .document(achievementId)
+                .get()
+                .await()
+
+            deserializeAchievementGlobal(doc, achievementId)
+        } catch (e: Exception) {
+            android.util.Log.e("AchievementMethods", "Error getting achievement $achievementId", e)
+            null
+        }
     }
 
     // ─────────────────────────────────────────────────────────────
     // OTORGAR LOGROS EXCLUSIVOS
     // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Elimina del usuario actual cualquier logro exclusivo que no le pertenezca.
+     * Repara logros otorgados incorrectamente por el bug de evaluación automática.
+     */
+    suspend fun cleanupInvalidExclusiveAchievements() {
+        val currentUserId = auth.currentUser?.uid ?: return
+        val globalList = try { getCachedGlobalAchievements() } catch (_: Exception) { return }
+        val userDocs = try {
+            userAchievementsCollection().get().await().documents
+        } catch (_: Exception) { return }
+
+        val invalidIds = userDocs.mapNotNull { doc ->
+            val global = globalList.find { it.id == doc.id } ?: return@mapNotNull null
+            val isExclusive = global.isExclusive || global.category == AchievementCategory.EXCLUSIVE
+            if (isExclusive && !global.exclusiveUserIds.contains(currentUserId)) doc.id
+            else null
+        }
+
+        if (invalidIds.isEmpty()) return
+
+        android.util.Log.w("AchievementMethods",
+            "🧹 Limpiando ${invalidIds.size} logros exclusivos incorrectos: $invalidIds")
+
+        for (id in invalidIds) {
+            try { userAchievementsCollection().document(id).delete().await() }
+            catch (e: Exception) {
+                android.util.Log.e("AchievementMethods", "Error al limpiar logro exclusivo $id", e)
+            }
+        }
+    }
 
     private suspend fun grantExclusiveAchievements(achievement: AchievementGlobal) {
         // Crear el UserAchievement desbloqueado inmediatamente
@@ -651,7 +841,7 @@ class AchievementMethods {
                     .set(unlockedAchievement)
                     .await()
 
-                // Otorgar XP al usuario
+                // Otorgar XP al usuario usando el sistema correcto
                 try {
                     val xpAmount = when (achievement.rarity) {
                         AchievementRarity.COMUN -> 200
@@ -660,24 +850,25 @@ class AchievementMethods {
                         AchievementRarity.SPECIAL -> 1200
                     }
 
-                    db.collection("users")
-                        .document(userId)
-                        .get()
-                        .await()
-                        .reference
-                        .update(
-                            "xp", com.google.firebase.firestore.FieldValue.increment(xpAmount.toLong())
-                        )
-                        .await()
+                    // Usar UserMethods para otorgar XP correctamente
+                    UserMethods().addXP(
+                        amount = xpAmount,
+                        source = XPSource.ACHIEVEMENT_UNLOCKED,
+                        sourceId = achievement.id
+                    )
                 } catch (_: Exception) {
                     // Si falla la XP, no fallar la operación completa
+                    android.util.Log.w(
+                        "AchievementMethods",
+                        "No se pudo otorgar XP para el logro exclusivo ${achievement.id}"
+                    )
                 }
 
             } catch (e: Exception) {
                 // Log error pero continuar con otros usuarios
                 android.util.Log.e(
                     "AchievementMethods",
-                    "Error al otorgar logro exclusivo $achievement.id a usuario $userId",
+                    "Error al otorgar logro exclusivo ${achievement.id} a usuario $userId",
                     e
                 )
             }

@@ -22,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
+ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalOffer
@@ -306,6 +307,22 @@ fun AddEditCarScreen(
                 CarBackgroundSection(viewModel, categories)
             }
 
+            // Notes Section
+            SectionCard(
+                title = "Notas",
+                icon = Icons.Default.Edit
+            ) {
+                OutlinedTextField(
+                    value = viewModel.notes.value,
+                    onValueChange = { viewModel.onNotesChange(it) },
+                    label = { Text("Notas personales") },
+                    placeholder = { Text("Observaciones, estado, dónde lo conseguiste...") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                    maxLines = 6
+                )
+            }
+
             // Extra spacing at the bottom
             Spacer(modifier = Modifier.height(8.dp))
         }
@@ -478,6 +495,17 @@ fun CarFormFields(viewModel: CarFormViewModel) {
         else -> 1
     }
 
+    // NOMBRE (primero)
+    OutlinedTextField(
+        value = viewModel.name.value,
+        onValueChange = { viewModel.onNameChange(it) },
+        label = { Text("Nombre") },
+        placeholder = { Text("Honda Civic, Reverb, etc.") },
+        modifier = Modifier.fillMaxWidth()
+    )
+
+    Spacer(modifier = Modifier.height(8.dp))
+
     // MARCA
     if (columns == 1) {
         ExposedDropdownField(
@@ -540,16 +568,6 @@ fun CarFormFields(viewModel: CarFormViewModel) {
         }
     }
 
-    Spacer(modifier = Modifier.height(8.dp))
-
-    // NOMBRE (siempre full width)
-    OutlinedTextField(
-        value = viewModel.name.value,
-        onValueChange = { viewModel.onNameChange(it) },
-        label = { Text("Nombre") },
-        placeholder = { Text("Honda Civic, Reverb, etc.") },
-        modifier = Modifier.fillMaxWidth()
-    )
 
     Spacer(modifier = Modifier.height(8.dp))
 

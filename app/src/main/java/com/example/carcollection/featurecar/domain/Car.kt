@@ -17,7 +17,8 @@ data class Car(
     val backgroundName: String? = null,
     val backgroundUrl: String? = null,  // URL del fondo (nuevo campo para migración)
 
-    val createdAt: Long? = null // Timestamp de creación
+    val createdAt: Long? = null, // Timestamp de creación
+    val notes: String? = null   // Notas personales del coleccionista
 ) {
     // Constructor sin argumentos requerido por Firestore para deserialización
     constructor() : this(
@@ -33,6 +34,7 @@ data class Car(
         tags = emptyList<String>(),
         backgroundName = null,
         backgroundUrl = null,
-        createdAt = null
+        createdAt = null,
+        notes = null
     )
 }

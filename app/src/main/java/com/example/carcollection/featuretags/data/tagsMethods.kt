@@ -10,12 +10,35 @@ class TagsMethods {
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // In-memory cache — shared via companion object across all TagsMethods instances
+    // ─────────────────────────────────────────────────────────────────────────
+    companion object {
+        /** Cached tags per userId  */
+        @Volatile private var cachedTags: List<Tag> = emptyList()
+        @Volatile private var cachedUserId: String? = null
+        @Volatile private var cacheTimestamp: Long = 0L
+        private const val CACHE_TTL_MS = 5 * 60 * 1000L // 5 minutes
+
+        fun invalidateCache() {
+            cachedTags = emptyList()
+            cachedUserId = null
+            cacheTimestamp = 0L
+        }
+
+        fun isCacheValid(userId: String): Boolean {
+            val age = System.currentTimeMillis() - cacheTimestamp
+            return cachedUserId == userId && cachedTags.isNotEmpty() && age < CACHE_TTL_MS
+        }
+    }
+
     fun addTag(name: String, color: String){
         val firebaseUser = auth.currentUser
         if (firebaseUser != null) {
             val tag = Tag(name = name, color = color)
             db.collection("users").document(firebaseUser.uid).collection("tags")
                 .add(tag)
+            invalidateCache()
         }
     }
 
@@ -25,6 +48,7 @@ class TagsMethods {
             db.collection("users").document(firebaseUser.uid).collection("tags")
                 .document(tagId)
                 .delete()
+            invalidateCache()
         }
     }
 
@@ -38,24 +62,32 @@ class TagsMethods {
             db.collection("users").document(firebaseUser.uid).collection("tags")
                 .document(tagId)
                 .update(tagUpdates)
+            invalidateCache()
         }
     }
 
     suspend fun getAllTags(): List<Tag> {
-        val firebaseUser = auth.currentUser
+        val firebaseUser = auth.currentUser ?: return emptyList()
+        val userId = firebaseUser.uid
+
+        // Return cached result if valid
+        if (isCacheValid(userId)) return cachedTags
+
         val tags = mutableListOf<Tag>()
-        if (firebaseUser != null) {
-            val querySnapshot = db.collection("users").document(firebaseUser.uid).collection("tags")
-                .get()
-                .await()
-            for (document in querySnapshot.documents) {
-                val tag = document.toObject(Tag::class.java)
-                tag?.id = document.id
-                if (tag != null) {
-                    tags.add(tag)
-                }
-            }
+        val querySnapshot = db.collection("users").document(userId).collection("tags")
+            .get()
+            .await()
+        for (document in querySnapshot.documents) {
+            val tag = document.toObject(Tag::class.java)
+            tag?.id = document.id
+            if (tag != null) tags.add(tag)
         }
+
+        // Update cache
+        cachedTags = tags
+        cachedUserId = userId
+        cacheTimestamp = System.currentTimeMillis()
+
         return tags
     }
 
@@ -73,6 +105,7 @@ class TagsMethods {
         return null
     }
     suspend fun updateTagNameInAllCars(oldTagName: String, newTagName: String): Result<Unit> {
+        invalidateCache() // tag name changed → invalidate
         val firebaseUser = auth.currentUser
         return if (firebaseUser != null) {
             val userId = firebaseUser.uid

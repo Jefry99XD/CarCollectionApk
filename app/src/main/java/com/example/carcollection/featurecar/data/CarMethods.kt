@@ -2,14 +2,17 @@ package com.example.carcollection.featurecar.data;
 
 
 import com.example.carcollection.featurecar.domain.Car
+import com.example.carcollection.featurecar.domain.CarStatsData
 import com.example.carcollection.featurecar.domain.CarValidator
 import com.example.carcollection.featurecar.domain.BatchAddResult
+import com.example.carcollection.featurestats.ComparisonStats
 import com.example.carcollection.featureuser.data.UserMethods
 import com.example.carcollection.featureuser.domain.XPSource
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.delay
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.Source
 import com.google.firebase.firestore.Query
 
@@ -25,13 +28,20 @@ class CarMethods {
     private var cacheTimestamp: Long = 0
     private val CACHE_DURATION = 5 * 60 * 1000L // 5 minutos
 
+    // Caché ligero para estadísticas (solo campos necesarios, 10 minutos TTL)
+    private var statsDataCache: List<CarStatsData>? = null
+    private var statsDataCacheTimestamp: Long = 0
+    private val STATS_CACHE_DURATION = 10 * 60 * 1000L // 10 minutos
+
     /**
-     * Invalida la caché de carros
+     * Invalida la caché de carros (completa y para stats)
      * Debe llamarse después de agregar, editar o eliminar carros
      */
     fun invalidateCache() {
         carsCache = null
         cacheTimestamp = 0
+        statsDataCache = null
+        statsDataCacheTimestamp = 0
     }
 
     /**
@@ -70,6 +80,9 @@ class CarMethods {
                         val documentReference = carsCollectionRef.add(carWithTimestamp).await()
 
                         invalidateCache()
+
+                        // 📊 Actualizar contador de carros en perfil de usuario
+                        updateUserCarsCount(userId, +1)
 
                         // 🎮 Otorgar XP por agregar carro
                         try {
@@ -162,6 +175,9 @@ class CarMethods {
                     .collection("carsCollection")
                     .document(carId)
                 carDocRef.delete().await()
+
+                // 📊 Actualizar contador de carros en perfil de usuario
+                updateUserCarsCount(userId, -1)
 
                 // Invalidar caché después de eliminar
                 invalidateCache()
@@ -518,6 +534,9 @@ class CarMethods {
 
                 invalidateCache()
 
+                // 📊 Actualizar contador de carros en perfil de usuario
+                updateUserCarsCount(userId, successCount.toLong())
+
                 // ✅ Otorgar XP total por batch
                 try {
                     val validCars = cars.filter { CarValidator.validateCar(it).isEmpty() }
@@ -700,4 +719,184 @@ class CarMethods {
         }
     }
 
+    /**
+     * Obtener carros específicos por sus IDs.
+     * ✅ Optimizado: usa whereIn en lotes de 30 (límite de Firestore)
+     * en lugar de N reads individuales — de O(n) fetches a O(n/30) fetches.
+     *
+     * Usado para mostrar carros favoritos del usuario actual.
+     */
+    suspend fun getCarsByIds(carIds: List<String>): List<Car> {
+        if (carIds.isEmpty()) return emptyList()
+
+        val firebaseUser = auth.currentUser ?: return emptyList()
+        val userId = firebaseUser.uid
+
+        return try {
+            // Firestore whereIn tiene límite de 30 valores — chunked para colecciones grandes
+            carIds.chunked(30).flatMap { chunk ->
+                try {
+                    db.collection("users")
+                        .document(userId)
+                        .collection("carsCollection")
+                        .whereIn(com.google.firebase.firestore.FieldPath.documentId(), chunk)
+                        .get()
+                        .await()
+                        .documents
+                        .mapNotNull { doc ->
+                            doc.toObject(Car::class.java)?.copy(id = doc.id)
+                        }
+                } catch (e: Exception) {
+                    emptyList()
+                }
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    /**
+     * Obtener carros específicos por IDs para un usuario en concreto (perfil público).
+     * ✅ Optimizado con whereIn en lotes de 30.
+     */
+    suspend fun getCarsByIdsForUser(userId: String, carIds: List<String>): List<Car> {
+        if (carIds.isEmpty()) return emptyList()
+
+        return try {
+            carIds.chunked(30).flatMap { chunk ->
+                try {
+                    db.collection("users")
+                        .document(userId)
+                        .collection("carsCollection")
+                        .whereIn(com.google.firebase.firestore.FieldPath.documentId(), chunk)
+                        .get()
+                        .await()
+                        .documents
+                        .mapNotNull { doc ->
+                            doc.toObject(Car::class.java)?.copy(id = doc.id)
+                        }
+                } catch (e: Exception) {
+                    emptyList()
+                }
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // MEJORA 1: Endpoint ligero para estadísticas (solo campos necesarios)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Obtiene solo los campos necesarios para calcular estadísticas.
+     * Evita cargar photoUrl, backgroundUrl y otros campos pesados.
+     * Tiene su propia caché de 10 minutos independiente de getUserCars().
+     */
+    suspend fun getUserCarsForStats(forceRefresh: Boolean = false): Result<List<CarStatsData>> {
+        val firebaseUser = auth.currentUser
+            ?: return Result.failure(Exception("No user currently logged in."))
+
+        // Retornar caché si es válida
+        if (!forceRefresh && statsDataCache != null) {
+            val age = System.currentTimeMillis() - statsDataCacheTimestamp
+            if (age < STATS_CACHE_DURATION) {
+                return Result.success(statsDataCache!!)
+            }
+        }
+
+        val userId = firebaseUser.uid
+        return try {
+            val snapshot = db.collection("users")
+                .document(userId)
+                .collection("carsCollection")
+                .get()
+                .await()
+
+            val statsData = snapshot.documents.mapNotNull { doc ->
+                // Mapear solo los campos relevantes para stats
+                CarStatsData(
+                    brand      = doc.getString("brand"),
+                    year       = doc.getString("year"),
+                    color      = doc.getString("color"),
+                    quality    = doc.getString("quality"),
+                    type       = doc.getString("type"),
+                    tags       = (doc.get("tags") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+                    createdAt  = doc.getLong("createdAt")
+                )
+            }
+
+            statsDataCache = statsData
+            statsDataCacheTimestamp = System.currentTimeMillis()
+
+            Result.success(statsData)
+        } catch (e: Exception) {
+            Result.failure(Exception("Error fetching stats data: ${e.message}"))
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // MEJORA 5: Mantenimiento de carsCount para comparativas entre usuarios
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Actualiza el contador carsCount en el documento del usuario.
+     * Se usa internamente tras agregar o eliminar carros.
+     * @param delta +1 al agregar, -1 al eliminar, N al batch import
+     */
+    private suspend fun updateUserCarsCount(userId: String, delta: Long) {
+        try {
+            db.collection("users")
+                .document(userId)
+                .update("carsCount", FieldValue.increment(delta))
+                .await()
+        } catch (e: Exception) {
+            // No es crítico – si falla, la comparativa puede ser inexacta
+            println("⚠️ Failed to update carsCount: ${e.message}")
+        }
+    }
+
+    /**
+     * Obtiene las estadísticas de comparación con otros usuarios.
+     * Lee el campo carsCount de todos los documentos de usuario para
+     * calcular el percentil del usuario actual.
+     *
+     * @return ComparisonStats con el percentil calculado
+     */
+    suspend fun getUserComparisonStats(): Result<ComparisonStats> {
+        val firebaseUser = auth.currentUser
+            ?: return Result.failure(Exception("No user currently logged in."))
+        val myUserId = firebaseUser.uid
+
+        return try {
+            val snapshot = db.collection("users").get().await()
+
+            val allCounts = snapshot.documents.mapNotNull { doc ->
+                doc.getLong("carsCount")?.toInt()
+            }
+
+            val myCount = snapshot.documents
+                .find { it.id == myUserId }
+                ?.getLong("carsCount")?.toInt()
+                ?: (statsDataCache?.size ?: carsCache?.size ?: 0)
+
+            val totalUsers = allCounts.size
+            val avgCars = if (totalUsers > 0) allCounts.average().toInt() else 0
+            val usersWithFewer = allCounts.count { it < myCount }
+            val percentile = if (totalUsers > 1) {
+                ((usersWithFewer.toFloat() / (totalUsers - 1)) * 100).toInt().coerceIn(0, 100)
+            } else 100
+
+            Result.success(
+                ComparisonStats(
+                    myCarCount        = myCount,
+                    totalUsers        = totalUsers,
+                    percentile        = percentile,
+                    averageCarsPerUser = avgCars
+                )
+            )
+        } catch (e: Exception) {
+            Result.failure(Exception("Error fetching comparison stats: ${e.message}"))
+        }
+    }
 }

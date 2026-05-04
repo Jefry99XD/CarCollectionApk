@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,10 +13,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
@@ -64,9 +64,9 @@ fun UserMain(
     val user by userViewModel.user.collectAsState()
     val isLoading by userViewModel.isLoading.collectAsState()
     val errorMessage by userViewModel.errorMessage.collectAsState()
-    val scrollState = rememberScrollState()
 
     val recentCars by userViewModel.recentCars.collectAsState()
+    val favoriteCars by userViewModel.favoriteCars.collectAsState()
     val carCount by userViewModel.carCount.collectAsState()
     val tagCount by userViewModel.tagCount.collectAsState()
     val achievementCount by userViewModel.achievementCount.collectAsState()
@@ -76,6 +76,7 @@ fun UserMain(
         userViewModel.fetchUserProfile()
         userViewModel.fetchUserStats()
         userViewModel.fetchRecentCars()
+        userViewModel.fetchFavoriteCars()
     }
 
     Scaffold(
@@ -115,162 +116,225 @@ fun UserMain(
             }
 
             else -> {
-
-
-                Column(
+                LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(innerPadding)
-                        .verticalScroll(scrollState)
-                        .padding(horizontal = 20.dp, vertical = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                        .padding(innerPadding),
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     // ─── Foto ───
-                    AsyncImage(
-                        model = user?.photoUrl ?: "",
-                        contentDescription = "Foto de perfil",
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier
-                            .size(130.dp)
-                    )
+                    item {
+                        AsyncImage(
+                            model = user?.photoUrl ?: "",
+                            contentDescription = "Foto de perfil",
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .size(130.dp)
+                        )
+                    }
 
                     // ─── Nombre y correo ───
-                    Text(
-                        text = user?.username ?: "Usuario desconocido",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        textAlign = TextAlign.Center
-                    )
-                    Text(
-                        text = user?.email ?: "",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray,
-                        textAlign = TextAlign.Center
-                    )
+                    item {
+                        Text(
+                            text = user?.username ?: "Usuario desconocido",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    item {
+                        Text(
+                            text = user?.email ?: "",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center
+                        )
+                    }
 
                     // ─── Bio ───
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                "Bio",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                user?.bio ?: "Agrega una Bio",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.Gray
-                            )
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    "Bio",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    user?.bio ?: "Agrega una Bio",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.Gray
+                                )
+                            }
                         }
                     }
 
                     // ─── 🎮 Sistema de Niveles ───
-                    user?.let { currentUser ->
-                        LevelCard(
-                            level = currentUser.level,
-                            totalXP = currentUser.totalXP,
-                            currentLevelXP = currentUser.currentLevelXP,
-                            xpForNextLevel = currentUser.xpForNextLevel,
-                            xpFromCars = currentUser.xpFromCars,
-                            xpFromAchievements = currentUser.xpFromAchievements
-                        )
+                    item {
+                        user?.let { currentUser ->
+                            LevelCard(
+                                level = currentUser.level,
+                                totalXP = currentUser.totalXP,
+                                currentLevelXP = currentUser.currentLevelXP,
+                                xpForNextLevel = currentUser.xpForNextLevel,
+                                xpFromCars = currentUser.xpFromCars,
+                                xpFromAchievements = currentUser.xpFromAchievements
+                            )
+                        }
                     }
 
                     // ─── 📊 Estadísticas básicas ───
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        elevation = CardDefaults.cardElevation(6.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            elevation = CardDefaults.cardElevation(6.dp)
                         ) {
-                            Text("Estadísticas", style = MaterialTheme.typography.titleMedium)
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                StatItem(
-                                    Icons.Default.DirectionsCar,
-                                    "Carros",
-                                    carCount
-                                )
-                                StatItem(Icons.Default.LocalOffer, "Tags", tagCount)
-                                StatItem(
-                                    Icons.Default.BeachAccess,
-                                    "Series",
-                                    seriesCount
-                                )
-                                StatItem(Icons.Default.Star, "Logros", achievementCount)
+                                Text("Estadísticas", style = MaterialTheme.typography.titleMedium)
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceEvenly
+                                ) {
+                                    StatItem(
+                                        Icons.Default.DirectionsCar,
+                                        "Carros",
+                                        carCount
+                                    )
+                                    StatItem(Icons.Default.LocalOffer, "Tags", tagCount)
+                                    StatItem(
+                                        Icons.Default.BeachAccess,
+                                        "Series",
+                                        seriesCount
+                                    )
+                                    StatItem(Icons.Default.Star, "Logros", achievementCount)
+                                }
                             }
                         }
                     }
 
+                    // ─── ❤️ Carros Favoritos ───
+                    if (favoriteCars.isNotEmpty()) {
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Star,
+                                            contentDescription = "Favoritos",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Text("Mis Favoritos (${favoriteCars.size}/10)", style = MaterialTheme.typography.titleMedium)
+                                    }
+                                    Spacer(Modifier.height(12.dp))
+
+                                    // Grid 2 columnas
+                                    Column(
+                                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        var currentRow = 0
+                                        while (currentRow < favoriteCars.size) {
+                                            val car1 = favoriteCars.getOrNull(currentRow)
+                                            val car2 = favoriteCars.getOrNull(currentRow + 1)
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                            ) {
+                                                if (car1 != null) {
+                                                    FavoriteCarCard(car = car1, modifier = Modifier.weight(1f).height(180.dp))
+                                                }
+                                                if (car2 != null) {
+                                                    FavoriteCarCard(car = car2, modifier = Modifier.weight(1f).height(180.dp))
+                                                } else if (car1 != null) {
+                                                    Spacer(modifier = Modifier.weight(1f))
+                                                }
+                                            }
+                                            currentRow += 2
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
 
                     // ─── 🕹️ Actividad reciente ───
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Actividad reciente", style = MaterialTheme.typography.titleMedium)
-                            Spacer(Modifier.height(8.dp))
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text("Actividad reciente", style = MaterialTheme.typography.titleMedium)
+                                Spacer(Modifier.height(8.dp))
 
-                            if (recentCars.isNotEmpty()) {
-                                recentCars.forEach { car ->
-                                    RecentCarItem(
-                                        name = car.name ?: "Sin nombre",
-                                        year = car.year?.toString() ?: "Año desconocido",
-                                        imageUrl = car.photoUrl ?: "",
-                                        serie = car.serie ?: ""
+                                if (recentCars.isNotEmpty()) {
+                                    recentCars.forEach { car ->
+                                        RecentCarItem(
+                                            name = car.name ?: "Sin nombre",
+                                            year = car.year?.toString() ?: "Año desconocido",
+                                            imageUrl = car.photoUrl ?: "",
+                                            serie = car.serie ?: ""
+                                        )
+                                    }
+                                } else {
+                                    Text(
+                                        "Aún no has agregado autos recientes.",
+                                        color = Color.Gray,
+                                        style = MaterialTheme.typography.bodyMedium
                                     )
                                 }
-                            } else {
-                                Text(
-                                    "Aún no has agregado autos recientes.",
-                                    color = Color.Gray,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
                             }
                         }
                     }
 
-
-
                     // ─── Botones ───
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Button(onClick = onEditClick, modifier = Modifier.fillMaxWidth()) {
-                            Icon(Icons.Default.Edit, contentDescription = "Editar")
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Editar perfil")
-                        }
-
-                        OutlinedButton(
-                            onClick = {
-                                userViewModel.logoutUser()
-                                navController.navigate(NavRoutes.MENU)
-
-
-                            },
-                            modifier = Modifier.fillMaxWidth()
+                    item {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.Logout,
-                                contentDescription = "Cerrar sesión"
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Cerrar sesión")
+                            Button(onClick = onEditClick, modifier = Modifier.fillMaxWidth()) {
+                                Icon(Icons.Default.Edit, contentDescription = "Editar")
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Editar perfil")
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    userViewModel.logoutUser()
+                                    navController.navigate(NavRoutes.MENU)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.Logout,
+                                    contentDescription = "Cerrar sesión"
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Cerrar sesión")
+                            }
                         }
                     }
                 }
@@ -330,5 +394,63 @@ fun StatItem(icon: androidx.compose.ui.graphics.vector.ImageVector, label: Strin
         )
         Text("$value", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Text(label, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+    }
+}
+
+
+@Composable
+fun FavoriteCarCard(car: com.example.carcollection.featurecar.domain.Car, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Imagen del carro
+            AsyncImage(
+                model = car.photoUrl ?: "",
+                contentDescription = "${car.brand} ${car.name}",
+                contentScale = ContentScale.Inside,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            )
+
+            // Nombre del carro
+            Text(
+                text = car.name ?: "Sin nombre",
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 2,
+                textAlign = TextAlign.Center
+            )
+
+            // Serie completa
+            if (car.serie?.isNotBlank() == true) {
+                Text(
+                    text = car.serie ?: "",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 2,
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            // Año
+            Text(
+                text = "${car.year ?: "?"}",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.Gray,
+                maxLines = 1
+            )
+        }
     }
 }

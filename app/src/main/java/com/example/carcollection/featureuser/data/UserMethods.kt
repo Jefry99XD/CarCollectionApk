@@ -789,4 +789,84 @@ class UserMethods {
         }
     }
 
+    // ════════════════════════════════════════════════════════════════
+    // CARROS FAVORITOS
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * Agregar o remover un carro de la lista de favoritos
+     * Máximo 6 carros favoritos
+     */
+    suspend fun toggleFavoriteCar(carId: String): Result<User> {
+        val firebaseUser = auth.currentUser
+            ?: return Result.failure(Exception("No user logged in"))
+
+        val userId = firebaseUser.uid
+
+        return try {
+            val userDocRef = db.collection("users").document(userId)
+            val userSnapshot = userDocRef.get().await()
+            val user = userSnapshot.toObject(User::class.java)
+                ?: throw Exception("User not found")
+
+            val currentFavorites = user.favoriteCars.toMutableList()
+
+            if (currentFavorites.contains(carId)) {
+                // Remover de favoritos
+                currentFavorites.remove(carId)
+            } else {
+                // Agregar a favoritos (máximo 10)
+                if (currentFavorites.size >= 10) {
+                    return Result.failure(Exception("Solo puedes tener máximo 10 carros favoritos"))
+                }
+                currentFavorites.add(carId)
+            }
+
+            // Actualizar en Firestore
+            userDocRef.update("favoriteCars", currentFavorites).await()
+
+            // Retornar usuario actualizado
+            val updatedUser = user.copy(favoriteCars = currentFavorites)
+            Result.success(updatedUser)
+
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to toggle favorite car: ${e.message}"))
+        }
+    }
+
+    /**
+     * Obtener la lista de IDs de carros favoritos del usuario actual
+     */
+    suspend fun getFavoriteCarsIds(): Result<List<String>> {
+        val firebaseUser = auth.currentUser
+            ?: return Result.failure(Exception("No user logged in"))
+
+        val userId = firebaseUser.uid
+
+        return try {
+            val userSnapshot = db.collection("users").document(userId).get().await()
+            val user = userSnapshot.toObject(User::class.java)
+                ?: throw Exception("User not found")
+
+            Result.success(user.favoriteCars)
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to fetch favorite cars: ${e.message}"))
+        }
+    }
+
+    /**
+     * Obtener los carros favoritos de un usuario específico (para perfil público)
+     */
+    suspend fun getPublicUserFavoriteCars(userId: String): Result<List<String>> {
+        return try {
+            val userSnapshot = db.collection("users").document(userId).get().await()
+            val user = userSnapshot.toObject(User::class.java)
+                ?: throw Exception("User not found")
+
+            Result.success(user.favoriteCars)
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to fetch favorite cars: ${e.message}"))
+        }
+    }
+
 }

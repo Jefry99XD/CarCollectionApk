@@ -210,6 +210,12 @@ private fun BlisterViewVertical(
 
                     // Tags
                     TagsFlowRow(car, allTags)
+
+                    // Notas
+                    if (!car.notes.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        BlisterNotesBox(car.notes)
+                    }
                 }
 
                 // FRANJA LATERAL - Color primario con efecto diagonal
@@ -365,6 +371,12 @@ private fun BlisterViewHorizontal(
 
                 Spacer(modifier = Modifier.height(8.dp))
                 TagsFlowRow(car, allTags)
+
+                // Notas
+                if (!car.notes.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    BlisterNotesBox(car.notes)
+                }
             }
 
             // Franja lateral compacta
@@ -586,6 +598,31 @@ private fun Divider(modifier: Modifier = Modifier, thickness: Dp = 1.dp, color: 
             .height(thickness)
             .background(color)
     )
+}
+
+// 🔹 NOTAS DEL COLECCIONISTA - estilo blister
+@Composable
+private fun BlisterNotesBox(notes: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth(0.9f)
+            .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(8.dp))
+            .padding(horizontal = 10.dp, vertical = 8.dp)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = "NOTAS",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = 0.7f),
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = notes,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White
+            )
+        }
+    }
 }
 
 // 🔹 Componente: Información del carro horizontal

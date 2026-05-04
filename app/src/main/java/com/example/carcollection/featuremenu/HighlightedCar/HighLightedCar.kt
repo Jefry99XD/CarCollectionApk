@@ -54,6 +54,31 @@ data class CarOfTheDay(
     val description: String = ""
 )
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Singleton cache — persists across recompositions and navigation.
+// The JSON file (~large) is parsed at most ONCE per calendar day per process.
+// ─────────────────────────────────────────────────────────────────────────────
+object CarOfTheDayCache {
+    @Volatile private var cachedCar: CarOfTheDay? = null
+    @Volatile private var cachedDate: String? = null
+
+    fun getOrLoad(context: Context): CarOfTheDay? {
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Calendar.getInstance().time)
+        // Return cached value when date matches (same car all day, no re-read needed)
+        if (cachedDate == today && cachedCar != null) return cachedCar
+        val result = getCarOfTheDay(context)
+        cachedCar = result
+        cachedDate = today
+        return result
+    }
+
+    /** Call when the assets file changes (dev/testing only). */
+    fun invalidate() {
+        cachedCar = null
+        cachedDate = null
+    }
+}
+
 /**
  * Función para obtener el carro del día basado en la fecha actual.
  * Usa la fecha como semilla para generar un índice consistente.
@@ -65,67 +90,76 @@ fun getCarOfTheDay(context: Context): CarOfTheDay? {
         val inputStream = context.assets.open("diecast_images.json")
         val json = inputStream.bufferedReader().use { it.readText() }
 
-
         // Parsear JSON
         val gson = Gson()
         val carLibraryEntries = try {
-            // Intentar parsear como array
             val typeArray = object : TypeToken<List<CarLibraryEntry>>() {}.type
-            val entries = gson.fromJson<List<CarLibraryEntry>>(json, typeArray)
-            entries
+            gson.fromJson<List<CarLibraryEntry>>(json, typeArray)
         } catch (_: Exception) {
-            // Si falla, intentar como objeto único
             try {
                 val typeSingle = object : TypeToken<CarLibraryEntry>() {}.type
-                val singleEntry = gson.fromJson<CarLibraryEntry>(json, typeSingle)
-                listOf(singleEntry)
+                listOf(gson.fromJson<CarLibraryEntry>(json, typeSingle))
             } catch (e2: Exception) {
                 throw e2
             }
         }
 
+        // ─────────────────────────────────────────────────────────────────────
+        // NUEVO ALGORITMO:
+        //  1. Deduplicar por nombre de modelo → una entrada por carro único
+        //  2. Usar el hash de la fecha para elegir el MODELO del día
+        //  3. Usar un hash secundario para elegir la VARIACIÓN de ese modelo
+        //
+        // Esto garantiza que cada día salga un modelo diferente, sin importar
+        // cuántas variaciones tenga (evita ver el mismo carro toda una semana).
+        // ─────────────────────────────────────────────────────────────────────
 
-        // Aplanar todas las variaciones
-        val allVariations = mutableListOf<Pair<CarLibraryEntry, CarVariation>>()
-        carLibraryEntries.forEach { entry ->
-            entry.variations?.forEach { variation ->
-                val hasValidUrl = variation.url != null &&
-                                 variation.url.isNotBlank() &&
-                                 !variation.url.contains("Image_Not_Available", ignoreCase = true)
-
-                if (hasValidUrl) {
-                    allVariations.add(Pair(entry, variation))
-                }
+        // Paso 1: filtrar entradas que tengan al menos una variación con URL válida
+        val validEntries = carLibraryEntries
+            .filter { entry ->
+                entry.name != null &&
+                entry.variations?.any { v ->
+                    v.url != null &&
+                    v.url.isNotBlank() &&
+                    !v.url.contains("Image_Not_Available", ignoreCase = true)
+                } == true
             }
-        }
+            .distinctBy { it.name?.trim()?.lowercase() } // un registro por modelo único
 
-        if (allVariations.isEmpty()) {
-            return null
-        }
+        if (validEntries.isEmpty()) return null
 
-        // Obtener fecha actual en formato YYYY-MM-DD
-        val calendar = Calendar.getInstance()
+        // Paso 2: fecha como semilla → índice del modelo
+        val calendar  = Calendar.getInstance()
         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
         val dateString = dateFormat.format(calendar.time)
 
-        // Usar la fecha como semilla para generar índice consistente
-        // Hashcode de la fecha será el mismo para todos los usuarios
-        val seed = dateString.hashCode()
-        val index = abs(seed % allVariations.size)
+        val dateSeed   = dateString.hashCode()
+        val modelIndex = abs(dateSeed % validEntries.size)
+        val selectedEntry = validEntries[modelIndex]
 
-        // Seleccionar el carro del día
-        val (carEntry, variation) = allVariations[index]
+        // Paso 3: elegir variación con hash secundario (distinto al de modelo)
+        val validVariations = selectedEntry.variations?.filter { v ->
+            v.url != null &&
+            v.url.isNotBlank() &&
+            !v.url.contains("Image_Not_Available", ignoreCase = true)
+        } ?: emptyList()
 
-        val carOfTheDay = CarOfTheDay(
-            name = carEntry.name ?: "Modelo desconocido",
-            year = variation.year ?: "N/A",
-            series = variation.series ?: "N/A",
-            url = variation.url ?: "",
-            color = variation.color ?: "",
-            description = carEntry.description?.takeIf { it.isNotBlank() }?.trim() ?: "Un clásico por descubrir."
+        if (validVariations.isEmpty()) return null
+
+        val variationSeed  = dateSeed * 31 + modelIndex   // hash diferente al del modelo
+        val variationIndex = abs(variationSeed.toLong() % validVariations.size).toInt()
+        val selectedVariation = validVariations[variationIndex]
+
+        CarOfTheDay(
+            name        = selectedEntry.name ?: "Modelo desconocido",
+            year        = selectedVariation.year   ?: "N/A",
+            series      = selectedVariation.series ?: "N/A",
+            url         = selectedVariation.url    ?: "",
+            color       = selectedVariation.color  ?: "",
+            description = selectedEntry.description
+                ?.takeIf { it.isNotBlank() }?.trim()
+                ?: "Un clásico por descubrir."
         )
-
-        carOfTheDay
 
     } catch (e: Exception) {
         e.printStackTrace()
@@ -140,9 +174,9 @@ fun CarOfTheDayScreen() {
     var isLoading by remember { mutableStateOf(true) }
     var showImageDialog by remember { mutableStateOf(false) }
 
-    // Cargar el carro del día
+    // Use the process-level cache — avoids re-reading the large JSON on every composition
     LaunchedEffect(Unit) {
-        carOfTheDay = getCarOfTheDay(context)
+        carOfTheDay = CarOfTheDayCache.getOrLoad(context)
         isLoading = false
     }
 

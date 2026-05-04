@@ -59,6 +59,8 @@ fun AppNavigationDrawer(
     val user by userViewModel.user.collectAsState()
     val userName = user?.username ?: ""
     val photoUrl = user?.photoUrl ?: ""
+    // Level comes from the same user StateFlow — no extra Firestore fetch needed
+    val userLevel = user?.level ?: 1
     Surface(
         modifier = Modifier
             .fillMaxHeight()
@@ -72,7 +74,9 @@ fun AppNavigationDrawer(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             UserProfileSection(
-                userName = userName, carCount = carCount, photoUrl = photoUrl, onEditClick = {
+                userName = userName, carCount = carCount, photoUrl = photoUrl,
+                userLevel = userLevel,
+                onEditClick = {
                     onCloseDrawer()
                     navController.navigate(NavRoutes.PROFILE)
                 }

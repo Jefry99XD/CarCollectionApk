@@ -1,0 +1,314 @@
+{
+  "achievements": [
+    {
+      "id": "fordista",
+      "title": "Fordista",
+      "description": "Obtener 3 carros Ford diferentes",
+      "category": "COLLECTION",
+      "rarity": "COMUN",
+      "goal": 3,
+      "conditions": [
+        {
+          "concept": "ford",
+          "aliases": [],
+          "matchFields": ["BRAND"],
+          "matchType": "CONTAINS",
+          "allowMultiplePerConcept": false
+        }
+      ],
+      "rules": {
+        "conditionLogic": "AND",
+        "timeWindow": null,
+        "uniquePerCar": true
+      },
+      "hidden": false,
+      "active": true,
+      "isExclusive": false,
+      "exclusiveUserIds": [],
+      "iconUrl": "https://cdn-icons-png.flaticon.com/512/3050/3050159.png"
+    },
+    {
+      "id": "ferrarista",
+      "title": "Ferrarista",
+      "description": "Obtener 5 carros Ferrari",
+      "category": "COLLECTION",
+      "rarity": "RARO",
+      "goal": 5,
+      "conditions": [
+        {
+          "concept": "ferrari",
+          "aliases": [],
+          "matchFields": ["BRAND"],
+          "matchType": "CONTAINS",
+          "allowMultiplePerConcept": false
+        }
+      ],
+      "rules": {
+        "conditionLogic": "AND",
+        "timeWindow": null,
+        "uniquePerCar": true
+      },
+      "hidden": false,
+      "active": true,
+      "isExclusive": false,
+      "exclusiveUserIds": [],
+      "iconUrl": "https://cdn-icons-png.flaticon.com/512/3050/3050159.png"
+    },
+    {
+      "id": "lamborghini_lover",
+      "title": "Lamborghini Lover",
+      "description": "Obtener 4 carros Lamborghini",
+      "category": "COLLECTION",
+      "rarity": "RARO",
+      "goal": 4,
+      "conditions": [
+        {
+          "concept": "lamborghini",
+          "aliases": [],
+          "matchFields": ["BRAND"],
+          "matchType": "CONTAINS",
+          "allowMultiplePerConcept": false
+        }
+      ],
+      "rules": {
+        "conditionLogic": "AND",
+        "timeWindow": null,
+        "uniquePerCar": true
+      },
+      "hidden": false,
+      "active": true,
+      "isExclusive": false,
+      "exclusiveUserIds": [],
+      "iconUrl": "https://cdn-icons-png.flaticon.com/512/3050/3050159.png"
+    },
+    {
+      "id": "rojo_fuego",
+      "title": "Rojo Fuego",
+      "description": "Obtener 3 carros rojos",
+      "category": "COLLECTION",
+      "rarity": "COMUN",
+      "goal": 3,
+      "conditions": [
+        {
+          "concept": "rojo",
+          "aliases": ["red", "roja"],
+          "matchFields": ["COLOR"],
+          "matchType": "CONTAINS",
+          "allowMultiplePerConcept": true
+        }
+      ],
+      "rules": {
+        "conditionLogic": "AND",
+        "timeWindow": null,
+        "uniquePerCar": true
+      },
+      "hidden": false,
+      "active": true,
+      "isExclusive": false,
+      "exclusiveUserIds": [],
+      "iconUrl": "https://cdn-icons-png.flaticon.com/512/3050/3050159.png"
+    },
+    {
+      "id": "speed_lover",
+      "title": "Speed Lover",
+      "description": "Obtener 5 deportivos",
+      "category": "COLLECTION",
+      "rarity": "COMUN",
+      "goal": 5,
+      "conditions": [
+        {
+          "concept": "deportivo",
+          "aliases": ["sports", "sports car"],
+          "matchFields": ["TYPE"],
+          "matchType": "CONTAINS",
+          "allowMultiplePerConcept": true
+        }
+      ],
+      "rules": {
+        "conditionLogic": "AND",
+        "timeWindow": null,
+        "uniquePerCar": true
+      },
+      "hidden": false,
+      "active": true,
+      "isExclusive": false,
+      "exclusiveUserIds": [],
+      "iconUrl": "https://cdn-icons-png.flaticon.com/512/3050/3050159.png"
+    },
+    {
+      "id": "treasure_hunter",
+      "title": "Treasure Hunter",
+      "description": "Obtener 3 TH (Treasure Hunt)",
+      "category": "COLLECTION",
+      "rarity": "RARO",
+      "goal": 3,
+      "conditions": [
+        {
+          "concept": "th",
+          "aliases": ["treasure hunt"],
+          "matchFields": ["QUALITY"],
+          "matchType": "CONTAINS",
+          "allowMultiplePerConcept": false
+        }
+      ],
+      "rules": {
+        "conditionLogic": "AND",
+        "timeWindow": null,
+        "uniquePerCar": true
+      },
+      "hidden": false,
+      "active": true,
+      "isExclusive": false,
+      "exclusiveUserIds": [],
+      "iconUrl": "https://cdn-icons-png.flaticon.com/512/3050/3050159.png"
+    },
+    {
+      "id": "midnight_racer",
+      "title": "Midnight Racer",
+      "description": "Agregar 3 carros en 24 horas",
+      "category": "TIME_BASED",
+      "rarity": "RARO",
+      "goal": 3,
+      "conditions": [],
+      "rules": {
+        "conditionLogic": "AND",
+        "timeWindow": "DAY",
+        "uniquePerCar": true
+      },
+      "hidden": false,
+      "active": true,
+      "isExclusive": false,
+      "exclusiveUserIds": [],
+      "iconUrl": "https://cdn-icons-png.flaticon.com/512/3050/3050159.png"
+    },
+    {
+      "id": "monthly_grind",
+      "title": "Monthly Grind",
+      "description": "Agregar 10 carros en 30 días",
+      "category": "TIME_BASED",
+      "rarity": "COMUN",
+      "goal": 10,
+      "conditions": [],
+      "rules": {
+        "conditionLogic": "AND",
+        "timeWindow": "MONTH",
+        "uniquePerCar": true
+      },
+      "hidden": false,
+      "active": true,
+      "isExclusive": false,
+      "exclusiveUserIds": [],
+      "iconUrl": "https://cdn-icons-png.flaticon.com/512/3050/3050159.png"
+    },
+    {
+      "id": "movie_legend",
+      "title": "Movie Legend",
+      "description": "Poseer autos de películas famosas",
+      "category": "COLLECTION",
+      "rarity": "RARO",
+      "goal": 3,
+      "conditions": [
+        {
+          "concept": "fast and furious",
+          "aliases": ["rápido y furioso"],
+          "matchFields": ["NAME", "TAGS"],
+          "matchType": "CONTAINS",
+          "allowMultiplePerConcept": true
+        },
+        {
+          "concept": "james bond",
+          "aliases": ["bond", "aston martin"],
+          "matchFields": ["NAME", "TAGS"],
+          "matchType": "CONTAINS",
+          "allowMultiplePerConcept": true
+        },
+        {
+          "concept": "back to the future",
+          "aliases": ["delorean"],
+          "matchFields": ["NAME", "TAGS"],
+          "matchType": "CONTAINS",
+          "allowMultiplePerConcept": true
+        }
+      ],
+      "rules": {
+        "conditionLogic": "OR",
+        "timeWindow": null,
+        "uniquePerCar": true
+      },
+      "hidden": false,
+      "active": true,
+      "isExclusive": false,
+      "exclusiveUserIds": [],
+      "iconUrl": "https://cdn-icons-png.flaticon.com/512/3050/3050159.png"
+    },
+    {
+      "id": "year_1980s",
+      "title": "Retro 80s",
+      "description": "Obtener 3 carros de los 80s",
+      "category": "COLLECTION",
+      "rarity": "RARO",
+      "goal": 3,
+      "conditions": [
+        {
+          "concept": "198",
+          "aliases": [],
+          "matchFields": ["YEAR"],
+          "matchType": "STARTS_WITH",
+          "allowMultiplePerConcept": true
+        }
+      ],
+      "rules": {
+        "conditionLogic": "AND",
+        "timeWindow": null,
+        "uniquePerCar": true
+      },
+      "hidden": false,
+      "active": true,
+      "isExclusive": false,
+      "exclusiveUserIds": [],
+      "iconUrl": "https://cdn-icons-png.flaticon.com/512/3050/3050159.png"
+    },
+    {
+      "id": "german_engineering",
+      "title": "German Engineering",
+      "description": "Poseer autos alemanes premium",
+      "category": "COLLECTION",
+      "rarity": "RARO",
+      "goal": 3,
+      "conditions": [
+        {
+          "concept": "porsche",
+          "aliases": [],
+          "matchFields": ["BRAND"],
+          "matchType": "CONTAINS",
+          "allowMultiplePerConcept": false
+        },
+        {
+          "concept": "mercedes",
+          "aliases": ["mercedes-benz"],
+          "matchFields": ["BRAND"],
+          "matchType": "CONTAINS",
+          "allowMultiplePerConcept": false
+        },
+        {
+          "concept": "bmw",
+          "aliases": [],
+          "matchFields": ["BRAND"],
+          "matchType": "CONTAINS",
+          "allowMultiplePerConcept": false
+        }
+      ],
+      "rules": {
+        "conditionLogic": "OR",
+        "timeWindow": null,
+        "uniquePerCar": true
+      },
+      "hidden": false,
+      "active": true,
+      "isExclusive": false,
+      "exclusiveUserIds": [],
+      "iconUrl": "https://cdn-icons-png.flaticon.com/512/3050/3050159.png"
+    }
+  ]
+}
+

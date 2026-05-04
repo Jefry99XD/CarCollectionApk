@@ -19,6 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -249,6 +250,11 @@ fun CarDetailModernView(
                         }
                     }
                 }
+
+                // Notes (landscape)
+                if (!car.notes.isNullOrBlank()) {
+                    NotesCard(car.notes)
+                }
             }
         }
     } else {
@@ -429,6 +435,11 @@ fun CarDetailModernView(
                 }
             }
 
+            // Notes (portrait)
+            if (!car.notes.isNullOrBlank()) {
+                NotesCard(car.notes)
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
@@ -498,5 +509,46 @@ private fun Color.isLightColor(): Boolean {
 
     val luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255
     return luminance > 0.5
+}
+
+@Composable
+private fun NotesCard(notes: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Notas",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Text(
+                text = notes,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
 }
 

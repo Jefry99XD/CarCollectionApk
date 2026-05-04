@@ -39,6 +39,7 @@ import com.example.carcollection.featuretags.data.TagsMethods
 import com.example.carcollection.featuretags.presentation.AddTagScreen
 import com.example.carcollection.featuretags.presentation.EditTagScreen
 import com.example.carcollection.featuretags.presentation.TagViewModel
+import com.example.carcollection.featuretags.presentation.TagViewModelFactory
 import com.example.carcollection.featuretags.presentation.TagsEvent
 import com.example.carcollection.featuretags.presentation.ViewTagsScreen
 import com.example.carcollection.featureuser.UserEdit
@@ -77,6 +78,9 @@ fun AppNavGraph(
     val achievementViewModel: AchievementViewModel = viewModel()
     val wishListViewModel: WishListViewModel = viewModel()
     val collectionViewModel = remember { CarViewModel( carMethods, tagsMethods) }
+
+    // Single shared TagViewModel — avoids per-screen Firestore reloads (featuretags point 1)
+    val tagViewModel: TagViewModel = viewModel(factory = TagViewModelFactory(tagsMethods))
 
     // ViewModel compartido para datos de biblioteca
     var preloadedCarData by remember { mutableStateOf<PreloadedCarData?>(null) }
@@ -170,37 +174,43 @@ fun AppNavGraph(
 
             val cars = collectionViewModel.cars.collectAsState(initial = emptyList()).value
             val allTags = collectionViewModel.allTags.collectAsState(initial = emptyList()).value
+            val user by userViewModel.user.collectAsState()
 
             val car = cars.find { it.id == carId }
+            val isFavorite = carId?.let { user?.favoriteCars?.contains(it) } ?: false
 
             CarDetailScreen(
                 car = car,
                 allTags = allTags,
-                onBackClick = { navController.popBackStack() }
+                isFavorite = isFavorite,
+                onBackClick = { navController.popBackStack() },
+                onToggleFavorite = {
+                    carId?.let { id ->
+                        userViewModel.toggleFavoriteCar(id)
+                    }
+                }
             )
         }
 
 
         composable(NavRoutes.ADD_EDIT_TAG)
         {
-            val viewModel = TagViewModel(tagsMethods = TagsMethods())
             AddTagScreen(
-                viewModel = viewModel,
+                viewModel = tagViewModel,
                 onBackClick = { navController.popBackStack() },
                 onTagAdded = { navController.popBackStack() }
             )
         }
         composable("tag_edit/{tagId}") { backStackEntry ->
             val tagId = backStackEntry.arguments?.getString("tagId")!!
-            val viewModel = TagViewModel(tagsMethods = TagsMethods())
 
             LaunchedEffect(tagId) {
-                viewModel.onEvent(TagsEvent.OnEditClicked(tagId))
+                tagViewModel.onEvent(TagsEvent.OnEditClicked(tagId))
             }
 
             EditTagScreen(
                 tagId = tagId,
-                viewModel = viewModel,
+                viewModel = tagViewModel,
                 onBackClick = { navController.popBackStack() },
                 onTagSaved = { navController.popBackStack() },
             )
@@ -208,10 +218,8 @@ fun AppNavGraph(
 
 
         composable(NavRoutes.VIEW_TAGS) {
-            val viewModel = remember { TagViewModel(tagsMethods = TagsMethods()) }
-
             ViewTagsScreen(
-                viewModel = viewModel,
+                viewModel = tagViewModel,
                 onBackClick = { navController.popBackStack() },
                 onNavigateToAddTag = { navController.navigate(NavRoutes.ADD_EDIT_TAG) },
                 onNavigateToEditTag = { tagId ->
@@ -222,11 +230,9 @@ fun AppNavGraph(
         composable(NavRoutes.EDIT_TAG) { backStackEntry ->
             val tagId = backStackEntry.arguments?.getString("tagId") ?: return@composable
 
-            val viewModel = remember { TagViewModel(tagsMethods = TagsMethods()) }
-
             EditTagScreen(
                 tagId = tagId,
-                viewModel = viewModel,
+                viewModel = tagViewModel,
                 onTagSaved = { navController.popBackStack() },
                 onBackClick = { navController.popBackStack() }
             )
@@ -270,11 +276,15 @@ fun AppNavGraph(
             )
         }
         composable(NavRoutes.STATS_MAIN) {
+            val statsViewModel = viewModel<StatsViewModel>(
+                factory = StatsViewModelFactory(carMethods)
+            )
             StatsMainScreen(
                 onBackClick = { navController.popBackStack() },
                 onCategoryClick = { category ->
                     navController.navigate("statsCategory/${category.name}")
-                }
+                },
+                viewModel = statsViewModel
             )
         }
         composable(
@@ -487,9 +497,11 @@ fun AppNavGraph(
         ) { backStackEntry ->
 
             val uid = backStackEntry.arguments?.getString("uid")!!
+            val username = userViewModel.publicUser.value?.username ?: "Usuario"
 
             PublicUserAchievements(
                 uid = uid,
+                username = username,
                 achievementViewModel = achievementViewModel,
                 onBackClick = { navController.popBackStack() }
             )

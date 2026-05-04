@@ -83,7 +83,7 @@ class CarViewModel(
         }
     }
 
-    fun checkAchievements() {
+    fun checkAchievements(carEventOnly: Boolean = false) {
         // Cancelar job anterior si existe
         achievementCheckJob?.cancel()
 
@@ -113,8 +113,12 @@ class CarViewModel(
                     // Obtener el usuario actual
                     val userMethods = com.example.carcollection.featureuser.data.UserMethods()
                     val currentUser = userMethods.getUserProfile().getOrNull()
-                    // Revisar y actualizar logros
-                    achievementMethods.evaluateAchievements(userCars, currentUser)
+                    // ✅ EVALUACIÓN INCREMENTAL: si es un evento de carro, solo evaluar COLLECTION + TIME_BASED + EXCLUSIVE
+                    if (carEventOnly) {
+                        achievementMethods.evaluateAchievementsForCarEvent(userCars, currentUser)
+                    } else {
+                        achievementMethods.evaluateAchievements(userCars, currentUser)
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -304,7 +308,8 @@ class CarViewModel(
             val result = carMethods.addCarToCollection(car)
             if (result.isSuccess) {
                 loadUserCars()
-                checkAchievements()
+                // ✅ EVALUACIÓN INCREMENTAL: solo COLLECTION + TIME_BASED + EXCLUSIVE
+                checkAchievements(carEventOnly = true)
             }
         }
     }
@@ -313,9 +318,10 @@ class CarViewModel(
         viewModelScope.launch {
             val result = carMethods.deleteCarFromCollection(carId)
             if (result.isSuccess) {
-                // Forzar recarga y verificación de logros
-                hasLoadedInitialData = false
-                loadUserCars()
+                // ✅ Actualizar estado local en lugar de forzar reload completo
+                _cars.value = _cars.value.filter { it.id != carId }
+                // ✅ EVALUACIÓN INCREMENTAL: solo COLLECTION + TIME_BASED + EXCLUSIVE
+                checkAchievements(carEventOnly = true)
             }
         }
     }

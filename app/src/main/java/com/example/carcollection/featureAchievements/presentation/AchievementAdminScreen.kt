@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.carcollection.featureAchievements.data.AchievementMethods
 import com.example.carcollection.featureAchievements.domain.AchievementGlobal
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
@@ -43,17 +44,12 @@ fun AchievementAdminScreen(
     LaunchedEffect(Unit) {
         scope.launch {
             try {
-                val snapshot = FirebaseFirestore.getInstance()
-                    .collection("achievements")
-                    .get()
-                    .await()
-
-                achievements = snapshot.documents.mapNotNull { doc ->
-                    doc.toObject(AchievementGlobal::class.java)?.copy(id = doc.id)
-                }.sortedBy { it.title }
-
+                val methods = AchievementMethods()
+                val allAchievements = methods.getAllGlobalAchievements()
+                achievements = allAchievements.sortedBy { it.title }
                 isLoading = false
             } catch (e: Exception) {
+                android.util.Log.e("AchievementAdminScreen", "Error loading achievements", e)
                 e.printStackTrace()
                 isLoading = false
             }

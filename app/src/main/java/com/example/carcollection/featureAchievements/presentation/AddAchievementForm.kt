@@ -1,6 +1,9 @@
 package com.example.carcollection.featureAchievements.presentation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.border
@@ -18,6 +21,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.carcollection.featureAchievements.domain.*
 import kotlinx.coroutines.launch
@@ -140,19 +145,17 @@ fun AddAchievementForm(
         }
     }
 
-    // Cargar usuarios cuando se activa logro exclusivo
-    LaunchedEffect(isExclusive) {
-        if (isExclusive && availableUsers.isEmpty()) {
+    // Cargar usuarios cuando se activa logro exclusivo o se selecciona categoría EXCLUSIVE
+    LaunchedEffect(isExclusive, category) {
+        if ((isExclusive || category == AchievementCategory.EXCLUSIVE) && availableUsers.isEmpty()) {
             isLoadingUsers = true
-            scope.launch {
-                try {
-                    val result = viewModel.getAllUsers()
-                    availableUsers = result
-                } catch (e: Exception) {
-                    errorMessage = "Error al cargar usuarios: ${e.message}"
-                }
-                isLoadingUsers = false
+            try {
+                val result = viewModel.getAllUsers()
+                availableUsers = result
+            } catch (e: Exception) {
+                errorMessage = "Error al cargar usuarios: ${e.message}"
             }
+            isLoadingUsers = false
         }
     }
 
@@ -182,11 +185,17 @@ fun AddAchievementForm(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
-                    .padding(20.dp)
-                    .verticalScroll(rememberScrollState()),
+                    .padding(padding),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(20.dp)
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
 
                 /* ───── Guía de ayuda ───── */
                 Card(
@@ -306,20 +315,23 @@ fun AddAchievementForm(
 
                 Spacer(Modifier.height(8.dp))
 
-                OutlinedTextField(
-                    value = goal,
-                    onValueChange = { goal = it },
-                    label = { Text(if (category == AchievementCategory.USER) "Nivel requerido" else "Meta (cantidad)") },
-                    placeholder = { Text(if (category == AchievementCategory.USER) "Ej: 5, 10, 50" else "Ej: 10, 50, 500") },
-                    supportingText = {
-                        if (category == AchievementCategory.USER) {
-                            Text("El nivel que el usuario debe alcanzar")
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
+                // Ocultar meta para logros exclusivos
+                if (category != AchievementCategory.EXCLUSIVE) {
+                    OutlinedTextField(
+                        value = goal,
+                        onValueChange = { goal = it },
+                        label = { Text(if (category == AchievementCategory.USER) "Nivel requerido" else "Meta (cantidad)") },
+                        placeholder = { Text(if (category == AchievementCategory.USER) "Ej: 5, 10, 50" else "Ej: 10, 50, 500") },
+                        supportingText = {
+                            if (category == AchievementCategory.USER) {
+                                Text("El nivel que el usuario debe alcanzar")
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
 
-                Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(16.dp))
+                }
 
                 /* ───── SECCIÓN POR CATEGORÍA ───── */
 
@@ -510,18 +522,208 @@ fun AddAchievementForm(
                     }
 
                     Spacer(Modifier.height(16.dp))
+                } else if (category == AchievementCategory.EXCLUSIVE) {
+                    /* ───── EXCLUSIVE: Logro Exclusivo para Usuarios ───── */
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(
+                                alpha = 0.3f
+                            )
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(
+                                "⭐ Logro Exclusivo",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "Este logro se asignará y desbloqueará inmediatamente a los usuarios seleccionados. Sin condiciones ni meta requerida.",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // Sección de selección de usuarios
+                    Text("Seleccionar usuarios", style = MaterialTheme.typography.titleMedium)
+
+                    // Usa las variables del scope externo (showUserDropdown, isLoadingUsers, availableUsers)
+                    OutlinedButton(
+                        onClick = { showUserDropdown = !showUserDropdown },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            if (selectedUserIds.isEmpty())
+                                "Agregar usuarios (${selectedUserIds.size} seleccionados)"
+                            else
+                                "Usuarios seleccionados: ${selectedUserIds.size}"
+                        )
+                    }
+
+                    if (isLoadingUsers) {
+                        Spacer(Modifier.height(8.dp))
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                    }
+
+                    if (showUserDropdown && !isLoadingUsers) {
+                        Spacer(Modifier.height(8.dp))
+
+                        val filteredUsers = remember(availableUsers, userSearchQuery) {
+                            if (userSearchQuery.isBlank()) {
+                                availableUsers
+                            } else {
+                                availableUsers.filter { (uid, name) ->
+                                    name.contains(userSearchQuery, ignoreCase = true) ||
+                                            uid.contains(userSearchQuery, ignoreCase = true)
+                                }
+                            }
+                        }
+
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(4.dp)),
+                            elevation = CardDefaults.cardElevation(4.dp)
+                        ) {
+                            Column(modifier = Modifier.fillMaxSize()) {
+                                OutlinedTextField(
+                                    value = userSearchQuery,
+                                    onValueChange = { userSearchQuery = it },
+                                    label = { Text("Buscar") },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(8.dp),
+                                    singleLine = true
+                                )
+
+                                HorizontalDivider()
+
+                                LazyColumn(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    items(
+                                        items = filteredUsers,
+                                        key = { (uid, _) -> uid }
+                                    ) { (userId, userName) ->
+                                        val isSelected = selectedUserIds.contains(userId)
+
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(4.dp))
+                                                .background(
+                                                    if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                                    else Color.Transparent
+                                                )
+                                                .clickable {
+                                                    selectedUserIds =
+                                                        if (isSelected) selectedUserIds - userId
+                                                        else selectedUserIds + userId
+                                                }
+                                                .padding(8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Checkbox(
+                                                checked = isSelected,
+                                                onCheckedChange = { checked ->
+                                                    selectedUserIds =
+                                                        if (checked) selectedUserIds + userId
+                                                        else selectedUserIds - userId
+                                                }
+                                            )
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    userName,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                                                )
+                                                Text(
+                                                    userId,
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Mostrar usuarios seleccionados
+                    if (selectedUserIds.isNotEmpty()) {
+                        Spacer(Modifier.height(12.dp))
+
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 150.dp)
+                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            selectedUserIds.forEach { userId ->
+                                val userName =
+                                    availableUsers.find { it.first == userId }?.second
+                                        ?: userId
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            userName,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                                        )
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            selectedUserIds = selectedUserIds - userId
+                                        },
+                                        modifier = Modifier.size(32.dp),
+                                        contentPadding = PaddingValues(0.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Delete,
+                                            contentDescription = "Remover",
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
                 } else {
                     // COLLECTION: Condiciones
                     /* ───── COLLECTION: Condiciones ───── */
-                    Text("Lógica de condiciones", style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        text = if (conditionLogic == ConditionLogic.AND)
-                            "AND: Un carro debe cumplir TODAS las condiciones (Ej: Ferrari roja)"
-                        else
-                            "OR: Un carro debe cumplir AL MENOS UNA condición (Ej: Lista de nombres)",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+
+                    // Solo mostrar condiciones si la categoría es COLLECTION
+                    if (category == AchievementCategory.COLLECTION) {
+                        Text("Lógica de condiciones", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            text = if (conditionLogic == ConditionLogic.AND)
+                                "AND: Un carro debe cumplir TODAS las condiciones (Ej: Ferrari roja)"
+                            else
+                                "OR: Un carro debe cumplir AL MENOS UNA condición (Ej: Lista de nombres)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -830,216 +1032,16 @@ fun AddAchievementForm(
 
                 Spacer(Modifier.height(16.dp))
 
-                /* ───── LOGROS EXCLUSIVOS ───── */
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
-                    )
+
+                } // fin del Column con scroll
+
+                /* ───── Guardar (Botón Fijo) ───── */
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    "🏆 Logro Exclusivo",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                                )
-                                Text(
-                                    "Asignar este logro solo a ciertos usuarios",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Switch(
-                                checked = isExclusive,
-                                onCheckedChange = { isExclusive = it }
-                            )
-                        }
-
-                        if (isExclusive) {
-                            Spacer(Modifier.height(12.dp))
-
-                            Text(
-                                "Usuarios seleccionados: ${selectedUserIds.size}",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-
-                            Spacer(Modifier.height(8.dp))
-
-                            // Mostrar usuarios seleccionados
-                            if (selectedUserIds.isNotEmpty()) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .heightIn(max = 150.dp)
-                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant)
-                                        .verticalScroll(rememberScrollState()),
-                                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    selectedUserIds.forEachIndexed { index, userId ->
-                                        val userName =
-                                            availableUsers.find { it.first == userId }?.second
-                                                ?: userId
-
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(8.dp),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(
-                                                    userName,
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                                                )
-                                                Text(
-                                                    userId,
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-                                            IconButton(
-                                                onClick = {
-                                                    selectedUserIds =
-                                                        selectedUserIds.filterIndexed { i, _ -> i != index }
-                                                },
-                                                modifier = Modifier.size(24.dp)
-                                            ) {
-                                                Icon(
-                                                    Icons.Default.Delete,
-                                                    contentDescription = "Remover usuario",
-                                                    modifier = Modifier.size(16.dp),
-                                                    tint = MaterialTheme.colorScheme.error
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-
-                                Spacer(Modifier.height(8.dp))
-                            }
-
-                            // Dropdown para seleccionar usuarios - Simplificado con tamaño fijo
-                            if (!isLoadingUsers) {
-                                OutlinedButton(
-                                    onClick = { showUserDropdown = !showUserDropdown },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text("Seleccionar usuarios")
-                                        Icon(
-                                            if (showUserDropdown) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                            contentDescription = "Toggle dropdown"
-                                        )
-                                    }
-                                }
-                            } else {
-                                Text("Cargando usuarios...", style = MaterialTheme.typography.bodySmall)
-                            }
-
-                            if (showUserDropdown && !isLoadingUsers) {
-                                Spacer(Modifier.height(8.dp))
-
-                                Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(300.dp)
-                                        .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(4.dp)),
-                                    elevation = CardDefaults.cardElevation(4.dp)
-                                ) {
-                                    Column(
-                                        modifier = Modifier.fillMaxSize()
-                                    ) {
-                                        OutlinedTextField(
-                                            value = userSearchQuery,
-                                            onValueChange = { userSearchQuery = it },
-                                            label = { Text("Buscar") },
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(8.dp),
-                                            singleLine = true
-                                        )
-
-                                        HorizontalDivider()
-
-                                        val filteredUsers = if (userSearchQuery.isBlank()) {
-                                            availableUsers
-                                        } else {
-                                            availableUsers.filter { (uid, name) ->
-                                                name.contains(userSearchQuery, ignoreCase = true) ||
-                                                uid.contains(userSearchQuery, ignoreCase = true)
-                                            }
-                                        }
-
-                                        if (filteredUsers.isEmpty()) {
-                                            Box(
-                                                modifier = Modifier.fillMaxSize(),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Text("No encontrado")
-                                            }
-                                        } else {
-                                            Column(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .weight(1f)
-                                                    .verticalScroll(rememberScrollState())
-                                            ) {
-                                                filteredUsers.forEach { (uid, name) ->
-                                                    val isSelected = uid in selectedUserIds
-                                                    Row(
-                                                        modifier = Modifier
-                                                            .fillMaxWidth()
-                                                            .clickable {
-                                                                selectedUserIds = if (isSelected) {
-                                                                    selectedUserIds.filter { it != uid }
-                                                                } else {
-                                                                    selectedUserIds + uid
-                                                                }
-                                                            }
-                                                            .padding(8.dp),
-                                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                                        verticalAlignment = Alignment.CenterVertically
-                                                    ) {
-                                                        Column(modifier = Modifier.weight(1f)) {
-                                                            Text(name, style = MaterialTheme.typography.bodySmall)
-                                                        }
-                                                        if (isSelected) {
-                                                            Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            Spacer(Modifier.height(4.dp))
-
-                            Text(
-                                "💡 Busca usuarios por nombre o ID. Puedes seleccionar múltiples usuarios.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                /* ───── Guardar ───── */
                 Button(
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     enabled = !isLoading,
@@ -1053,7 +1055,12 @@ fun AddAchievementForm(
                             return@Button
                         }
 
-                        val goalInt = goal.toIntOrNull()
+                        val goalInt = if (category == AchievementCategory.EXCLUSIVE) {
+                            1 // Para logros exclusivos, meta es 1 (se da inmediatamente)
+                        } else {
+                            goal.toIntOrNull()
+                        }
+
                         if (goalInt == null || goalInt <= 0) {
                             errorMessage = if (category == AchievementCategory.USER) {
                                 "El nivel debe ser un número positivo"
@@ -1083,6 +1090,12 @@ fun AddAchievementForm(
                             return@Button
                         }
 
+                        // Para logros EXCLUSIVE, necesitan al menos un usuario seleccionado
+                        if (category == AchievementCategory.EXCLUSIVE && selectedUserIds.isEmpty()) {
+                            errorMessage = "Selecciona al menos un usuario para el logro exclusivo"
+                            return@Button
+                        }
+
                         // Validar logros exclusivos
                         if (isExclusive && selectedUserIds.isEmpty()) {
                             errorMessage = "Agrega al menos un usuario para un logro exclusivo"
@@ -1094,6 +1107,12 @@ fun AddAchievementForm(
                             val generatedId = if (category == AchievementCategory.USER) {
                                 // Para logros de nivel: level_X
                                 "level_$goalInt"
+                            } else if (category == AchievementCategory.EXCLUSIVE) {
+                                // Para logros exclusivos: desde el título
+                                title.lowercase().trim()
+                                    .replace(Regex("[^a-z0-9]+"), "_")
+                                    .removePrefix("_")
+                                    .removeSuffix("_")
                             } else {
                                 // Para otros: desde el título
                                 title.lowercase().trim()
@@ -1109,20 +1128,21 @@ fun AddAchievementForm(
                                 iconUrl = iconUrl,
                                 category = category,
                                 rarity = rarity,
-                                conditions = if (category == AchievementCategory.USER || category == AchievementCategory.TIME_BASED || category == AchievementCategory.STREAK_BASED) emptyList() else conditions.toList(),
-                                goal = goalInt,
+                                conditions = if (category == AchievementCategory.USER || category == AchievementCategory.TIME_BASED || category == AchievementCategory.STREAK_BASED || category == AchievementCategory.EXCLUSIVE) emptyList() else conditions.toList(),
+                                goal = if (category == AchievementCategory.EXCLUSIVE) 0 else goalInt,
                                 rules = when (category) {
                                     AchievementCategory.COLLECTION -> AchievementRules(
                                         conditionLogic = conditionLogic
                                     )
-                                    AchievementCategory.TIME_BASED -> rules // Usa el que seleccionó el usuario
-                                    AchievementCategory.STREAK_BASED -> rules // Usa el que seleccionó el usuario
+                                    AchievementCategory.TIME_BASED -> rules
+                                    AchievementCategory.STREAK_BASED -> rules
                                     AchievementCategory.USER -> AchievementRules(conditionLogic = ConditionLogic.AND)
+                                    AchievementCategory.EXCLUSIVE -> AchievementRules(conditionLogic = ConditionLogic.AND)
                                 },
                                 hidden = hidden,
                                 active = active,
-                                isExclusive = isExclusive,
-                                exclusiveUserIds = if (isExclusive) selectedUserIds else emptyList()
+                                isExclusive = category == AchievementCategory.EXCLUSIVE,
+                                exclusiveUserIds = if (category == AchievementCategory.EXCLUSIVE) selectedUserIds else emptyList()
                             )
 
                             if (isEditMode) {
@@ -1167,8 +1187,12 @@ fun AddAchievementForm(
                         Spacer(Modifier.height(8.dp))
                         Text(successMessage, color = MaterialTheme.colorScheme.primary)
                     }
-                } // Column
-            } // else
-        } // Scaffold
-    }
+                } // Column del botón
+
+            } // Column principal
+        } // else
+    } // Scaffold
+}
+}
+
 

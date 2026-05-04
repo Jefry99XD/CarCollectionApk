@@ -32,6 +32,7 @@ object NavRoutes {
     const val STATS_MAIN = "stats_main"
     const val EASTER_EGG = "easter_egg_secret"
     const val NOTIFICATIONS = "notifications"
+    const val FAVORITES = "favorites"
 
     fun editTag(tagId: String) = "edit_tag/$tagId"
     fun editAchievement(achievementId: String) = "edit_achievement/$achievementId"

@@ -30,8 +30,8 @@ class MainActivity : ComponentActivity() {
 
         drawerLayout = findViewById(R.id.drawer_layout)
 
-        // Inicializar MusicManager
-        musicManager = MusicManager(this)
+        // Inicializar MusicManager — singleton, shared with ConfigMenu
+        musicManager = MusicManager.getInstance(this)
 
         // Inicializa el sidebar en Compose
         val composeView = findViewById<ComposeView>(R.id.sidebar_compose_view)
@@ -69,8 +69,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Verificar preferencia y reproducir si está habilitada
+        // Verificar preferencia y reproducir si está habilitada (restoring saved volume first)
         lifecycleScope.launch {
+            musicManager.restoreVolume()      // Point 4: apply saved volume before play
             val isMusicEnabled = musicManager.isMusicEnabled.first()
             if (isMusicEnabled) {
                 musicManager.startMusic()

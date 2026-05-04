@@ -60,10 +60,10 @@ fun StatsCategoryScreen(
     viewModel: StatsViewModel,
     onBackClick: () -> Unit
 ) {
-    // Datos reales procesados desde Firebase
-    val cars by viewModel.cars.collectAsState()
+    // Datos ligeros (mejora 1) procesados desde Firebase
+    val statsData by viewModel.statsData.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    val stats = remember(cars, selectedCategory) {
+    val stats = remember(statsData, selectedCategory) {
         viewModel.generateStats(selectedCategory)
     }
     var selectedChart by remember { mutableStateOf(ChartType.PIE) }

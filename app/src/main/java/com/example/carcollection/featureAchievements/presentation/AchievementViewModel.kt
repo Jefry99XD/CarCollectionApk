@@ -32,6 +32,8 @@ class AchievementViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
+                // 🧹 Limpiar logros exclusivos incorrectos antes de cargar (repara datos corruptos)
+                methods.cleanupInvalidExclusiveAchievements()
                 _achievements.value = methods.getAllAchievements()
                 _errorMessage.value = null
             } catch (e: Exception) {

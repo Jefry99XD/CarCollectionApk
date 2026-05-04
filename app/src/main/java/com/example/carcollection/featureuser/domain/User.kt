@@ -38,6 +38,10 @@ data class User(
     // ─── Insignias ───
     val badges: List<String> = emptyList(), // Ejemplo: ["Coleccionista", "Veterano"]
 
+    // ─── Carros Favoritos y Showcase ───
+    val favoriteCars: List<String> = emptyList(),      // IDs de carros favoritos (sin límite)
+    val showcaseCars: List<String> = emptyList(),      // IDs de carros en showcase (máximo 10, debe estar en favoriteCars)
+
     // ─── Derechos de administrador ───
     val adminRights: Boolean = false, // Solo puede ser modificado en Firebase
 
@@ -48,7 +52,7 @@ data class User(
     // ─── Última actividad ───
     val lastActive: Long = System.currentTimeMillis(),
 ) {
-    constructor() : this("", null, null, null, null, 0L, 0, 0, 0, 1, 0L, 0L, 0L, emptyList(), false, false, null, 0L)
+    constructor() : this("", null, null, null, null, 0L, 0, 0, 0, 1, 0L, 0L, 0L, emptyList(), emptyList(), emptyList(), false, false, null, 0L)
 
     // Propiedad computada: días desde que se unió
     @get:Exclude

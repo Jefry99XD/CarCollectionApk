@@ -4,7 +4,6 @@ package com.example.carcollection.featurecar.presentation.add_edit_car
 import android.annotation.SuppressLint
 import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -12,6 +11,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,27 +25,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.FilterAltOff
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -74,15 +67,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -92,9 +83,7 @@ import androidx.navigation.NavHostController
 import com.example.carcollection.featurecar.domain.Car
 import com.example.carcollection.featurecar.domain.CarViewModel
 import com.example.carcollection.featuremenu.main.components.CarCard
-import com.example.carcollection.featuretags.domain.Tag
 import com.example.carcollection.presentation.navigation.NavRoutes
-import androidx.core.graphics.toColorInt
 
 @Composable
 fun DropdownMenuBox(
@@ -150,6 +139,7 @@ fun CollectionViewScreen(
     val currentPage by viewModel.currentPage.collectAsState()
     val totalPages by viewModel.totalPages.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val filterState by viewModel.filterState.collectAsState()  // ✅ Collected as state for reactivity
     val snackbarHostState = remember { SnackbarHostState() }
 
     val allTags by viewModel.allTags.collectAsState(initial = emptyList())
@@ -165,11 +155,9 @@ fun CollectionViewScreen(
     val sortByState by viewModel.sortBy.collectAsState()
     val sortAscendingState by viewModel.sortAscending.collectAsState()
 
-    // ✅ Calcular activeFiltersCount de forma optimizada
+    // ✅ activeFiltersCount reacts automatically to filterState changes
     val activeFiltersCount by remember {
         derivedStateOf {
-            // Contar filtros activos basados en filterState
-            val filterState = viewModel.filterState.value
             listOfNotNull(
                 filterState.brand,
                 filterState.year,
@@ -185,6 +173,14 @@ fun CollectionViewScreen(
     var carToDelete by remember { mutableStateOf<Car?>(null) }
 
     var expanded by rememberSaveable { mutableStateOf(false) }
+
+    // Auto-expandir el panel de filtros cuando se activa alguno,
+    // pero NO forzar la visibilidad — el botón toggle siempre tiene control.
+    LaunchedEffect(activeFiltersCount > 0) {
+        if (activeFiltersCount > 0) {
+            expanded = true
+        }
+    }
 
     // ✅ NUEVO: Estado para forzar refresh cuando vuelve de editar/agregar
     var forceRefresh by remember { mutableStateOf(false) }
@@ -487,7 +483,7 @@ fun CollectionViewScreen(
                     // 2️⃣B FILTROS
                     item {
                         AnimatedVisibility(
-                            visible = activeFiltersCount > 0 || expanded,
+                            visible = expanded,
                             enter = fadeIn() + expandVertically(),
                             exit = fadeOut() + shrinkVertically()
                         ) {
@@ -522,14 +518,14 @@ fun CollectionViewScreen(
                                         }
                                     }
 
-                                    // Fila 1: Brand, Year
+                                     // Fila 1: Brand, Year
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
                                         Box(modifier = Modifier.weight(1f)) {
                                             DropdownMenuBox(
-                                                selectedOption = viewModel.filterState.value.brand ?: "Marca",
+                                                selectedOption = filterState.brand ?: "Marca",
                                                 options = listOf("Marca") + allBrands,
                                                 onOptionSelected = {
                                                     viewModel.onBrandSelected(if (it == "Marca") null else it)
@@ -538,7 +534,7 @@ fun CollectionViewScreen(
                                         }
                                         Box(modifier = Modifier.weight(1f)) {
                                             DropdownMenuBox(
-                                                selectedOption = viewModel.filterState.value.year ?: "Año",
+                                                selectedOption = filterState.year ?: "Año",
                                                 options = listOf("Año") + allYears,
                                                 onOptionSelected = {
                                                     viewModel.onYearSelected(if (it == "Año") null else it)
@@ -554,7 +550,7 @@ fun CollectionViewScreen(
                                     ) {
                                         Box(modifier = Modifier.weight(1f)) {
                                             DropdownMenuBox(
-                                                selectedOption = viewModel.filterState.value.series ?: "Serie",
+                                                selectedOption = filterState.series ?: "Serie",
                                                 options = listOf("Serie") + allSeries,
                                                 onOptionSelected = {
                                                     viewModel.onSeriesSelected(if (it == "Serie") null else it)
@@ -563,7 +559,7 @@ fun CollectionViewScreen(
                                         }
                                         Box(modifier = Modifier.weight(1f)) {
                                             DropdownMenuBox(
-                                                selectedOption = viewModel.filterState.value.color ?: "Color",
+                                                selectedOption = filterState.color ?: "Color",
                                                 options = listOf("Color") + allColors,
                                                 onOptionSelected = {
                                                     viewModel.onColorSelected(if (it == "Color") null else it)
@@ -579,7 +575,7 @@ fun CollectionViewScreen(
                                     ) {
                                         Box(modifier = Modifier.weight(1f)) {
                                             DropdownMenuBox(
-                                                selectedOption = viewModel.filterState.value.type ?: "Tipo",
+                                                selectedOption = filterState.type ?: "Tipo",
                                                 options = listOf("Tipo") + allTypes,
                                                 onOptionSelected = {
                                                     viewModel.onTypeSelected(if (it == "Tipo") null else it)
@@ -588,7 +584,7 @@ fun CollectionViewScreen(
                                         }
                                         Box(modifier = Modifier.weight(1f)) {
                                             DropdownMenuBox(
-                                                selectedOption = viewModel.filterState.value.quality ?: "Calidad",
+                                                selectedOption = filterState.quality ?: "Calidad",
                                                 options = listOf("Calidad") + allQualities,
                                                 onOptionSelected = {
                                                     viewModel.onQualitySelected(if (it == "Calidad") null else it)
@@ -602,7 +598,7 @@ fun CollectionViewScreen(
                                         Row(modifier = Modifier.fillMaxWidth()) {
                                             Box(modifier = Modifier.weight(1f)) {
                                                 DropdownMenuBox(
-                                                    selectedOption = viewModel.filterState.value.tag ?: "Tag",
+                                                    selectedOption = filterState.tag ?: "Tag",
                                                     options = listOf("Tag") + allTags.map { it.name },
                                                     onOptionSelected = {
                                                         viewModel.onTagSelected(if (it == "Tag") null else it)
@@ -760,6 +756,68 @@ fun CollectionViewScreen(
                             }
                         }
                     }
+
+                    // 5️⃣ PAGINACIÓN INFERIOR (móvil) — para no tener que subir al terminar la lista
+                    if (totalPages > 1) {
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    IconButton(
+                                        onClick = { viewModel.prevPage() },
+                                        enabled = currentPage > 0,
+                                        colors = IconButtonDefaults.iconButtonColors(
+                                            contentColor = if (currentPage > 0)
+                                                MaterialTheme.colorScheme.primary
+                                            else
+                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                                        ),
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = "Página anterior",
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                    Text(
+                                        "${currentPage + 1} / $totalPages",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        modifier = Modifier.width(50.dp),
+                                        textAlign = TextAlign.Center
+                                    )
+                                    IconButton(
+                                        onClick = { viewModel.nextPage() },
+                                        enabled = currentPage < totalPages - 1,
+                                        colors = IconButtonDefaults.iconButtonColors(
+                                            contentColor = if (currentPage < totalPages - 1)
+                                                MaterialTheme.colorScheme.primary
+                                            else
+                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                                        ),
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                            contentDescription = "Página siguiente",
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             } else {
                 // 📱 TABLET/HORIZONTAL - Vista Grid (Todo scrollable)
@@ -856,7 +914,7 @@ fun CollectionViewScreen(
                     // 2️⃣B FILTROS (Tablet)
                     item {
                         AnimatedVisibility(
-                            visible = activeFiltersCount > 0 || expanded,
+                            visible = expanded,
                             enter = fadeIn() + expandVertically(),
                             exit = fadeOut() + shrinkVertically()
                         ) {
@@ -898,7 +956,7 @@ fun CollectionViewScreen(
                                     ) {
                                         Box(modifier = Modifier.weight(1f)) {
                                             DropdownMenuBox(
-                                                selectedOption = viewModel.filterState.value.brand ?: "Marca",
+                                                selectedOption = filterState.brand ?: "Marca",
                                                 options = listOf("Marca") + allBrands,
                                                 onOptionSelected = {
                                                     viewModel.onBrandSelected(if (it == "Marca") null else it)
@@ -907,7 +965,7 @@ fun CollectionViewScreen(
                                         }
                                         Box(modifier = Modifier.weight(1f)) {
                                             DropdownMenuBox(
-                                                selectedOption = viewModel.filterState.value.year ?: "Año",
+                                                selectedOption = filterState.year ?: "Año",
                                                 options = listOf("Año") + allYears,
                                                 onOptionSelected = {
                                                     viewModel.onYearSelected(if (it == "Año") null else it)
@@ -923,7 +981,7 @@ fun CollectionViewScreen(
                                     ) {
                                         Box(modifier = Modifier.weight(1f)) {
                                             DropdownMenuBox(
-                                                selectedOption = viewModel.filterState.value.series ?: "Serie",
+                                                selectedOption = filterState.series ?: "Serie",
                                                 options = listOf("Serie") + allSeries,
                                                 onOptionSelected = {
                                                     viewModel.onSeriesSelected(if (it == "Serie") null else it)
@@ -932,7 +990,7 @@ fun CollectionViewScreen(
                                         }
                                         Box(modifier = Modifier.weight(1f)) {
                                             DropdownMenuBox(
-                                                selectedOption = viewModel.filterState.value.color ?: "Color",
+                                                selectedOption = filterState.color ?: "Color",
                                                 options = listOf("Color") + allColors,
                                                 onOptionSelected = {
                                                     viewModel.onColorSelected(if (it == "Color") null else it)
@@ -948,7 +1006,7 @@ fun CollectionViewScreen(
                                     ) {
                                         Box(modifier = Modifier.weight(1f)) {
                                             DropdownMenuBox(
-                                                selectedOption = viewModel.filterState.value.type ?: "Tipo",
+                                                selectedOption = filterState.type ?: "Tipo",
                                                 options = listOf("Tipo") + allTypes,
                                                 onOptionSelected = {
                                                     viewModel.onTypeSelected(if (it == "Tipo") null else it)
@@ -957,7 +1015,7 @@ fun CollectionViewScreen(
                                         }
                                         Box(modifier = Modifier.weight(1f)) {
                                             DropdownMenuBox(
-                                                selectedOption = viewModel.filterState.value.quality ?: "Calidad",
+                                                selectedOption = filterState.quality ?: "Calidad",
                                                 options = listOf("Calidad") + allQualities,
                                                 onOptionSelected = {
                                                     viewModel.onQualitySelected(if (it == "Calidad") null else it)
@@ -971,7 +1029,7 @@ fun CollectionViewScreen(
                                         Row(modifier = Modifier.fillMaxWidth()) {
                                             Box(modifier = Modifier.weight(1f)) {
                                                 DropdownMenuBox(
-                                                    selectedOption = viewModel.filterState.value.tag ?: "Tag",
+                                                    selectedOption = filterState.tag ?: "Tag",
                                                     options = listOf("Tag") + allTags.map { it.name },
                                                     onOptionSelected = {
                                                         viewModel.onTagSelected(if (it == "Tag") null else it)

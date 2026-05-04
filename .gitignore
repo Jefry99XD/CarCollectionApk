@@ -45,14 +45,14 @@ google-services.json
 serviceAccountKey.json
 
 # ==============================
-# APKs y releases
+# Scripts Python
 # ==============================
-
-# ⛔ Evita ignorar APKs si deseas subirlos al repo
-# ✅ Asegúrate de guardar tus APKs en una carpeta como /release/
-# Esta línea ignora APKs por defecto:
-*.apk
-
+*.py
+__pycache__/
+*.pyc
+.python-version
+venv/
+env/
 
 !app/release/*.apk
 

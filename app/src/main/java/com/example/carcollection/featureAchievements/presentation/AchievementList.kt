@@ -46,7 +46,9 @@ fun AchievementList(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
     userCars: List<Car> = emptyList(),
-    userCarNames: Set<String> = emptySet()
+    userCarNames: Set<String> = emptySet(),
+    currentUserId: String? = null,
+    profileUsername: String? = null  // null = perfil propio, valor = perfil público
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var showOnlyUnlocked by remember { mutableStateOf(false) }
@@ -56,8 +58,13 @@ fun AchievementList(
     val itemsPerPage = 10
 
     // Filter achievements based on search and filters
-    val filteredAchievements = remember(achievements, searchQuery, showOnlyUnlocked, showOnlyLocked) {
+    val filteredAchievements = remember(achievements, searchQuery, showOnlyUnlocked, showOnlyLocked, currentUserId) {
         achievements.filter { (achievement, progress) ->
+            // Defensa extra: ocultar exclusivos que no pertenecen al usuario actual
+            val isEntitledToExclusive = !achievement.isExclusive ||
+                (!currentUserId.isNullOrEmpty() && achievement.exclusiveUserIds.contains(currentUserId))
+            if (!isEntitledToExclusive) return@filter false
+
             val matchesSearch = searchQuery.isEmpty() ||
                 achievement.title.contains(searchQuery, ignoreCase = true) ||
                 achievement.description.contains(searchQuery, ignoreCase = true)
@@ -213,7 +220,9 @@ fun AchievementList(
                                 achievement = achievement,
                                 userAchievement = progress,
                                 userCars = userCars,
-                                userCarNames = userCarNames
+                                userCarNames = userCarNames,
+                                currentUserId = currentUserId,
+                                profileUsername = profileUsername
                             )
                         }
 

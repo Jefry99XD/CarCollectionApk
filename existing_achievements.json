@@ -1,0 +1,436 @@
+{
+  "acceleracer": {
+    "id": "acceleracer",
+    "title": "Acceleracer",
+    "category": "COLLECTION",
+    "goal": 29,
+    "description": "Registra todos los carros de las películas de Acceleracers"
+  },
+  "america": {
+    "id": "america",
+    "title": "America. 🦅",
+    "category": "COLLECTION",
+    "goal": 50,
+    "description": "Registra 50 carros Americanos"
+  },
+  "barbie_girl": {
+    "id": "barbie_girl",
+    "title": "Barbie Girl",
+    "category": "COLLECTION",
+    "goal": 1,
+    "description": "Registra algun carro referente a Barbie"
+  },
+  "beat_that": {
+    "id": "beat_that",
+    "title": "Beat That",
+    "category": "COLLECTION",
+    "goal": 30,
+    "description": "Registra los carros del juego Hot Wheels Beat That"
+  },
+  "beat_that_exclusivo": {
+    "id": "beat_that_exclusivo",
+    "title": "Beat That Exclusivo",
+    "category": "COLLECTION",
+    "goal": 6,
+    "description": "Registra los 6 autos exclusivos de Beat That DS"
+  },
+  "brilla": {
+    "id": "brilla",
+    "title": "Brilla!",
+    "category": "COLLECTION",
+    "goal": 1,
+    "description": "Registra tu primer STH"
+  },
+  "car_of_the_day": {
+    "id": "car_of_the_day",
+    "title": "Carro del Día",
+    "category": "COLLECTION",
+    "goal": 1,
+    "description": "Posee el carro destacado del día. Este logro se otorga automáticamente cuando tienes el carro del día."
+  },
+  "cavallino_rampante": {
+    "id": "cavallino_rampante",
+    "title": "Cavallino Rampante",
+    "category": "COLLECTION",
+    "goal": 28,
+    "description": "Registra 28 Ferraris"
+  },
+  "coleccionista_avanzado": {
+    "id": "coleccionista_avanzado",
+    "title": "Coleccionista Avanzado",
+    "category": "COLLECTION",
+    "goal": 250,
+    "description": "Registra 250 carros"
+  },
+  "coleccionista_experto": {
+    "id": "coleccionista_experto",
+    "title": "Coleccionista Maestro",
+    "category": "COLLECTION",
+    "goal": 500,
+    "description": "Registra 500 carros"
+  },
+  "coleccionista_legendario": {
+    "id": "coleccionista_legendario",
+    "title": "Coleccionista legendario",
+    "category": "COLLECTION",
+    "goal": 1000,
+    "description": "Registra 1000 carros"
+  },
+  "color_sangre": {
+    "id": "color_sangre",
+    "title": "Color Sangre",
+    "category": "COLLECTION",
+    "goal": 50,
+    "description": "Registra 50 carros rojos"
+  },
+  "deora": {
+    "id": "deora",
+    "title": "Deora?",
+    "category": "COLLECTION",
+    "goal": 6,
+    "description": "Registra los Deoras"
+  },
+  "dune_ratz": {
+    "id": "dune_ratz",
+    "title": "Dune Ratz",
+    "category": "COLLECTION",
+    "goal": 7,
+    "description": "Registra los carros del equipo Dune Ratz de World Race"
+  },
+  "el_culon": {
+    "id": "el_culon",
+    "title": "El Culon",
+    "category": "COLLECTION",
+    "goal": 1,
+    "description": "Registra un Fat Bax. Eso si que nadie los quiere pero que buen perro tiene"
+  },
+  "el_gran_coleccionista": {
+    "id": "el_gran_coleccionista",
+    "title": "El Gran Coleccionista",
+    "category": "COLLECTION",
+    "goal": 2500,
+    "description": "Agrega 2500 carros"
+  },
+  "el_inicio_del_vicio": {
+    "id": "el_inicio_del_vicio",
+    "title": "El inicio del vicio",
+    "category": "COLLECTION",
+    "goal": 1,
+    "description": "Registra tu primer carro"
+  },
+  "el_se_or_de_la_noche": {
+    "id": "el_se_or_de_la_noche",
+    "title": "El señor de la noche",
+    "category": "COLLECTION",
+    "goal": 19,
+    "description": "Colecciona 19 carros relacionados a Batman"
+  },
+  "elon_musk": {
+    "id": "elon_musk",
+    "title": "This is Elon Musk",
+    "category": "COLLECTION",
+    "goal": 2,
+    "description": "Registra Cyber carros"
+  },
+  "encaminado": {
+    "id": "encaminado",
+    "title": "Colecionista entusiasta",
+    "category": "COLLECTION",
+    "goal": 100,
+    "description": "Registra 100 Carros"
+  },
+  "gran_turismo_4": {
+    "id": "gran_turismo_4",
+    "title": "Gran Turismo 4",
+    "category": "COLLECTION",
+    "goal": 721,
+    "description": "Registra 721 Autos"
+  },
+  "gran_turismo_5": {
+    "id": "gran_turismo_5",
+    "title": "Gran Turismo 5",
+    "category": "COLLECTION",
+    "goal": 1074,
+    "description": "Registra 1074 Autos"
+  },
+  "gran_turismo_6": {
+    "id": "gran_turismo_6",
+    "title": "Gran Turismo 6",
+    "category": "COLLECTION",
+    "goal": 1245,
+    "description": "Registra 1245 Autos"
+  },
+  "highway_35_world_race": {
+    "id": "highway_35_world_race",
+    "title": "Highway 35 World Race",
+    "category": "COLLECTION",
+    "goal": 35,
+    "description": "Registra los 35 carros de todos los equipos de la película de Hot Wheels Highway 35 World Race"
+  },
+  "hondero": {
+    "id": "hondero",
+    "title": "Hondero",
+    "category": "COLLECTION",
+    "goal": 30,
+    "description": "Registra 30 Hondas"
+  },
+  "hot_wheels_world_race_the_game": {
+    "id": "hot_wheels_world_race_the_game",
+    "title": "Hot Wheels World Race The Game",
+    "category": "COLLECTION",
+    "goal": 35,
+    "description": "Registra los carros del juego de Hot Wheels World Race"
+  },
+  "iconos_gran_turismo": {
+    "id": "iconos_gran_turismo",
+    "title": "Iconos Gran Turismo",
+    "category": "COLLECTION",
+    "goal": 5,
+    "description": "Registra los autos \"Icono\" de Gran Turismo"
+  },
+  "iniciante": {
+    "id": "iniciante",
+    "title": "Principiante",
+    "category": "COLLECTION",
+    "goal": 10,
+    "description": "Registra 10 carros"
+  },
+  "initial_d": {
+    "id": "initial_d",
+    "title": "Initial D",
+    "category": "COLLECTION",
+    "goal": 1,
+    "description": "Registra un hachiroku AE86"
+  },
+  "italia": {
+    "id": "italia",
+    "title": "Mamma Mia ",
+    "category": "COLLECTION",
+    "goal": 50,
+    "description": "Registra 10 marcas italianas"
+  },
+  "japan_konnichiwa": {
+    "id": "japan_konnichiwa",
+    "title": "Japan Konnichiwa",
+    "category": "COLLECTION",
+    "goal": 50,
+    "description": "Registra 50 carros japoneses"
+  },
+  "kansei_dorifto": {
+    "id": "kansei_dorifto",
+    "title": "Kansei Dorifto?",
+    "category": "COLLECTION",
+    "goal": 2,
+    "description": "Registra el ae86 y rx7 fd"
+  },
+  "level_10": {
+    "id": "level_10",
+    "title": "Usuario Experimentado",
+    "category": "USER",
+    "goal": 10,
+    "description": "Alcanza El nivel 10"
+  },
+  "level_25": {
+    "id": "level_25",
+    "title": "Usuario Profesional",
+    "category": "USER",
+    "goal": 25,
+    "description": "Alcanza El nivel 25"
+  },
+  "level_5": {
+    "id": "level_5",
+    "title": "Usuario Principiante",
+    "category": "USER",
+    "goal": 5,
+    "description": "Alcanza El nivel 5"
+  },
+  "level_50": {
+    "id": "level_50",
+    "title": "Tuba supremo",
+    "category": "USER",
+    "goal": 50,
+    "description": "Alcanza El nivel 50"
+  },
+  "los_originales": {
+    "id": "los_originales",
+    "title": "Los originales",
+    "category": "COLLECTION",
+    "goal": 100,
+    "description": "Registra 100 Carros fantasia"
+  },
+  "metal_maniacs": {
+    "id": "metal_maniacs",
+    "title": "Metal Maniacs",
+    "category": "COLLECTION",
+    "goal": 10,
+    "description": "Registra los autos de los metal maniacs "
+  },
+  "mf_ghost": {
+    "id": "mf_ghost",
+    "title": "MF Ghost",
+    "category": "COLLECTION",
+    "goal": 1,
+    "description": "Registra un Toyota 86 GT"
+  },
+  "mia_la_toyota": {
+    "id": "mia_la_toyota",
+    "title": "Mia la toyota",
+    "category": "COLLECTION",
+    "goal": 25,
+    "description": "Registra 25 Toyotas"
+  },
+  "pesadito": {
+    "id": "pesadito",
+    "title": "Pesadito",
+    "category": "COLLECTION",
+    "goal": 1,
+    "description": "Registra tu primer carro premium"
+  },
+  "primero": {
+    "id": "primero",
+    "title": "Primero",
+    "category": "COLLECTION",
+    "goal": 100,
+    "description": "Registra 100 carros de primera edición. Pueden ser valiosos"
+  },
+  "racing_drones": {
+    "id": "racing_drones",
+    "title": "Racing Drones",
+    "category": "COLLECTION",
+    "goal": 9,
+    "description": "Registra los autos del equipo de Gelorum Racing Drones"
+  },
+  "rapido_y_furioso": {
+    "id": "rapido_y_furioso",
+    "title": "Rapido y furioso",
+    "category": "COLLECTION",
+    "goal": 50,
+    "description": "Registra 50 carros referentes a Rapido y furioso"
+  },
+  "red_line": {
+    "id": "red_line",
+    "title": "Red Line",
+    "category": "COLLECTION",
+    "goal": 1,
+    "description": "Registra tu primer auto RLC"
+  },
+  "road_beasts": {
+    "id": "road_beasts",
+    "title": "Road Beasts",
+    "category": "COLLECTION",
+    "goal": 7,
+    "description": "Registra los carros del equipo de Road Beasts"
+  },
+  "rosaditaaa": {
+    "id": "rosaditaaa",
+    "title": "Rosaditaaa",
+    "category": "COLLECTION",
+    "goal": 18,
+    "description": "Registra 18 autos de color rosa"
+  },
+  "scorchers": {
+    "id": "scorchers",
+    "title": "Scorchers",
+    "category": "COLLECTION",
+    "goal": 7,
+    "description": "Registra los carros del equipo Scorchers de World Race"
+  },
+  "silencerz": {
+    "id": "silencerz",
+    "title": "Silencerz",
+    "category": "COLLECTION",
+    "goal": 9,
+    "description": "Registra los carros del equipo Silencerz"
+  },
+  "solo_premium": {
+    "id": "solo_premium",
+    "title": "Solo premium",
+    "category": "COLLECTION",
+    "goal": 25,
+    "description": "Registra 25 carros premium"
+  },
+  "street_breed": {
+    "id": "street_breed",
+    "title": "Street Breed",
+    "category": "COLLECTION",
+    "goal": 7,
+    "description": "Registra los carros del equipo Street Breed de World Race"
+  },
+  "stun_track_challenge": {
+    "id": "stun_track_challenge",
+    "title": "Stunt Track Challenge",
+    "category": "COLLECTION",
+    "goal": 40,
+    "description": "Registra los carros del juego Hot Wheels Stunt Track Challenge"
+  },
+  "super_cazador_de_tesoros": {
+    "id": "super_cazador_de_tesoros",
+    "title": "Super cazador de tesoros",
+    "category": "COLLECTION",
+    "goal": 10,
+    "description": "Registra 10 STH"
+  },
+  "teku": {
+    "id": "teku",
+    "title": "Teku",
+    "category": "COLLECTION",
+    "goal": 9,
+    "description": "Registra los 9 carros teku"
+  },
+  "treasure_hunts": {
+    "id": "treasure_hunts",
+    "title": "Treasure Hunts",
+    "category": "COLLECTION",
+    "goal": 15,
+    "description": "Registra 15 carros TH. Lastima que no son sth"
+  },
+  "tuba_collector": {
+    "id": "tuba_collector",
+    "title": "Tuba Collector",
+    "category": "COLLECTION",
+    "goal": 5000,
+    "description": "Registra 5000 carros. Con eso te comprabas unas casa"
+  },
+  "turbo_racing": {
+    "id": "turbo_racing",
+    "title": "Turbo Racing",
+    "category": "COLLECTION",
+    "goal": 41,
+    "description": "Registra los carros del juego Hot Wheels Turbo Racing"
+  },
+  "twin_mill": {
+    "id": "twin_mill",
+    "title": "TWIN MILL !!!",
+    "category": "COLLECTION",
+    "goal": 10,
+    "description": "Registra todos los Twin Mill"
+  },
+  "velocity_x": {
+    "id": "velocity_x",
+    "title": "Velocity X",
+    "category": "COLLECTION",
+    "goal": 58,
+    "description": "Registra los carros del juego Velocity X"
+  },
+  "wangan_midnight": {
+    "id": "wangan_midnight",
+    "title": "Wangan Midnight",
+    "category": "COLLECTION",
+    "goal": 1,
+    "description": "Registra El Demonz Z (Nissan Fairlady Z)"
+  },
+  "wave_rippers": {
+    "id": "wave_rippers",
+    "title": "Wave Rippers",
+    "category": "COLLECTION",
+    "goal": 7,
+    "description": "Registra los carros del equipo de Wave Rippers de Highway 35 World Race"
+  },
+  "ya_ya_ya_ya_ya": {
+    "id": "ya_ya_ya_ya_ya",
+    "title": "Ya Ya Ya Ya Ya!",
+    "category": "COLLECTION",
+    "goal": 1,
+    "description": "Hey hey Come on over and have some fun with crazy taxi"
+  }
+}

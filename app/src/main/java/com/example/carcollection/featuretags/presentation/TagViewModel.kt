@@ -3,6 +3,7 @@ package com.example.carcollection.featuretags.presentation
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.carcollection.featuretags.data.TagsMethods
 import com.example.carcollection.featuretags.domain.Tag
@@ -151,5 +152,28 @@ class TagViewModel(
             editTag() // ya maneja ID internamente
             onComplete()
         }
+    }
+
+    /** Force-refresh tags from Firestore (bypasses cache). */
+    fun refreshTagsNow() {
+        viewModelScope.launch {
+            TagsMethods.invalidateCache()
+            refreshTags()
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Factory
+// ─────────────────────────────────────────────────────────────────────────────
+class TagViewModelFactory(
+    private val tagsMethods: TagsMethods
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(TagViewModel::class.java)) {
+            return TagViewModel(tagsMethods) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

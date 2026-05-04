@@ -85,12 +85,16 @@ fun AchievementItem(
     userAchievement: UserAchievement?,
     modifier: Modifier = Modifier,
     userCars: List<Car> = emptyList(),
-    userCarNames: Set<String> = emptySet()
+    userCarNames: Set<String> = emptySet(),
+    currentUserId: String? = null,
+    profileUsername: String? = null  // null = perfil propio, valor = perfil público
 ) {
     val isUnlocked = userAchievement?.unlocked == true
     val progress = userAchievement?.progress ?: 0
     val goal = achievement.goal
-    val progressPercent = (progress.toFloat() / goal).coerceIn(0f, 1f)
+    // Evitar división por cero (logros exclusivos tienen goal = 0)
+    val progressPercent = if (goal > 0) (progress.toFloat() / goal).coerceIn(0f, 1f) else if (isUnlocked) 1f else 0f
+    val isExclusiveAchievement = achievement.isExclusive || achievement.goal == 0
 
     var isExpanded by remember { mutableStateOf(false) }
     val hasLongDescription = achievement.description.length > 80
@@ -172,7 +176,50 @@ fun AchievementItem(
 
                     Spacer(Modifier.height(6.dp))
 
-                    if (!isUnlocked) {
+                    if (isExclusiveAchievement) {
+                        // Determinar si el usuario actual es el dueño del logro exclusivo
+                        val isOwner = currentUserId != null &&
+                            achievement.exclusiveUserIds.contains(currentUserId)
+                        val ownerName = profileUsername ?: "este usuario"
+
+                        if (isUnlocked && isOwner) {
+                            // Perfil propio con logro exclusivo desbloqueado
+                            Text(
+                                text = "✅ Desbloqueado",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "⭐ Tu logro exclusivo",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        } else if (isUnlocked && !isOwner) {
+                            // Perfil público — el dueño tiene este logro
+                            Text(
+                                text = "✅ Desbloqueado por $ownerName",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "🔒 Solo $ownerName puede tener este logro",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                            )
+                        } else {
+                            // Logro exclusivo no desbloqueado (raro, pero mostrar info)
+                            Text(
+                                text = "⭐ Logro exclusivo de $ownerName",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                            Text(
+                                text = "🔒 Solo $ownerName puede tener este logro",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                            )
+                        }
+                    } else if (!isUnlocked) {
                         LinearProgressIndicator(
                             progress = { progressPercent },
                             modifier = Modifier
@@ -186,6 +233,20 @@ fun AchievementItem(
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.Gray
                         )
+                        // Para logros de 1 carro bloqueados, mostrar cuál es el carro requerido
+                        if (goal == 1) {
+                            val concept = achievement.conditions.firstOrNull()?.concept
+                            if (!concept.isNullOrBlank() && !concept.contains(",")) {
+                                val displayConcept = concept.replaceFirstChar {
+                                    if (it.isLowerCase()) it.titlecase() else it.toString()
+                                }
+                                Text(
+                                    text = "🚗 Se necesita: $displayConcept",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     } else {
                         Text(
                             text = "✅ Desbloqueado",
@@ -304,16 +365,17 @@ fun AchievementItem(
                                 userCars.size
                             }
 
-                            // Solo mostrar si hay al menos 1 carro
-                            if (carCount > 0) {
-                                Text(
-                                    text = if (isCompleted) "✅ $displayName ($carCount)" else "• $displayName ($carCount)",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = if (isCompleted) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurface,
-                                    textDecoration = if (isCompleted) TextDecoration.LineThrough else null,
-                                    fontWeight = if (isCompleted) FontWeight.SemiBold else FontWeight.Medium
-                                )
-                            }
+                            // Mostrar siempre todas las condiciones (incluso si el usuario no tiene el carro)
+                            val countText = if (carCount > 0) " ($carCount)" else ""
+                            Text(
+                                text = if (isCompleted) "✅ $displayName$countText" else "• $displayName$countText",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (isCompleted) Color(0xFF4CAF50)
+                                        else if (carCount == 0) Color.Gray.copy(alpha = 0.5f)
+                                        else MaterialTheme.colorScheme.onSurface,
+                                textDecoration = if (isCompleted) TextDecoration.LineThrough else null,
+                                fontWeight = if (isCompleted) FontWeight.SemiBold else FontWeight.Medium
+                            )
                         }
                     }
                 }

@@ -40,6 +40,8 @@ class CarFormViewModel(
         private set
     var backgroundName = mutableStateOf("fondo_1")
         private set
+    var notes = mutableStateOf("")
+        private set
 
     private var currentCarId: String? = null
 
@@ -96,6 +98,7 @@ class CarFormViewModel(
     fun onTypeChange(value: String) { type.value = value }
     fun onQualityChange(value: String) { quality.value = value }
     fun onBackgroundNameChange(value: String) { backgroundName.value = value }
+    fun onNotesChange(value: String) { notes.value = value }
 
     // Load car data for editing
     fun loadCar(carId: String) {
@@ -111,6 +114,7 @@ class CarFormViewModel(
                 type.value = car.type.orEmpty()
                 quality.value = car.quality.orEmpty()
                 backgroundName.value = car.backgroundName.orEmpty()
+                notes.value = car.notes.orEmpty()
                 _selectedTags.value = car.tags
             }
         }
@@ -138,7 +142,8 @@ class CarFormViewModel(
                 quality = quality.value,
                 backgroundName = backgroundName.value,
                 backgroundUrl = backgroundUrl,  // ✅ Guardar URL completo
-                tags = selectedTags.value
+                tags = selectedTags.value,
+                notes = notes.value.takeIf { it.isNotBlank() }
             )
 
             val result = if (currentCarId == null) {

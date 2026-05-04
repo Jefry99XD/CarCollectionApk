@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
+import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import com.example.carcollection.R
 import com.example.carcollection.featurecar.domain.Car
@@ -83,8 +84,10 @@ fun CarCard(
                 model = car.photoUrl,
                 contentDescription = "${car.brand} ${car.name}",
                 placeholder = painterResource(R.drawable.placeholder),
+                error = painterResource(R.drawable.placeholder),
+                contentScale = ContentScale.Inside,
                 modifier = Modifier
-                    .size(100.dp) // Reducido de 140.dp
+                    .size(100.dp)
                     .background(Color.Transparent)
             )
 

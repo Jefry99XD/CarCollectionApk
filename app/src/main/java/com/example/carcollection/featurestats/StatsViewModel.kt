@@ -4,7 +4,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.carcollection.featurecar.data.CarMethods
-import com.example.carcollection.featurecar.domain.Car
+import com.example.carcollection.featurecar.domain.CarStatsData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -12,184 +12,162 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.random.Random
 
+// ─────────────────────────────────────────────────────────────────────────────
+// MEJORA 5 – Datos de comparación con otros usuarios
+// ─────────────────────────────────────────────────────────────────────────────
+data class ComparisonStats(
+    val myCarCount: Int,
+    val totalUsers: Int,
+    /** 0–100: "tienes más carros que el X% de usuarios" */
+    val percentile: Int,
+    val averageCarsPerUser: Int
+)
+
 class StatsViewModel(
     private val carMethods: CarMethods
 ) : ViewModel() {
 
-    private val _cars = MutableStateFlow<List<Car>>(emptyList())
-    val cars: StateFlow<List<Car>> = _cars
+    // ─── MEJORA 1: datos ligeros (sin photoUrl / backgroundUrl) ──────────────
+    private val _statsData = MutableStateFlow<List<CarStatsData>>(emptyList())
+    val statsData: StateFlow<List<CarStatsData>> = _statsData
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    init {
-        loadCars()
+    // ─── MEJORA 2: caché de stats calculadas por categoría ───────────────────
+    private val statsCache = mutableMapOf<StatsCategory, List<StatItem>>()
+
+    /** Invalida la caché; llamar cuando se agreguen/eliminen carros */
+    fun invalidateStatsCache() {
+        statsCache.clear()
+        _statsData.value = emptyList()
     }
 
-    fun loadCars() {
+    // ─── MEJORA 5: comparación con otros usuarios ────────────────────────────
+    private val _comparisonStats = MutableStateFlow<ComparisonStats?>(null)
+    val comparisonStats: StateFlow<ComparisonStats?> = _comparisonStats
+
+    private val _comparisonLoading = MutableStateFlow(false)
+    val comparisonLoading: StateFlow<Boolean> = _comparisonLoading
+
+    init {
+        loadCarsForStats()
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // MEJORA 1 + 2: Carga ligera y caché de resultados
+    // ─────────────────────────────────────────────────────────────────────────
+
+    fun loadCarsForStats(forceRefresh: Boolean = false) {
         viewModelScope.launch {
             _isLoading.value = true
-            val result = carMethods.getUserCars()
-            _cars.value = result.getOrDefault(emptyList())
+            if (forceRefresh) statsCache.clear()
+            val result = carMethods.getUserCarsForStats(forceRefresh)
+            _statsData.value = result.getOrDefault(emptyList())
             _isLoading.value = false
         }
     }
 
+    /** Alias de compatibilidad (usado antes). Delega a loadCarsForStats(). */
+    fun loadCars() = loadCarsForStats()
+
+    /**
+     * Genera (o recupera de caché) las estadísticas para una categoría.
+     * La caché se invalida automáticamente cuando cambia _statsData.
+     */
     fun generateStats(category: StatsCategory): List<StatItem> {
-        val carsList = _cars.value
+        val data = _statsData.value
+        if (data.isEmpty()) return emptyList()
 
-        if (carsList.isEmpty()) {
-            return emptyList()
+        // Retornar de caché si existe
+        statsCache[category]?.let { return it }
+
+        val result = when (category) {
+            StatsCategory.BRAND     -> generateBrandStats(data)
+            StatsCategory.YEAR      -> generateYearStats(data)
+            StatsCategory.COLOR     -> generateColorStats(data)
+            StatsCategory.TYPE      -> generateTypeStats(data)
+            StatsCategory.QUALITY   -> generateQualityStats(data)
+            StatsCategory.TAGS      -> generateTagStats(data)
+            StatsCategory.CREATED_AT -> generateCreatedAtStats(data)
         }
 
-        return when (category) {
-            StatsCategory.BRAND -> generateBrandStats(carsList)
-            StatsCategory.YEAR -> generateYearStats(carsList)
-            StatsCategory.COLOR -> generateColorStats(carsList)
-            StatsCategory.TYPE -> generateTypeStats(carsList)
-            StatsCategory.QUALITY -> generateQualityStats(carsList)
-            StatsCategory.TAGS -> generateTagStats(carsList)
-            StatsCategory.CREATED_AT -> generateCreatedAtStats(carsList)
+        statsCache[category] = result
+        return result
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // MEJORA 5: Comparación con otros usuarios
+    // ─────────────────────────────────────────────────────────────────────────
+
+    fun loadComparisonStats() {
+        viewModelScope.launch {
+            _comparisonLoading.value = true
+            val result = carMethods.getUserComparisonStats()
+            _comparisonStats.value = result.getOrNull()
+            _comparisonLoading.value = false
         }
     }
 
-    private fun generateBrandStats(cars: List<Car>): List<StatItem> {
-        val brandCounts = cars
-            .mapNotNull { it.brand }
+    // ─────────────────────────────────────────────────────────────────────────
+    // Generadores de stats (ahora reciben CarStatsData en lugar de Car)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private fun generateBrandStats(data: List<CarStatsData>): List<StatItem> =
+        data.mapNotNull { it.brand }
             .filter { it.isNotBlank() }
-            .groupingBy { it }
-            .eachCount()
-            .entries
-            .sortedByDescending { it.value }
+            .groupingBy { it }.eachCount()
+            .entries.sortedByDescending { it.value }
+            .map { (brand, count) -> StatItem(brand, count, randomColor()) }
 
-        return brandCounts.map { (brand, count) ->
-            StatItem(
-                label = brand,
-                value = count,
-                color = randomColor()
-            )
-        }
-    }
-
-    private fun generateYearStats(cars: List<Car>): List<StatItem> {
-        val yearCounts = cars
-            .mapNotNull { it.year }
+    private fun generateYearStats(data: List<CarStatsData>): List<StatItem> =
+        data.mapNotNull { it.year }
             .filter { it.isNotBlank() }
-            .groupingBy { it }
-            .eachCount()
-            .entries
-            .sortedByDescending { it.value }
+            .groupingBy { it }.eachCount()
+            .entries.sortedByDescending { it.value }
+            .map { (year, count) -> StatItem(year, count, randomColor()) }
 
-        return yearCounts.map { (year, count) ->
-            StatItem(
-                label = year,
-                value = count,
-                color = randomColor()
-            )
-        }
-    }
-
-    private fun generateColorStats(cars: List<Car>): List<StatItem> {
-        val colorCounts = cars
-            .mapNotNull { it.color }
+    private fun generateColorStats(data: List<CarStatsData>): List<StatItem> =
+        data.mapNotNull { it.color }
             .filter { it.isNotBlank() }
-            .groupingBy { it }
-            .eachCount()
-            .entries
-            .sortedByDescending { it.value }
+            .groupingBy { it }.eachCount()
+            .entries.sortedByDescending { it.value }
+            .map { (color, count) -> StatItem(color, count, randomColor()) }
 
-        return colorCounts.map { (color, count) ->
-            StatItem(
-                label = color,
-                value = count,
-                color = randomColor()
-            )
-        }
-    }
-
-    private fun generateTypeStats(cars: List<Car>): List<StatItem> {
-        val typeCounts = cars
-            .mapNotNull { it.type }
+    private fun generateTypeStats(data: List<CarStatsData>): List<StatItem> =
+        data.mapNotNull { it.type }
             .filter { it.isNotBlank() }
-            .groupingBy { it }
-            .eachCount()
-            .entries
-            .sortedByDescending { it.value }
+            .groupingBy { it }.eachCount()
+            .entries.sortedByDescending { it.value }
+            .map { (type, count) -> StatItem(type, count, randomColor()) }
 
-        return typeCounts.map { (type, count) ->
-            StatItem(
-                label = type,
-                value = count,
-                color = randomColor()
-            )
-        }
-    }
-
-    private fun generateQualityStats(cars: List<Car>): List<StatItem> {
-        val qualityCounts = cars
-            .mapNotNull { it.quality }
+    private fun generateQualityStats(data: List<CarStatsData>): List<StatItem> =
+        data.mapNotNull { it.quality }
             .filter { it.isNotBlank() }
-            .groupingBy { it }
-            .eachCount()
-            .entries
-            .sortedByDescending { it.value }
+            .groupingBy { it }.eachCount()
+            .entries.sortedByDescending { it.value }
+            .map { (quality, count) -> StatItem(quality, count, randomColor()) }
 
-        return qualityCounts.map { (quality, count) ->
-            StatItem(
-                label = quality,
-                value = count,
-                color = randomColor()
-            )
-        }
-    }
-
-    private fun generateTagStats(cars: List<Car>): List<StatItem> {
-        val allTags = cars.flatMap { it.tags }
-        val tagCounts = allTags
+    private fun generateTagStats(data: List<CarStatsData>): List<StatItem> =
+        data.flatMap { it.tags }
             .filter { it.isNotBlank() }
-            .groupingBy { it }
-            .eachCount()
-            .entries
-            .sortedByDescending { it.value }
+            .groupingBy { it }.eachCount()
+            .entries.sortedByDescending { it.value }
+            .map { (tag, count) -> StatItem(tag, count, randomColor()) }
 
-        return tagCounts.map { (tag, count) ->
-            StatItem(
-                label = tag,
-                value = count,
-                color = randomColor()
-            )
-        }
-    }
-
-    private fun generateCreatedAtStats(cars: List<Car>): List<StatItem> {
+    private fun generateCreatedAtStats(data: List<CarStatsData>): List<StatItem> {
         val dateFormat = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
-
-        val monthCounts = cars
-            .mapNotNull { it.createdAt }
-            .groupingBy { timestamp ->
-                val date = Date(timestamp)
-                dateFormat.format(date)
-            }
-            .eachCount()
-            .entries
-            .sortedByDescending { it.value }
-
-        return monthCounts.map { (month, count) ->
-            StatItem(
-                label = month,
-                value = count,
-                color = randomColor()
-            )
-        }
+        return data.mapNotNull { it.createdAt }
+            .groupingBy { ts -> dateFormat.format(Date(ts)) }.eachCount()
+            .entries.sortedByDescending { it.value }
+            .map { (month, count) -> StatItem(month, count, randomColor()) }
     }
 
-    private fun randomColor(): Color {
-        return Color(
-            Random.nextInt(100, 200),
-            Random.nextInt(100, 200),
-            Random.nextInt(100, 200)
-        )
-    }
+    private fun randomColor(): Color = Color(
+        Random.nextInt(100, 200),
+        Random.nextInt(100, 200),
+        Random.nextInt(100, 200)
+    )
 }
 
 // ViewModelFactory for StatsViewModel
@@ -204,4 +182,3 @@ class StatsViewModelFactory(
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
-
