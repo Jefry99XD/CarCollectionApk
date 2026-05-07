@@ -116,6 +116,30 @@
           "name": "Fondo 8",
           "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo8.png",
           "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/fondo8.png"
+        },
+        {
+          "id": "fondo_20",
+          "name": "Fondo 05",
+          "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/05.png",
+          "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/05.png"
+        },
+        {
+          "id": "fondo_21",
+          "name": "Fondo HW35",
+          "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/hw35.jpg",
+          "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/hw35.jpg"
+        },
+        {
+          "id": "fondo_22",
+          "name": "Fondo AF1",
+          "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/af1.jpeg",
+          "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/af1.jpeg"
+        },
+        {
+          "id": "fondo_23",
+          "name": "Fondo HWN",
+          "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/hwn.jpeg",
+          "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/hwn.jpeg"
         }
       ]
     }
