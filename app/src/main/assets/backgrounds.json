@@ -140,6 +140,12 @@
           "name": "Fondo HWN",
           "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/hwn.jpeg",
           "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/hwn.jpeg"
+        },
+        {
+          "id": "fondo_24",
+          "name": "acceleracers",
+          "url": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/acl.jpg",
+          "thumbnailUrl": "https://raw.githubusercontent.com/polarismkr/diecastimghoster/main/fondos/acl.jpg"
         }
       ]
     }
