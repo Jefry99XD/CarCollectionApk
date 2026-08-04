@@ -2,6 +2,7 @@ package com.example.carcollection.featurecar.presentation.add_edit_car
 
 import android.content.Context
 import coil.Coil
+import coil.annotation.ExperimentalCoilApi
 
 /**
  * Configuración de Coil para featurecar
@@ -25,6 +26,7 @@ data class CacheStats(
  * Limpiar caché de Coil
  * Usar con cuidado - solo en situaciones de memoria baja
  */
+@OptIn(ExperimentalCoilApi::class)
 suspend fun clearCoilCache(context: Context) {
     try {
         val imageLoader = Coil.imageLoader(context)

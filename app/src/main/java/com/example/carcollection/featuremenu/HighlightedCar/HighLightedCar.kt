@@ -15,6 +15,9 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,11 +31,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
+import com.example.carcollection.featurecar.domain.Car
 import com.example.carcollection.featurecar.presentation.add_edit_car.CarLibraryEntry
 import com.example.carcollection.featurecar.presentation.add_edit_car.CarVariation
+import com.example.carcollection.featureAchievements.data.AchievementMethods
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.util.Calendar
@@ -42,6 +48,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import kotlin.math.abs
 
 // Data class para el carro del día
@@ -168,16 +176,42 @@ fun getCarOfTheDay(context: Context): CarOfTheDay? {
 }
 
 @Composable
-fun CarOfTheDayScreen() {
+fun CarOfTheDayScreen(
+    userCars: List<Car> = emptyList()
+) {
     val context = LocalContext.current
     var carOfTheDay by remember { mutableStateOf<CarOfTheDay?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var showImageDialog by remember { mutableStateOf(false) }
+    var isClaimingAchievement by remember { mutableStateOf(false) }
+    var claimMessage by remember { mutableStateOf("") }
+    var showClaimMessage by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val achievementMethods = remember { AchievementMethods() }
+
+    // Verificar si el usuario ya desbloqueó el logro
+    var achievementUnlocked by remember { mutableStateOf(false) }
+    
+    // Contador de reclamaciones
+    var claimCount by remember { mutableStateOf(0) }
+    
+    // Verificar si el usuario tiene un carro que contiene el nombre del carro del día
+    var canClaimAchievement by remember { mutableStateOf(false) }
 
     // Use the process-level cache — avoids re-reading the large JSON on every composition
     LaunchedEffect(Unit) {
         carOfTheDay = CarOfTheDayCache.getOrLoad(context)
         isLoading = false
+    }
+
+    // Actualizar estado del logro cuando cambian los carros o el carro del día
+    LaunchedEffect(userCars, carOfTheDay) {
+        if (carOfTheDay != null && userCars.isNotEmpty()) {
+            val canClaim = userCars.any { car ->
+                car.name?.contains(carOfTheDay!!.name, ignoreCase = true) == true
+            }
+            canClaimAchievement = canClaim
+        }
     }
 
     if (isLoading) {
@@ -222,13 +256,136 @@ fun CarOfTheDayScreen() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // ─── Título general ───
-        Text(
-            text = "Carro del Día",
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
+        Box(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = "Carro del Día",
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.Center),
+                textAlign = TextAlign.Center
+            )
+
+            // Botón "Reclamar Logro" en la esquina superior derecha
+            if (canClaimAchievement && !achievementUnlocked) {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            try {
+                                isClaimingAchievement = true
+                                
+                                // Verificar nuevamente que tenga el carro
+                                val hasCarOfTheDay = userCars.any { car ->
+                                    car.name?.contains(carOfTheDay!!.name, ignoreCase = true) == true
+                                }
+
+                                if (!hasCarOfTheDay) {
+                                    // El usuario NO tiene el carro - bloquear después del tap
+                                    claimMessage = "No tienes este carro en tu colección"
+                                    canClaimAchievement = false
+                                    showClaimMessage = true
+                                    isClaimingAchievement = false
+                                    return@launch
+                                }
+
+                                // Llamar al método para actualizar el logro
+                                val result = achievementMethods.manualClaimCarOfTheDayAchievement()
+                                
+                                if (result.success) {
+                                    claimMessage = result.message
+                                    achievementUnlocked = true
+                                    claimCount += 1  // Incrementar contador
+                                } else {
+                                    // Mostrar el motivo del fallo
+                                    claimMessage = result.message
+                                    
+                                    // Si ya reclamó hoy, bloquear el botón
+                                    if (result.reason == "ALREADY_CLAIMED_TODAY") {
+                                        canClaimAchievement = false
+                                    }
+                                }
+                                showClaimMessage = true
+                                isClaimingAchievement = false
+                            } catch (e: Exception) {
+                                claimMessage = "Error al reclamar el logro: ${e.message}"
+                                showClaimMessage = true
+                                isClaimingAchievement = false
+                            }
+                        }
+                    },
+                    enabled = !isClaimingAchievement,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text(
+                        if (isClaimingAchievement) "Reclamando..." else "Reclamar Logro",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        fontSize = MaterialTheme.typography.labelMedium.fontSize
+                    )
+                }
+            } else if (!canClaimAchievement && !achievementUnlocked) {
+                // No puede reclamar porque no tiene el carro
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.errorContainer,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        "⚠ Sin carro",
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    )
+                }
+            } else if (achievementUnlocked) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                color = MaterialTheme.colorScheme.primary,
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            "✓ Desbloqueado",
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        )
+                    }
+                    if (claimCount > 0) {
+                        Text(
+                            "Reclamado $claimCount ${if (claimCount == 1) "vez" else "veces"}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+            }
+        }
 
         // ─── Imagen principal con badge y overlay ───
         Card(
@@ -328,6 +485,39 @@ fun CarOfTheDayScreen() {
                 modifier = Modifier.padding(16.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+
+        // ─── Mensaje de reclamación de logro ───
+        if (showClaimMessage) {
+            Card(
+                shape = RoundedCornerShape(12.dp),
+                elevation = CardDefaults.cardElevation(4.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (achievementUnlocked)
+                        MaterialTheme.colorScheme.primaryContainer
+                    else
+                        MaterialTheme.colorScheme.errorContainer
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = claimMessage,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    modifier = Modifier.padding(16.dp),
+                    color = if (achievementUnlocked)
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    else
+                        MaterialTheme.colorScheme.onErrorContainer,
+                    textAlign = TextAlign.Center
+                )
+            }
+            
+            LaunchedEffect(showClaimMessage) {
+                delay(3000)
+                showClaimMessage = false
+            }
         }
     }
 

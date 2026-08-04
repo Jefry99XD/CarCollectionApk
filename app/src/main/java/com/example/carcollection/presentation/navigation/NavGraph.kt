@@ -91,6 +91,7 @@ fun AppNavGraph(
         composable(NavRoutes.MENU) {
             MenuScreen(
                 userViewModel = userViewModel,
+                carViewModel = collectionViewModel,
                 onNavigateToCollection = { navController.navigate(NavRoutes.COLLECTION) },
                 onNavigateToTags = { navController.navigate(NavRoutes.VIEW_TAGS) },
                 onNavigateToConsultas = { navController.navigate(NavRoutes.CONSULTAS)},

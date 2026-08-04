@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.random.Random
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MEJORA 5 – Datos de comparación con otros usuarios
@@ -21,6 +20,16 @@ data class ComparisonStats(
     /** 0–100: "tienes más carros que el X% de usuarios" */
     val percentile: Int,
     val averageCarsPerUser: Int
+)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TREND METRICS – Datos de crecimiento y tendencias
+// ─────────────────────────────────────────────────────────────────────────────
+data class GrowthMetrics(
+    val growthRate: Float,          // Porcentaje de crecimiento respecto al mes anterior
+    val averagePerMonth: Float,     // Promedio de carros añadidos por mes
+    val totalCars: Int,             // Total de carros en la colección
+    val trendMonths: Int            // Cantidad de meses con datos
 )
 
 class StatsViewModel(
@@ -34,6 +43,10 @@ class StatsViewModel(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
+    // ─── Error state for better UX ──────────────────────────────────────────
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage
+
     // ─── MEJORA 2: caché de stats calculadas por categoría ───────────────────
     private val statsCache = mutableMapOf<StatsCategory, List<StatItem>>()
 
@@ -41,6 +54,7 @@ class StatsViewModel(
     fun invalidateStatsCache() {
         statsCache.clear()
         _statsData.value = emptyList()
+        _errorMessage.value = null
     }
 
     // ─── MEJORA 5: comparación con otros usuarios ────────────────────────────
@@ -49,6 +63,9 @@ class StatsViewModel(
 
     private val _comparisonLoading = MutableStateFlow(false)
     val comparisonLoading: StateFlow<Boolean> = _comparisonLoading
+
+    private val _comparisonError = MutableStateFlow<String?>(null)
+    val comparisonError: StateFlow<String?> = _comparisonError
 
     init {
         loadCarsForStats()
@@ -61,9 +78,16 @@ class StatsViewModel(
     fun loadCarsForStats(forceRefresh: Boolean = false) {
         viewModelScope.launch {
             _isLoading.value = true
+            _errorMessage.value = null
             if (forceRefresh) statsCache.clear()
             val result = carMethods.getUserCarsForStats(forceRefresh)
-            _statsData.value = result.getOrDefault(emptyList())
+            result.onSuccess { data ->
+                _statsData.value = data
+                _errorMessage.value = null
+            }.onFailure { error ->
+                _statsData.value = emptyList()
+                _errorMessage.value = error.message ?: "Error loading stats"
+            }
             _isLoading.value = false
         }
     }
@@ -71,29 +95,85 @@ class StatsViewModel(
     /** Alias de compatibilidad (usado antes). Delega a loadCarsForStats(). */
     fun loadCars() = loadCarsForStats()
 
+    fun clearError() {
+        _errorMessage.value = null
+    }
+
     /**
      * Genera (o recupera de caché) las estadísticas para una categoría.
      * La caché se invalida automáticamente cuando cambia _statsData.
+     * Opcionalmente filtra por rango de tiempo.
      */
-    fun generateStats(category: StatsCategory): List<StatItem> {
+    fun generateStats(category: StatsCategory, timeRange: TimeRange = TimeRange.ALL_TIME): List<StatItem> {
         val data = _statsData.value
         if (data.isEmpty()) return emptyList()
 
-        // Retornar de caché si existe
-        statsCache[category]?.let { return it }
+        val filteredData = filterDataByTimeRange(data, timeRange)
+        if (filteredData.isEmpty()) return emptyList()
 
+        // Generar key de caché que incluya el timeRange
+        val cacheKey = "$category-$timeRange"
+        
         val result = when (category) {
-            StatsCategory.BRAND     -> generateBrandStats(data)
-            StatsCategory.YEAR      -> generateYearStats(data)
-            StatsCategory.COLOR     -> generateColorStats(data)
-            StatsCategory.TYPE      -> generateTypeStats(data)
-            StatsCategory.QUALITY   -> generateQualityStats(data)
-            StatsCategory.TAGS      -> generateTagStats(data)
-            StatsCategory.CREATED_AT -> generateCreatedAtStats(data)
+            StatsCategory.BRAND     -> generateBrandStats(filteredData)
+            StatsCategory.YEAR      -> generateYearStats(filteredData)
+            StatsCategory.COLOR     -> generateColorStats(filteredData)
+            StatsCategory.TYPE      -> generateTypeStats(filteredData)
+            StatsCategory.QUALITY   -> generateQualityStats(filteredData)
+            StatsCategory.TAGS      -> generateTagStats(filteredData)
+            StatsCategory.CREATED_AT -> generateCreatedAtStats(filteredData)
         }
 
-        statsCache[category] = result
         return result
+    }
+
+    /**
+     * Filtra datos de carros por rango de tiempo basado en createdAt.
+     */
+    private fun filterDataByTimeRange(data: List<CarStatsData>, timeRange: TimeRange): List<CarStatsData> {
+        if (timeRange == TimeRange.ALL_TIME) return data
+        
+        val days = timeRange.days ?: return data
+        val cutoffTime = System.currentTimeMillis() - (days * 24 * 60 * 60 * 1000L)
+        
+        return data.filter { car ->
+            car.createdAt != null && car.createdAt >= cutoffTime
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TREND ANALYSIS: Análisis de tendencias
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Get monthly trend data showing cars added per month
+     */
+    fun getMonthlyTrend(): List<TrendItem> {
+        return TrendAnalyzer.generateMonthlyTrend(_statsData.value)
+    }
+
+    /**
+     * Get quality trend data showing distribution over time
+     */
+    fun getQualityTrend(): Map<String, List<TrendItem>> {
+        return TrendAnalyzer.generateQualityTrend(_statsData.value)
+    }
+
+    /**
+     * Get growth rate information
+     */
+    fun getGrowthMetrics(): GrowthMetrics {
+        val trend = getMonthlyTrend()
+        val growthRate = TrendAnalyzer.calculateGrowthRate(trend)
+        val avgPerMonth = TrendAnalyzer.getAveragePerMonth(trend)
+        val totalAdded = _statsData.value.size
+        
+        return GrowthMetrics(
+            growthRate = growthRate,
+            averagePerMonth = avgPerMonth,
+            totalCars = totalAdded,
+            trendMonths = trend.size
+        )
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -103,71 +183,101 @@ class StatsViewModel(
     fun loadComparisonStats() {
         viewModelScope.launch {
             _comparisonLoading.value = true
+            _comparisonError.value = null
             val result = carMethods.getUserComparisonStats()
-            _comparisonStats.value = result.getOrNull()
+            result.onSuccess { stats ->
+                _comparisonStats.value = stats
+                _comparisonError.value = null
+            }.onFailure { error ->
+                _comparisonStats.value = null
+                _comparisonError.value = error.message ?: "Error loading comparison stats"
+            }
             _comparisonLoading.value = false
         }
+    }
+
+    fun clearComparisonError() {
+        _comparisonError.value = null
     }
 
     // ─────────────────────────────────────────────────────────────────────────
     // Generadores de stats (ahora reciben CarStatsData en lugar de Car)
     // ─────────────────────────────────────────────────────────────────────────
 
-    private fun generateBrandStats(data: List<CarStatsData>): List<StatItem> =
-        data.mapNotNull { it.brand }
+    private fun generateBrandStats(data: List<CarStatsData>): List<StatItem> {
+        val stats = data.mapNotNull { it.brand }
             .filter { it.isNotBlank() }
             .groupingBy { it }.eachCount()
             .entries.sortedByDescending { it.value }
-            .map { (brand, count) -> StatItem(brand, count, randomColor()) }
+            .map { (brand, count) -> StatItem(brand, count, Color.Unspecified) }
+        return assignDeterministicColors(stats)
+    }
 
-    private fun generateYearStats(data: List<CarStatsData>): List<StatItem> =
-        data.mapNotNull { it.year }
+    private fun generateYearStats(data: List<CarStatsData>): List<StatItem> {
+        val stats = data.mapNotNull { it.year }
             .filter { it.isNotBlank() }
             .groupingBy { it }.eachCount()
             .entries.sortedByDescending { it.value }
-            .map { (year, count) -> StatItem(year, count, randomColor()) }
+            .map { (year, count) -> StatItem(year, count, Color.Unspecified) }
+        return assignDeterministicColors(stats)
+    }
 
-    private fun generateColorStats(data: List<CarStatsData>): List<StatItem> =
-        data.mapNotNull { it.color }
+    private fun generateColorStats(data: List<CarStatsData>): List<StatItem> {
+        val stats = data.mapNotNull { it.color }
             .filter { it.isNotBlank() }
             .groupingBy { it }.eachCount()
             .entries.sortedByDescending { it.value }
-            .map { (color, count) -> StatItem(color, count, randomColor()) }
+            .map { (color, count) -> StatItem(color, count, Color.Unspecified) }
+        return assignDeterministicColors(stats)
+    }
 
-    private fun generateTypeStats(data: List<CarStatsData>): List<StatItem> =
-        data.mapNotNull { it.type }
+    private fun generateTypeStats(data: List<CarStatsData>): List<StatItem> {
+        val stats = data.mapNotNull { it.type }
             .filter { it.isNotBlank() }
             .groupingBy { it }.eachCount()
             .entries.sortedByDescending { it.value }
-            .map { (type, count) -> StatItem(type, count, randomColor()) }
+            .map { (type, count) -> StatItem(type, count, Color.Unspecified) }
+        return assignDeterministicColors(stats)
+    }
 
-    private fun generateQualityStats(data: List<CarStatsData>): List<StatItem> =
-        data.mapNotNull { it.quality }
+    private fun generateQualityStats(data: List<CarStatsData>): List<StatItem> {
+        val stats = data.mapNotNull { it.quality }
             .filter { it.isNotBlank() }
             .groupingBy { it }.eachCount()
             .entries.sortedByDescending { it.value }
-            .map { (quality, count) -> StatItem(quality, count, randomColor()) }
+            .map { (quality, count) -> StatItem(quality, count, Color.Unspecified) }
+        return assignDeterministicColors(stats)
+    }
 
-    private fun generateTagStats(data: List<CarStatsData>): List<StatItem> =
-        data.flatMap { it.tags }
+    private fun generateTagStats(data: List<CarStatsData>): List<StatItem> {
+        val stats = data.flatMap { it.tags }
             .filter { it.isNotBlank() }
             .groupingBy { it }.eachCount()
             .entries.sortedByDescending { it.value }
-            .map { (tag, count) -> StatItem(tag, count, randomColor()) }
+            .map { (tag, count) -> StatItem(tag, count, Color.Unspecified) }
+        return assignDeterministicColors(stats)
+    }
 
     private fun generateCreatedAtStats(data: List<CarStatsData>): List<StatItem> {
         val dateFormat = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
-        return data.mapNotNull { it.createdAt }
+        val stats = data.mapNotNull { it.createdAt }
             .groupingBy { ts -> dateFormat.format(Date(ts)) }.eachCount()
             .entries.sortedByDescending { it.value }
-            .map { (month, count) -> StatItem(month, count, randomColor()) }
+            .map { (month, count) -> StatItem(month, count, Color.Unspecified) }
+        return assignDeterministicColors(stats)
     }
 
-    private fun randomColor(): Color = Color(
-        Random.nextInt(100, 200),
-        Random.nextInt(100, 200),
-        Random.nextInt(100, 200)
-    )
+    /**
+     * Assign deterministic colors to stats based on their labels.
+     * Ensures consistent colors across recompositions.
+     */
+    private fun assignDeterministicColors(stats: List<StatItem>): List<StatItem> {
+        val labels = stats.map { it.label }
+        val colors = ColorMapper.getColorsForLabels(labels)
+        return stats.mapIndexed { index, stat ->
+            stat.copy(color = colors.getOrNull(index) ?: ColorMapper.getColorForLabel(stat.label))
+        }
+    }
 }
 
 // ViewModelFactory for StatsViewModel

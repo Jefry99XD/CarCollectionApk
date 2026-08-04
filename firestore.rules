@@ -27,7 +27,13 @@ service cloud.firestore {
       // El dueño puede actualizar su perfil
       allow update, delete: if request.auth != null && request.auth.uid == userId;
 
-      // --- Autos visibles para todos los usuarios autenticados ---
+      // --- Autos visibles para todos los usuarios autenticados (colección principal) ---
+      match /cars/{carId} {
+        allow read: if request.auth != null; // TODOS pueden verlo
+        allow write, update, delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // --- Autos visibles para todos los usuarios autenticados (colección alternativa) ---
       match /carsCollection/{carId} {
         allow read: if request.auth != null; // TODOS pueden verlo
         allow write, update, delete: if request.auth != null && request.auth.uid == userId;

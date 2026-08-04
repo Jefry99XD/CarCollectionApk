@@ -45,13 +45,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import com.example.carcollection.R
 import com.example.carcollection.featuremenu.HighlightedCar.CarOfTheDayScreen
+import com.example.carcollection.featuremenu.HighlightedCar.TubaDelMesScreen
 import com.example.carcollection.featureuser.UserViewModel
+import com.example.carcollection.featurecar.domain.CarViewModel
 
 @Composable
 fun MenuScreen(
     userViewModel: UserViewModel,
+    carViewModel: CarViewModel? = null,
     onNavigateToCollection: () -> Unit,
     onNavigateToTags: () -> Unit,
     onNavigateToConsultas: () -> Unit,
@@ -63,6 +67,9 @@ fun MenuScreen(
 
     // ✅ NUEVO: Estado de carga
     val isLoading by userViewModel.isLoading.collectAsState()
+    
+    // ✅ Obtener carros del usuario del ViewModel
+    val userCars by carViewModel?.cars?.collectAsState(initial = emptyList()) ?: mutableStateOf(emptyList())
 
     // ...existing code...
     val configuration = LocalConfiguration.current
@@ -174,7 +181,12 @@ fun MenuScreen(
             item { Spacer(modifier = Modifier.height(8.dp)) }
 
             // Carro del día
-            item { CarOfTheDayScreen() }
+            item { CarOfTheDayScreen(userCars = userCars) }
+
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+
+            // Tuba del mes con leaderboard
+            item { TubaDelMesScreen() }
 
             // Footer
             item {

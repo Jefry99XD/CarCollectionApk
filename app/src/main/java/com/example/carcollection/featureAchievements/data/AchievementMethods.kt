@@ -15,6 +15,9 @@ import com.google.firebase.Timestamp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class AchievementMethods {
 
@@ -519,7 +522,7 @@ class AchievementMethods {
         cars: List<Car>
     ): UserAchievement? {
         // Obtener el carro del día
-        val carOfTheDay = getCarOfTheDayData() ?: return null // No hay carro del día
+        val carOfTheDay = getCarOfTheDayData() ?: return previous // No hay carro del día, mantener estado anterior
 
         // Verificar si el usuario tiene un carro que coincida
         val hasCarOfTheDay = cars.any { car ->
@@ -528,7 +531,7 @@ class AchievementMethods {
         }
 
         if (!hasCarOfTheDay) {
-            return null // Usuario no tiene el carro del día
+            return previous // Usuario no tiene el carro del día, mantener estado anterior
         }
 
         // Incrementar contador (progress = número de veces que ha tenido el carro del día)
@@ -599,6 +602,116 @@ class AchievementMethods {
         val name: String,
         val series: String
     )
+
+    // Data class para el resultado de reclamar el logro
+    data class ClaimAchievementResult(
+        val success: Boolean,
+        val message: String,
+        val reason: String? = null // "ALREADY_CLAIMED_TODAY", "NO_CAR", "ERROR"
+    )
+
+    /**
+     * Obtiene la fecha actual en formato "yyyy-MM-dd"
+     */
+    private fun getTodayDateString(): String {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        return dateFormat.format(Calendar.getInstance().time)
+    }
+
+    /**
+     * Desbloquea manualmente el logro "car_of_the_day".
+     * Se llama cuando el usuario hace click en el botón "Reclamar Logro".
+     * Devuelve el resultado de la operación.
+     */
+    suspend fun manualClaimCarOfTheDayAchievement(): ClaimAchievementResult {
+        return withContext(Dispatchers.Default) {
+            try {
+                val userId = auth.currentUser?.uid ?: return@withContext ClaimAchievementResult(
+                    success = false,
+                    message = "Usuario no autenticado",
+                    reason = "ERROR"
+                )
+                
+                // Obtener el estado actual del logro
+                val currentStateDoc = db.collection("users")
+                    .document(userId)
+                    .collection("achievements")
+                    .document("car_of_the_day")
+                    .get()
+                    .await()
+
+                val currentState = currentStateDoc.toObject(UserAchievement::class.java)
+                    ?: UserAchievement(
+                        achievementId = "car_of_the_day",
+                        goal = 1
+                    )
+
+                // Verificar si ya reclamó hoy
+                val todayDate = getTodayDateString()
+                if (currentState.lastClaimedDate == todayDate) {
+                    return@withContext ClaimAchievementResult(
+                        success = false,
+                        message = "Ya has reclamado el logro hoy",
+                        reason = "ALREADY_CLAIMED_TODAY"
+                    )
+                }
+
+                // Verificar si es la primera vez que se desbloquea
+                val wasNotUnlocked = !currentState.unlocked
+
+                // Actualizar el estado: incrementar progress y desbloquear
+                val updatedState = currentState.copy(
+                    progress = currentState.progress + 1,
+                    unlocked = true,
+                    unlockedAt = currentState.unlockedAt ?: System.currentTimeMillis(),
+                    lastEvaluatedAt = System.currentTimeMillis(),
+                    lastClaimedDate = todayDate  // Guardar la fecha de hoy
+                )
+
+                // Guardar en Firestore
+                db.collection("users")
+                    .document(userId)
+                    .collection("achievements")
+                    .document("car_of_the_day")
+                    .set(updatedState)
+                    .await()
+
+                // Crear notificación de logro
+                withContext(Dispatchers.Main) {
+                    notificationMethods.createAchievementNotification(
+                        achievementTitle = "Carro del Día",
+                        achievementId = "car_of_the_day",
+                        iconUrl = "" // Se puede agregar un ícono si es necesario
+                    )
+                }
+
+                // Agregar XP SOLO la primera vez que se desbloquea (no en reclamaciones posteriores)
+                if (wasNotUnlocked) {
+                    try {
+                        userMethods.addXP(
+                            amount = 200,
+                            source = XPSource.ACHIEVEMENT_UNLOCKED,
+                            sourceId = "car_of_the_day"
+                        )
+                    } catch (_: Exception) {
+                        // No fallar si hay error en XP
+                    }
+                }
+
+                return@withContext ClaimAchievementResult(
+                    success = true,
+                    message = "¡Logro desbloqueado! 🎉"
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+                return@withContext ClaimAchievementResult(
+                    success = false,
+                    message = "Error al reclamar el logro: ${e.message}",
+                    reason = "ERROR"
+                )
+            }
+        }
+    }
 
     // ─────────────────────────────────────────────────────────────
     // MATCHING DE CONDICIONES

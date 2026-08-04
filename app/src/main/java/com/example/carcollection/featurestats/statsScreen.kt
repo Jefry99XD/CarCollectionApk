@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.github.tehras.charts.bar.BarChart
 import com.github.tehras.charts.bar.BarChartData
@@ -50,6 +51,14 @@ enum class ChartType(val display: String) {
     LINE("Line Chart")
 }
 
+// Rango de tiempo para filtrado de estadísticas
+enum class TimeRange(val displayName: String, val days: Int?) {
+    ALL_TIME("Todo el tiempo", null),
+    LAST_30_DAYS("Últimos 30 días", 30),
+    LAST_6_MONTHS("Últimos 6 meses", 180),
+    LAST_YEAR("Último año", 365)
+}
+
 // ----------------------------------------------------
 // PANTALLA PRINCIPAL
 // ----------------------------------------------------
@@ -63,8 +72,10 @@ fun StatsCategoryScreen(
     // Datos ligeros (mejora 1) procesados desde Firebase
     val statsData by viewModel.statsData.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    val stats = remember(statsData, selectedCategory) {
-        viewModel.generateStats(selectedCategory)
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    var selectedTimeRange by remember { mutableStateOf(TimeRange.ALL_TIME) }
+    val stats = remember(statsData, selectedCategory, selectedTimeRange) {
+        viewModel.generateStats(selectedCategory, selectedTimeRange)
     }
     var selectedChart by remember { mutableStateOf(ChartType.PIE) }
 
@@ -90,6 +101,31 @@ fun StatsCategoryScreen(
             ) {
                 CircularProgressIndicator()
             }
+        } else if (errorMessage != null) {
+            Box(
+                modifier = Modifier
+                    .padding(padding)
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        "Error cargando estadísticas",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        errorMessage ?: "Error desconocido",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
         } else if (stats.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -111,6 +147,16 @@ fun StatsCategoryScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+
+                // -------------------------
+                // SELECTOR DE RANGO DE TIEMPO
+                // -------------------------
+                item {
+                    TimeRangeSelector(
+                        selected = selectedTimeRange,
+                        onSelect = { selectedTimeRange = it }
+                    )
+                }
 
                 // -------------------------
                 // SELECTOR DE TIPO DE GRAFICO
@@ -140,8 +186,38 @@ fun StatsCategoryScreen(
     }
 }
 
+// ────────────────────────────────────────────────────
+// SELECTOR DE RANGO DE TIEMPO
+// ────────────────────────────────────────────────────
+@Composable
+fun TimeRangeSelector(selected: TimeRange, onSelect: (TimeRange) -> Unit) {
+    Column {
+        Text(
+            "Rango de tiempo",
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 0.dp)
+        ) {
+            TimeRange.entries.forEach { range ->
+                FilterChip(
+                    selected = selected == range,
+                    onClick = { onSelect(range) },
+                    label = { Text(range.displayName, style = MaterialTheme.typography.labelSmall) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
 // ----------------------------------------------------
-// SELECTOR DE GRÁFICO
+// SELECTOR DE TIPO DE GRÁFICO
 // ----------------------------------------------------
 @Composable
 fun ChartSelector(selected: ChartType, onSelect: (ChartType) -> Unit) {

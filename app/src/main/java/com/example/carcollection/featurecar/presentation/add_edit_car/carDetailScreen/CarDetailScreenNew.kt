@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
@@ -190,7 +191,7 @@ fun CarDetailScreenNew(
                         )
                     }
                     IconButton(onClick = onShareClick) {
-                        Icon(Icons.Default.Send, contentDescription = "Compartir")
+                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Compartir")
                     }
                     IconButton(onClick = { onEditClick(car.id.orEmpty()) }) {
                         Icon(Icons.Default.Edit, contentDescription = "Editar")

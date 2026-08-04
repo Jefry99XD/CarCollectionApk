@@ -34,7 +34,11 @@ data class UserAchievement(
     val matchedConditionIndices: List<Int> = emptyList(),
 
     // Última vez que se evaluó el logro
-    val lastEvaluatedAt: Long = System.currentTimeMillis()
+    val lastEvaluatedAt: Long = System.currentTimeMillis(),
+
+    // Fecha de la última reclamación manual (para car_of_the_day cooldown)
+    // Formato: "yyyy-MM-dd" (ej: "2026-07-27")
+    val lastClaimedDate: String? = null
 ) {
     constructor() : this(
         achievementId = "",
@@ -45,6 +49,7 @@ data class UserAchievement(
         countedCarIds = emptyList(),
         timeKey = null,
         matchedConditionIndices = emptyList(),
-        lastEvaluatedAt = System.currentTimeMillis()
+        lastEvaluatedAt = System.currentTimeMillis(),
+        lastClaimedDate = null
     )
 }

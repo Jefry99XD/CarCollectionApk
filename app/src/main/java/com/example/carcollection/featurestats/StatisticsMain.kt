@@ -91,6 +91,17 @@ fun StatsMainScreen(
 
             item { Spacer(modifier = Modifier.height(8.dp)) }
 
+            // ─────────────────────────────────────────────────────────────
+            // TREND METRICS: Card de crecimiento y tendencias
+            // ─────────────────────────────────────────────────────────────
+            item {
+                if (viewModel != null) {
+                    GrowthMetricsCard(viewModel)
+                }
+            }
+
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+
             item {
                 Text(
                     "Categorías Disponibles",
@@ -359,6 +370,93 @@ fun CategoryCard(category: StatsCategory, onClick: () -> Unit) {
                         contentDescription = "Ir a categoría",
                         modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ────────────────────────────────────────────────────
+// TREND METRICS: Card de crecimiento y tendencias
+// ────────────────────────────────────────────────────
+@Composable
+fun GrowthMetricsCard(viewModel: StatsViewModel) {
+    val metrics = remember(viewModel) {
+        viewModel.getGrowthMetrics()
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+        ),
+        shape = MaterialTheme.shapes.large
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                "📈 Tu crecimiento",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            // Growth Rate
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Crecimiento",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+                    )
+                    Text(
+                        "${String.format("%.1f", metrics.growthRate)}%",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = when {
+                            metrics.growthRate > 0 -> Color(0xFF4CAF50)
+                            metrics.growthRate < 0 -> Color(0xFFf44336)
+                            else -> MaterialTheme.colorScheme.onTertiaryContainer
+                        }
+                    )
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Promedio/mes",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+                    )
+                    Text(
+                        "${String.format("%.1f", metrics.averagePerMonth)}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Total",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+                    )
+                    Text(
+                        "${metrics.totalCars}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
                     )
                 }
             }
